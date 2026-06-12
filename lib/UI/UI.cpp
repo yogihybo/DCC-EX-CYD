@@ -116,12 +116,8 @@ void UI::handleLoop() {
 }
 
 void UI::reset(bool redraw) {
-#if defined(CYD_ESP32)
   UI::tft->fillRect(0, (30 * TFT_HEIGHT) / 480, TFT_WIDTH,
                     TFT_HEIGHT - (30 * TFT_HEIGHT) / 480, UI::COLOR_MAIN_BG);
-#else
-  UI::tft->fillRect(0, 30, 320, 450, UI::COLOR_MAIN_BG);
-#endif
   _child.reset();
   if (redraw) {
     handleRedraw();

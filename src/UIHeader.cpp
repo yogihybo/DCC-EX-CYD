@@ -1,42 +1,24 @@
 #include <UIHeader.h>
 
 UIHeader::UIHeader() {
-#if defined(CYD_ESP32)
   _power = addElement<Image>(0, (2 * TFT_HEIGHT) / 480, (60 * TFT_WIDTH) / 320, (30 * TFT_HEIGHT) / 480, SPIFFS);
   _wifi = addElement<Image>((70 * TFT_WIDTH) / 320, 0, (30 * TFT_WIDTH) / 320, (30 * TFT_HEIGHT) / 480, SPIFFS);
   _cs = addElement<Image>((110 * TFT_WIDTH) / 320, 0, (30 * TFT_WIDTH) / 320, (30 * TFT_HEIGHT) / 480, SPIFFS);
 
   addElement<Image>((150 * TFT_WIDTH) / 320, 0, (30 * TFT_WIDTH) / 320, (30 * TFT_HEIGHT) / 480, "/header/conductor.bmp", SPIFFS);
   _locos = addElement<Label>((180 * TFT_WIDTH) / 320, (10 * TFT_HEIGHT) / 480, (100 * TFT_WIDTH) / 320, (18 * TFT_HEIGHT) / 480);
-#else
-  _power = addElement<Image>(0, 2, 60, 30, SPIFFS);
-  _wifi = addElement<Image>(70, 0, 30, 30, SPIFFS);
-  _cs = addElement<Image>(110, 0, 30, 30, SPIFFS);
-
-  addElement<Image>(150, 0, 30, 30, "/header/conductor.bmp", SPIFFS);
-  _locos = addElement<Label>(180, 10, 100, 18);
-#endif
 
   updatePowerStatus();
   updateWiFiStatus();
   updateCSStatus();
   updateLocoCount();
 
-#if defined(CYD_ESP32)
   addElement<Button>((290 * TFT_WIDTH) / 320, 0, (30 * TFT_WIDTH) / 320, (30 * TFT_HEIGHT) / 480, Button::Appearance {
     "/header/menu.bmp",
     SPIFFS
   })->onRelease([this](void*) {
     dispatchEvent(Event::MENU);
   });
-#else
-  addElement<Button>(290, 0, 30, 30, Button::Appearance {
-    "/header/menu.bmp",
-    SPIFFS
-  })->onRelease([this](void*) {
-    dispatchEvent(Event::MENU);
-  });
-#endif
 }
 
 void UIHeader::updatePowerStatus() {

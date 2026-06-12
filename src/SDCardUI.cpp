@@ -25,11 +25,7 @@ SDCardUI::SDCardUI() {
     _tasks.push_back([this] {
       setChild<MessageBox>("Formatting...", TFT_BLUE);
 
-#if defined(CYD_ESP32)
       if (SD.begin(5, SPI, 4000000, "/sd", 5, true)) {
-#else
-      if (SD.begin(D7, SPI, 4000000, "/sd", 5, true)) {
-#endif
         ESP.restart();
       } else {
         _tasks.push_back([this] {
