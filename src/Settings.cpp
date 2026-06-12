@@ -1,9 +1,9 @@
 #include <Settings.h>
-#include <SD.h>
+#include <SPIFFS.h>
 #include <Functions.h>
 
 void SettingsClass::load() {
-  File json = SD.open("/settings.json");
+  File json = SPIFFS.open("/settings.json");
   StaticJsonDocument<2048> doc;
   DeserializationError error = deserializeJson(doc, json);
 
@@ -43,7 +43,7 @@ void SettingsClass::save() {
   CS.save(doc["cs"] | doc.createNestedObject("cs"));
   LocoUI.save(doc["locoui"] | doc.createNestedObject("locoui"));
   
-  File json = SD.open("/settings.json", FILE_WRITE);
+  File json = SPIFFS.open("/settings.json", FILE_WRITE);
   serializeJson(doc, json);
   json.close();
 }

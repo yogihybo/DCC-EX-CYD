@@ -5,9 +5,8 @@ from os.path import join
 env = DefaultEnvironment()
 platformIO = env.PioPlatform()
 sys.path.append(join(platformIO.get_package_dir('tool-esptoolpy')))
-import esptool
-
 def buildRelease(*args, **kwargs):
+  import esptool
   frameworkDir = platformIO.get_package_dir('framework-arduinoespressif32')
   projectDir = env.subst('$PROJECT_DIR')
   buildDir = env.subst('$BUILD_DIR')

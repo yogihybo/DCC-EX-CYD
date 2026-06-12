@@ -1,8 +1,10 @@
 #include <Element.h>
 #include <UI.h>
 
+
+
 Element::Element(uint16_t x, uint16_t y, uint16_t w, uint16_t h)
-    : _x(x), _y(y), _w(w), _h(h), Touch(x, y, w, h, 1) { }
+    : _x(SCALE_X(x)), _y(SCALE_Y(y)), _w(SCALE_X(w)), _h(SCALE_Y(h)), Touch(SCALE_X(x), SCALE_Y(y), SCALE_X(w), SCALE_Y(h), 1) { }
 
 void Element::fillBorderRoundRect(uint32_t fill, uint32_t border, uint8_t radius, uint8_t width, uint8_t quadrants) {
   uint16_t x = _x;

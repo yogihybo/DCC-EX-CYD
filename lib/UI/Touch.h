@@ -4,7 +4,7 @@
 #include <Arduino.h>
 #include <Events.h>
 
-class Touch : Events {
+class Touch : public Events {
   private:
     uint8_t _margin;
     uint16_t _x, _y;
@@ -19,7 +19,7 @@ class Touch : Events {
 
     void onTouch(const EventCallback&& touched);
     void onRelease(const EventCallback&& released);
-    bool contains(uint16_t x, uint16_t y);
+    virtual bool contains(uint16_t x, uint16_t y);
     void touched(void* parameter);
     void released(void* parameter);
 };

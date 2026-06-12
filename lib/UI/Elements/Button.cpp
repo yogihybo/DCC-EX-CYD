@@ -5,7 +5,7 @@
 Button::Button(int16_t x, int16_t y, uint16_t w, uint16_t h,
                Appearance idle, Appearance pressed,
                bool latching, State state)
-    : Element(x, y, w, h), _idle(idle), _pressed(pressed), _latching(latching), _state(state) {
+    : Element(x, y, w, h), _idle(idle), _pressed(pressed), _latching(latching), _state(state), _bg(UI::COLOR_MAIN_BG) {
   draw();
 
   onTouch([this](void*) {
@@ -51,7 +51,7 @@ void Button::draw() {
   textX = (Element::_x + ((Element::_w - textW) / 2));
   textY = (Element::_y + ((Element::_h - textH) / 2)) + 2;
 
-  UI::tft->fillRect(Element::_x, Element::_y, Element::_w, Element::_h, TFT_BLACK);
+  UI::tft->fillRect(Element::_x, Element::_y, Element::_w, Element::_h, _bg);
   fillBorderRoundRect(appearance.fill, appearance.border.color, appearance.border.radius, 2, appearance.border.quadrants);
 
   if (appearance.icon.length()) {
@@ -122,4 +122,13 @@ void Button::setLabel(const String& label, State state, bool redraw) {
 
 bool Button::isLatching() {
   return _latching;
+}
+
+void Button::setBg(uint16_t bg, bool redraw) {
+  if (_bg != bg) {
+    _bg = bg;
+    if (redraw) {
+      draw();
+    }
+  }
 }

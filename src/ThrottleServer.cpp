@@ -68,21 +68,32 @@ void ThrottleServer::begin() {
         list.add("/$" + String(file.path()));
       });
 
-      listDir(SD.open(path), [&list](File file) {
-        list.add(String(file.path()));
-      });
-    } else if (SD.exists(path)) {
+      if (SD.cardType() != CARD_NONE) {
+        listDir(SD.open(path), [&list](File file) {
+          list.add(String(file.path()));
+        });
+      }
+    } else {
       StaticJsonDocument<16> filterDoc;
       filterDoc["name"] = true;
       StaticJsonDocument<48> doc;
 
-      listDir(SD.open(path), [&filterDoc, &doc, &list](File file) {
-        ReadBufferingStream bufferedFile(file, doc.capacity());
-        deserializeJson(doc, bufferedFile, DeserializationOption::Filter(filterDoc));
-        JsonObject item = list.createNestedObject();
-        item["file"] = String(file.path());
-        item["name"] = String(doc["name"].as<const char*>());
-      });
+      auto addItemsFromFS = [&listDir, &filterDoc, &doc, &list](fs::FS& fs, String path) {
+        if (fs.exists(path)) {
+          listDir(fs.open(path), [&filterDoc, &doc, &list](File file) {
+            ReadBufferingStream bufferedFile(file, doc.capacity());
+            deserializeJson(doc, bufferedFile, DeserializationOption::Filter(filterDoc));
+            JsonObject item = list.createNestedObject();
+            item["file"] = String(file.path());
+            item["name"] = String(doc["name"].as<const char*>());
+          });
+        }
+      };
+
+      addItemsFromFS(SPIFFS, path);
+      if (SD.cardType() != CARD_NONE) {
+        addItemsFromFS(SD, path);
+      }
     }
 
     response->setLength();
@@ -90,7 +101,8 @@ void ThrottleServer::begin() {
   });
 
   on("^\\/locos\\/.+\\.json$", HTTP_HEAD, [](AsyncWebServerRequest* request) {
-    request->send(SD.exists(request->url()) ? 204 : 404);
+    bool exists = SPIFFS.exists(request->url()) || (SD.cardType() != CARD_NONE && SD.exists(request->url()));
+    request->send(exists ? 204 : 404);
   });
 
   on("^(?:\\/\\$)?\\/(?:(?:locos|fns|icons)\\/.+|groups)\\.(?:json|bmp)$", HTTP_GET, [](AsyncWebServerRequest* request) {
@@ -99,17 +111,30 @@ void ThrottleServer::begin() {
       if (request->url().startsWith("/$/")) {
         handler = new AsyncStaticWebHandler(request->url().c_str(), SPIFFS, request->url().c_str() + 2, "max-age=604800");
       } else {
-        handler = new AsyncStaticWebHandler("", SD, "", "max-age=604800");
+        if (SPIFFS.exists(request->url())) {
+          handler = new AsyncStaticWebHandler("", SPIFFS, "", "max-age=604800");
+        } else {
+          handler = new AsyncStaticWebHandler("", SD, "", "max-age=604800");
+        }
       }
       handler->canHandle(request);
       handler->handleRequest(request);
     } else {
-      request->send(SD, request->url());
+      if (SPIFFS.exists(request->url())) {
+        request->send(SPIFFS, request->url());
+      } else {
+        request->send(SD, request->url());
+      }
     }
   });
 
   on("^\\/(?:locos|fns|icons)\\/.+\\.(?:json|bmp)$", HTTP_DELETE, [](AsyncWebServerRequest* request) {
-    bool success = SD.remove(request->url());
+    bool success = false;
+    if (SPIFFS.exists(request->url())) {
+      success = SPIFFS.remove(request->url());
+    } else if (SD.cardType() != CARD_NONE && SD.exists(request->url())) {
+      success = SD.remove(request->url());
+    }
     request->send(success ? 204 : 404);
   });
 
@@ -117,7 +142,11 @@ void ThrottleServer::begin() {
 
   }, NULL, [](AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
     if (!request->_tempFile) {
-      request->_tempFile = SD.open(request->url(), "w", true);
+      if (SD.cardType() != CARD_NONE) {
+        request->_tempFile = SD.open(request->url(), "w", true);
+      } else {
+        request->_tempFile = SPIFFS.open(request->url(), "w", true);
+      }
     }
 
     request->_tempFile.write(data, len);

@@ -2,8 +2,8 @@
 #include <UI.h>
 
 Header::Header(uint16_t x, uint16_t y, uint16_t w, uint16_t h,
-               const String& label, uint16_t color)
-    : Label(x, y, w, h, label, true, color) {
+               const String& label, uint16_t color, uint16_t bg)
+    : Label(x, y, w, h, label, true, color, bg) {
   draw();
 }
 

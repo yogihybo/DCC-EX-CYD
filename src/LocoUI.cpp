@@ -1,4 +1,5 @@
 #include <LocoUI.h>
+#include <SPIFFS.h>
 #include <SD.h>
 #include <StreamUtils.h>
 #include <Settings.h>
@@ -7,8 +8,32 @@
 #include <Elements/Button.h>
 #include <Functions.h>
 
-LocoUI::LocoUI(DCCExCS& dccExCS, uint16_t address) : _dccExCS(dccExCS), _loco(address) {
+LocoUI::LocoUI(DCCExCS& dccExCS, uint16_t address) : _dccExCS(dccExCS), _loco(address), _broadcastLocoHandler(0xFFFF) {
   _elements.reserve(37);
+
+  if (address == 0) {
+    addElement<Header>(0, 40, 320, 18, "Select Locomotive");
+
+    addElement<Button>(10, 90, 300, 60, "By Address")
+      ->onRelease([this](void*) {
+        uint8_t action = SettingsClass::LocoUI::Swipe::Action::KEYPAD;
+        dispatchEvent(Event::SWIPE_ACTION, &action);
+      });
+
+    addElement<Button>(10, 170, 300, 60, "By Name")
+      ->onRelease([this](void*) {
+        uint8_t action = SettingsClass::LocoUI::Swipe::Action::NAME;
+        dispatchEvent(Event::SWIPE_ACTION, &action);
+      });
+
+    addElement<Button>(10, 250, 300, 60, "By Group")
+      ->onRelease([this](void*) {
+        uint8_t action = SettingsClass::LocoUI::Swipe::Action::GROUP;
+        dispatchEvent(Event::SWIPE_ACTION, &action);
+      });
+    return;
+  }
+
   _broadcastLocoHandler = _dccExCS.addEventListener(DCCExCS::Event::BROADCAST_LOCO, [this](void* parameter) {
     broadcast(parameter);
   });
@@ -16,7 +41,12 @@ LocoUI::LocoUI(DCCExCS& dccExCS, uint16_t address) : _dccExCS(dccExCS), _loco(ad
   char path[32];
   sprintf(path, "/locos/%d.json", _loco.address);
   
-  if (SD.exists(path)) { // Check for loco config file
+  if (SPIFFS.exists(path)) {
+    File locoFile = SPIFFS.open(path);
+    ReadBufferingStream bufferedFile(locoFile, _locoDoc.capacity());
+    deserializeJson(_locoDoc, bufferedFile);
+    locoFile.close();
+  } else if (SD.exists(path)) { // Check for loco config file
     File locoFile = SD.open(path);
     ReadBufferingStream bufferedFile(locoFile, _locoDoc.capacity());
     deserializeJson(_locoDoc, bufferedFile);
@@ -24,25 +54,33 @@ LocoUI::LocoUI(DCCExCS& dccExCS, uint16_t address) : _dccExCS(dccExCS), _loco(ad
   }
 
   // Max 20 chars for name
-  String loco("#");
-  loco += _loco.address;
+  String nameStr = "";
   if (_locoDoc.containsKey("name")) {
-    loco += " - ";
-    loco += _locoDoc["name"].as<const char*>();
+    nameStr = _locoDoc["name"].as<const char*>();
   }
-  addElement<Header>(0, 40, 320, 18, loco);
 
-  addElement<Label>(0, 66, 60, 18, "Speed:");
-  _labelSpeed = addElement<Label>(60, 66, 50, 18);
+  // Create Loco Address Card (x = 10, y = 40, w = 145, h = 140)
+  _addressCard = addElement<LocoAddressCard>(10, 40, 145, 140, _loco.address, nameStr);
 
-  addElement<Label>(160, 66, 80, 18, "Direction:");
-  _labelDirection = addElement<Label>(244, 66, 76, 18);
+  // Create Speed & Direction Card (x = 165, y = 40, w = 145, h = 140)
+  _speedCard = addElement<SpeedDirectionCard>(165, 40, 145, 140, _loco.speed, _loco.direction);
+  _speedCard->addEventListener(SpeedDirectionCard::Event::DIRECTION_TOGGLE, [this](void*) {
+    _dccExCS.setLocoThrottle(_loco.address, _loco.speed, !_loco.direction);
+  });
 
   if (_locoDoc["functions"].is<JsonArray>()) { // Function map array part of loco json
     _locoFunctions = _locoDoc["functions"].as<JsonArray>();
   } else {
     File functionFile;
-    if (!_locoDoc.containsKey("functions") || !(functionFile = SD.open(_locoDoc["functions"].as<const char*>()))) { // Name of function map file
+    if (_locoDoc.containsKey("functions")) {
+      const char* fnPath = _locoDoc["functions"].as<const char*>();
+      if (SPIFFS.exists(fnPath)) {
+        functionFile = SPIFFS.open(fnPath);
+      } else if (SD.exists(fnPath)) {
+        functionFile = SD.open(fnPath);
+      }
+    }
+    if (!functionFile) { // Name of function map file or default
       functionFile = SPIFFS.open("/default.json");
     }
 
@@ -57,9 +95,9 @@ LocoUI::LocoUI(DCCExCS& dccExCS, uint16_t address) : _dccExCS(dccExCS), _loco(ad
 
   uint8_t rows = _locoFunctions.size();
 
-  if (rows > 8) { // More than 8 rows and we need paging
-    uint8_t pages = divideAndCeil(rows, 7);
-    auto paging = addComponent<Paging>(pages);
+  if (rows > 4) { // More than 4 rows and we need paging
+    uint8_t pages = divideAndCeil(rows, 3);
+    auto paging = addComponent<Paging>(pages, 0, 365, 320);
     paging->addEventListener(Paging::Event::CHANGED, [this](void* parameter) {
       _page = *static_cast<uint8_t*>(parameter);
       destroyFunctionButtons();
@@ -73,7 +111,9 @@ LocoUI::LocoUI(DCCExCS& dccExCS, uint16_t address) : _dccExCS(dccExCS), _loco(ad
 }
 
 LocoUI::~LocoUI() {
-  _dccExCS.removeEventListener(DCCExCS::Event::BROADCAST_LOCO, _broadcastLocoHandler);
+  if (_broadcastLocoHandler != 0xFFFF) {
+    _dccExCS.removeEventListener(DCCExCS::Event::BROADCAST_LOCO, _broadcastLocoHandler);
+  }
 }
 
 void LocoUI::broadcast(void* parameter) {
@@ -81,10 +121,10 @@ void LocoUI::broadcast(void* parameter) {
   if (_loco.address == broadcast.address) { // Broadcast for loco we're currently controlling
     _tasks.push_back([this, loco = _loco, broadcast] {
       if (loco.speed != broadcast.speed) {
-        _labelSpeed->setLabel(String(broadcast.speed));
+        _speedCard->setSpeed(broadcast.speed);
       }
       if (loco.direction != broadcast.direction) {
-        _labelDirection->setLabel(broadcast.direction ? "Forward" : "Reverse");
+        _speedCard->setDirection(broadcast.direction);
       }
       if (loco.functions != broadcast.functions) {
         toggleFunctionButtons(loco.functions ^ broadcast.functions);
@@ -96,53 +136,75 @@ void LocoUI::broadcast(void* parameter) {
 }
 
 void LocoUI::createFunctionButtons() {
-  UI::tft->fillRect(0, 90, 320, 344, TFT_BLACK); // Clear buttons
+  bool paging = _locoFunctions.size() > 4;
+  
+  // Draw functions card background
+  UI::tft->fillSmoothRoundRect(10, 195, 300, 220, 6, UI::COLOR_CARD_BG, UI::COLOR_MAIN_BG);
+  UI::tft->drawSmoothRoundRect(10, 195, 6, 1, 300, 220, UI::COLOR_BORDER, UI::COLOR_MAIN_BG);
+
+  uint8_t oldDatum = UI::tft->getTextDatum();
+  uint32_t oldTextColor = UI::tft->textcolor;
+  uint32_t oldTextBGColor = UI::tft->textbgcolor;
+
+  UI::tft->setTextDatum(MC_DATUM);
+  UI::tft->setTextColor(UI::COLOR_TEXT_MUTED, UI::COLOR_CARD_BG);
+  UI::tft->drawString("FUNCTIONS", 160, 210);
+
+  UI::tft->setTextDatum(oldDatum);
+  UI::tft->setTextColor(oldTextColor, oldTextBGColor);
   
   uint8_t i = 0;
-  uint16_t y = 92;
-  bool paging = _locoFunctions.size() > 8;
+  uint16_t y = 225;
 
   for (JsonArrayConst const& row : _locoFunctions) {
-    if (!paging || divideAndCeil(++i, 7) == _page) {
+    if (!paging || divideAndCeil(++i, 3) == _page) {
       uint8_t cols = row.size();
-      uint16_t width = (320 - ((cols - 1) * 7)) / cols;
+      uint16_t totalW = 280;
+      uint16_t width = (totalW - ((cols - 1) * 7)) / cols;
 
-      uint16_t x = 0;
+      uint16_t x = 20;
       uint8_t col = 0;
       for (JsonObjectConst const& fn : row) {
-        // Needed for 4 button rows as it divides to a half pixel so the two inner buttons are 1 pixel wider
         uint8_t extra = cols == 4 && (col == 1 || col == 2) ? 1 : 0;
         bool latching = fn["latching"] | true;
         uint8_t func = fn["fn"];
 
-        auto appearance = [](JsonObjectConst obj) -> Button::Appearance {
+        auto appearance = [](JsonObjectConst obj, bool active) -> Button::Appearance {
+          const char* label = obj["label"].as<const char*>();
           const char* icon = obj["icon"].as<const char*>();
+          
+          uint16_t textCol = active ? TFT_BLACK : TFT_WHITE;
+          uint16_t fillCol = active ? UI::COLOR_CYAN : UI::COLOR_CARD_BG;
+          uint16_t borderCol = active ? UI::COLOR_CYAN : UI::COLOR_BORDER;
+
           if (strncmp(icon, "/$/", 3) == 0) {
             return {
-              obj["label"].as<const char*>(),
-              obj["color"].as<uint16_t>(),
-              obj["fill"].as<uint16_t>(),
-              obj["border"].as<uint16_t>(),
+              label,
+              textCol,
+              fillCol,
+              Button::Appearance::Border(borderCol, 4),
               icon + 2,
               SPIFFS
             };
           }
 
           return {
-            obj["label"].as<const char*>(),
-            obj["color"].as<uint16_t>(),
-            obj["fill"].as<uint16_t>(),
-            obj["border"].as<uint16_t>(),
+            label,
+            textCol,
+            fillCol,
+            Button::Appearance::Border(borderCol, 4),
             icon
           };
         };
 
-        auto btn = addElement<Button>(x, y, width + extra, 42,
-          appearance(fn["btn"]["idle"]),
-          appearance(fn["btn"]["pressed"]),
+        bool isActive = _loco.functions.test(func);
+        auto btn = addElement<Button>(x, y, width + extra, 36,
+          appearance(fn["btn"]["idle"], false),
+          appearance(fn["btn"]["pressed"], true),
           latching,
-          _loco.functions.test(func) ? Button::State::PRESSED : Button::State::IDLE
+          isActive ? Button::State::PRESSED : Button::State::IDLE
         );
+        btn->setBg(UI::COLOR_CARD_BG, true);
         btn->onTouch([this, latching, func](void*) {
           if (latching) {
             _dccExCS.setLocoFn(_loco.address, func, _loco.functions.flip(func).test(func));
@@ -159,7 +221,7 @@ void LocoUI::createFunctionButtons() {
         x += width + 7 + extra;
         col++;
       }
-      y += 49;
+      y += 43;
     }
   }
 }
@@ -177,15 +239,15 @@ void LocoUI::toggleFunctionButtons(std::bitset<32> toggle) {
   });
   uint8_t btnIndex = std::distance(_elements.begin(), btnFirst);
   uint8_t btnCount = _elements.size();
-  bool paging = _locoFunctions.size() > 8;
+  bool paging = _locoFunctions.size() > 4;
 
   for (JsonArrayConst const& row : _locoFunctions) {
-    if (!paging || divideAndCeil(++i, 7) == _page) {
+    if (!paging || divideAndCeil(++i, 3) == _page) {
       for (JsonObjectConst const& fn : row) {
         uint8_t func = fn["fn"];
-        if ((fn["latching"] | true) && toggle.test(func) && btnIndex < btnCount) {
+        if (toggle.test(func) && btnIndex < btnCount) {
           static_cast<Button*>(_elements[btnIndex].get())
-            ->setState(_loco.functions.test(func) ? Button::State::PRESSED : Button::State::IDLE);
+            ->setState(_loco.functions.test(func) ? Button::State::PRESSED : Button::State::IDLE, true);
         }
         btnIndex++;
       }

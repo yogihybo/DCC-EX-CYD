@@ -1,4 +1,6 @@
 #include <LocoByNameUI.h>
+#include <SPIFFS.h>
+#include <SD.h>
 #include <StreamUtils.h>
 #include <Functions.h>
 #include <Components/Paging.h>
@@ -10,7 +12,12 @@ LocoByNameUI::LocoByNameUI(bool groups) {
   addElement<Header>(0, 40, 320, 18, "Select Loco");
 
   if (groups) { // Load by groups
-    if (SD.exists("/groups.json")) {
+    if (SPIFFS.exists("/groups.json")) {
+      File groupsFile = SPIFFS.open("/groups.json");
+      ReadBufferingStream bufferedFile(groupsFile, _doc.capacity());
+      deserializeJson(_doc, bufferedFile);
+      groupsFile.close();
+    } else if (SD.exists("/groups.json")) {
       File groupsFile = SD.open("/groups.json");
       ReadBufferingStream bufferedFile(groupsFile, _doc.capacity());
       deserializeJson(_doc, bufferedFile);
@@ -20,16 +27,44 @@ LocoByNameUI::LocoByNameUI(bool groups) {
     _btnsDoc = _doc.as<JsonArray>();
   } else { // Enum locos directory
     _btnsDoc = _doc.to<JsonArray>();
-    File locoDir = SD.open("/locos");
-    File locoFile;
+    
+    // Read from SPIFFS
+    if (SPIFFS.exists("/locos")) {
+      File locoDir = SPIFFS.open("/locos");
+      File locoFile;
 
-    while ((locoFile = locoDir.openNextFile())) {
-      if (!locoFile.isDirectory()) {
-        addLoco(locoFile);
-        locoFile.close();
+      while ((locoFile = locoDir.openNextFile())) {
+        if (!locoFile.isDirectory()) {
+          addLoco(locoFile);
+          locoFile.close();
+        }
       }
+      locoDir.close();
     }
-    locoDir.close();
+
+    // Read from SD
+    if (SD.cardType() != CARD_NONE && SD.exists("/locos")) {
+      File locoDir = SD.open("/locos");
+      File locoFile;
+
+      while ((locoFile = locoDir.openNextFile())) {
+        if (!locoFile.isDirectory()) {
+          uint16_t address = strtoul(locoFile.name(), (char**)NULL, 10);
+          bool exists = false;
+          for (JsonObjectConst const& btn : _btnsDoc) {
+            if (btn["loco"].as<uint16_t>() == address) {
+              exists = true;
+              break;
+            }
+          }
+          if (!exists) {
+            addLoco(locoFile);
+          }
+          locoFile.close();
+        }
+      }
+      locoDir.close();
+    }
   }
 
   drawPagingAndButtons();
@@ -56,8 +91,8 @@ void LocoByNameUI::addLoco(File& locoFile) {
 void LocoByNameUI::drawPagingAndButtons() {
   uint8_t count = _btnsDoc.size();
 
-  if (count > 8) { // If there's more than 8 buttons we need paging
-    uint8_t pages = divideAndCeil(count, 7);
+  if (count > 7) { // If there's more than 7 buttons we need paging
+    uint8_t pages = divideAndCeil(count, 6);
     auto paging = addComponent<Paging>(pages);
     paging->addEventListener(Paging::Event::CHANGED, [this](void* parameter) {
       destroyButtons();
@@ -69,14 +104,14 @@ void LocoByNameUI::drawPagingAndButtons() {
 }
 
 void LocoByNameUI::drawButtons(uint8_t page) {
-  UI::tft->fillRect(0, 90, 320, 344, TFT_BLACK); // Clear buttons
+  UI::tft->fillRect(0, 90, 320, 344, UI::COLOR_MAIN_BG); // Clear buttons
 
   uint16_t y = 70;
   uint8_t i = 0;
-  bool paging = _btnsDoc.size() > 8;
+  bool paging = _btnsDoc.size() > 7;
   
   for (JsonObjectConst const& btn : _btnsDoc) {
-    if (!paging || divideAndCeil(++i, 7) == page) {
+    if (!paging || divideAndCeil(++i, 6) == page) {
       addElement<Button>(0, y, 320, 42, btn["name"].as<const char*>())
         ->onRelease([this, btn](void*) {
           if (btn.containsKey("locos")) {
@@ -102,14 +137,18 @@ void LocoByNameUI::loadGroup(JsonArrayConst locos) {
   for (uint16_t address : locos) {
     char path[32];
     sprintf(path, "/locos/%d.json", address);
-    if (SD.exists(path)) {
+    if (SPIFFS.exists(path)) {
+      File loco = SPIFFS.open(path);
+      addLoco(loco);
+      loco.close();
+    } else if (SD.exists(path)) {
       File loco = SD.open(path);
       addLoco(loco);
       loco.close();
     }
   }
 
-  UI::tft->fillRect(0, 435, 320, 42, TFT_BLACK); // Clear paging
+  UI::tft->fillRect(0, 375, 320, 42, UI::COLOR_MAIN_BG); // Clear paging
   _components.clear();
   destroyButtons();
   drawPagingAndButtons();

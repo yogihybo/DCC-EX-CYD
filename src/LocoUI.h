@@ -4,7 +4,8 @@
 #include <bitset>
 #include <UI.h>
 #include <DCCExCS.h>
-#include <Elements/Label.h>
+#include <Elements/LocoAddressCard.h>
+#include <Elements/SpeedDirectionCard.h>
 #include <ArduinoJson.h>
 
 class LocoUI : public UI, public Events {
@@ -18,8 +19,8 @@ class LocoUI : public UI, public Events {
     uint16_t _broadcastLocoHandler;
     bool _speedPending = false;
 
-    Label* _labelSpeed;
-    Label* _labelDirection;
+    LocoAddressCard* _addressCard;
+    SpeedDirectionCard* _speedCard;
 
     StaticJsonDocument<10240> _locoDoc;
     JsonArrayConst _locoFunctions;

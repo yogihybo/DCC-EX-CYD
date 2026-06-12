@@ -1,52 +1,102 @@
 #include <Arduino.h>
-#include <SPIFFS.h>
 #include <SD.h>
 #include <SPI.h>
+#include <SPIFFS.h>
 #include <TFT_eSPI.h>
+
+#if defined(CYD_ESP32)
+#include <XPT2046_Touchscreen.h>
+#else
 #include <GT911.h>
+#endif
 #include <DFRobot_LIS2DW12.h>
-#undef ERR_OK // Needed as the DFRobot_LIS2DW12.h header has an unused define that conflicts
-#include <WiFi.h>
+#undef ERR_OK // Needed as the DFRobot_LIS2DW12.h header has an unused define
+              // that conflicts
+#include <AboutUI.h>
+#include <AccessoriesUI.h>
 #include <AsyncTCP.h>
-#include <Settings.h>
-#include <DCCExCS.h>
-#include <Locos.h>
-#include <UI.h>
-#include <UIHeader.h>
 #include <Children/Keypad.h>
 #include <Children/MessageBox.h>
 #include <Children/Pin.h>
-#include <SDCardUI.h>
-#include <MenuUI.h>
-#include <WiFiUI.h>
-#include <SettingsUI.h>
-#include <AboutUI.h>
-#include <ProgramUI.h>
-#include <LocoUI.h>
+#include <Components/BottomBar.h>
+#include <DCCExCS.h>
 #include <LocoByNameUI.h>
+#include <LocoUI.h>
+#include <Locos.h>
+#include <PowerUI.h>
+#include <ProgramUI.h>
+#include <SDCardUI.h>
+#include <Settings.h>
+#include <SettingsUI.h>
+#include <UI.h>
+#include <UIHeader.h>
+#include <WiFi.h>
+#include <WiFiUI.h>
 
 const uint32_t POWER_CHECK = 60000 * 2; // 2 Minutes
+#if defined(CYD_ESP32)
+const uint8_t BATTERY_PIN = 34;
+#else
 const uint8_t BATTERY_PIN = A2;
+#endif
 const uint8_t GESTURE_DISTANCE = 15;
 const uint16_t CONNECTION_ALIVE_DELAY = 5000;
 
+#if !defined(CYD_ESP32)
 const uint8_t ENCODER_BTN = A3;
 const uint8_t ENCODER_B = A1;
 const uint8_t ENCODER_A = A0;
+#endif
 
 TFT_eSPI tft;
+#if defined(CYD_ESP32)
+SPIClass mySpi(VSPI);
+XPT2046_Touchscreen ts(33);
+#else
 GT911 ts;
+#endif
+
 struct {
   bool enabled = false;
   DFRobot_IIS2DLPC_I2C inst;
   DFRobot_LIS2DW12::eOrient_t last = DFRobot_LIS2DW12::eOrient_t::eYDown;
 } acce;
 
+#if defined(CYD_ESP32)
+bool isTouched() { return ts.touched(); }
+uint8_t getTouchPoints(TouchPoint *points) {
+  if (ts.touched()) {
+    TS_Point p = ts.getPoint();
+    uint16_t px = map(p.x, 200, 3700, 0, 240);
+    uint16_t py = map(p.y, 240, 3800, 0, 320);
+    points[0].x = constrain(px, 0, 240);
+    points[0].y = constrain(py, 0, 320);
+    return 1;
+  }
+  return 0;
+}
+#else
+bool isTouched() { return ts.touched(GT911_MODE_POLLING); }
+uint8_t getTouchPoints(TouchPoint *points) {
+  uint8_t count = ts.touched(GT911_MODE_POLLING);
+  if (count > 0) {
+    GTPoint *gtPoints = ts.getPoints();
+    for (uint8_t i = 0; i < count; i++) {
+      points[i].x = gtPoints[i].x;
+      points[i].y = gtPoints[i].y;
+    }
+  }
+  return count;
+}
+#endif
+
+#if !defined(CYD_ESP32)
 volatile uint8_t encoderLastEncoded = 0;
 volatile int8_t encoderCurrentValue = 0;
 uint32_t encoderPressMillis = 0;
 UI::Encoder::ButtonState encoderBtnState = UI::Encoder::ButtonState::IDLE;
 uint8_t encoderCurrentPinState, encoderLastPinState;
+#endif
 
 AsyncClient csClient;
 uint8_t csBuffer[1024];
@@ -57,32 +107,32 @@ Locos locos;
 
 std::unique_ptr<UIHeader> uiHeader;
 std::unique_ptr<UI> activeUI;
+std::unique_ptr<BottomBar> bottomBar;
 std::function<std::unique_ptr<UI>()> setUI;
-bool isMenu;
 
-void setMenuUI();
 void setLocoUI();
+void setSettingsUI();
+void setAccessoriesUI();
+void setPowerUI();
 
-void setPinUI(uint32_t pin, const Events::EventCallback&& onValid) {
+void setPinUI(uint32_t pin, const Events::EventCallback &&onValid) {
   if (!pin) {
     onValid(nullptr);
   } else {
     setUI = [pin, onValid] {
       auto ui = std::make_unique<Pin>(pin);
       ui->addEventListener(Pin::Event::VALID, std::move(onValid));
-      ui->addEventListener(Pin::Event::CANCEL, [](void*) {
-        setMenuUI();
-      });
+      ui->addEventListener(Pin::Event::CANCEL, [](void *) { setSettingsUI(); });
       return ui;
     };
   }
 }
 
-void setLocoKeypadUI(const Events::EventCallback&& onCancel) {
+void setLocoKeypadUI(const Events::EventCallback &&onCancel) {
   setUI = [onCancel] {
     auto ui = std::make_unique<Keypad>("Loco Address", 10293, 0);
-    ui->addEventListener(Keypad::Event::ENTER, [](void* parameter) {
-      locos.add(*static_cast<uint16_t*>(parameter));
+    ui->addEventListener(Keypad::Event::ENTER, [](void *parameter) {
+      locos.add(*static_cast<uint16_t *>(parameter));
       setLocoUI();
     });
     ui->addEventListener(Keypad::Event::CANCEL, std::move(onCancel));
@@ -93,8 +143,8 @@ void setLocoKeypadUI(const Events::EventCallback&& onCancel) {
 void setLocoByNameUI(bool group) {
   setUI = [group] {
     auto ui = std::make_unique<LocoByNameUI>(group);
-    ui->addEventListener(LocoByNameUI::Event::SELECTED, [](void* parameter) {
-      locos.add(*static_cast<uint16_t*>(parameter));
+    ui->addEventListener(LocoByNameUI::Event::SELECTED, [](void *parameter) {
+      locos.add(*static_cast<uint16_t *>(parameter));
       setLocoUI();
     });
     return ui;
@@ -104,40 +154,37 @@ void setLocoByNameUI(bool group) {
 void setLocoUI() {
   setUI = [] {
     auto ui = std::make_unique<LocoUI>(dccExCS, locos);
-    ui->addEventListener(LocoUI::Event::SWIPE_ACTION, [](void* parameter) {
+    ui->addEventListener(LocoUI::Event::SWIPE_ACTION, [](void *parameter) {
       using Action = SettingsClass::LocoUI::Swipe::Action;
-      switch (const auto action = *static_cast<uint8_t*>(parameter)) {
-        case Action::KEYPAD: {
-          setLocoKeypadUI([](void*) {
-            if (locos == 0) {
-              setMenuUI();
-            } else {
-              setLocoUI();
-            }
-          });
-        } break;
-        case Action::NAME:
-        case Action::GROUP: {
-          bool group = action == Action::GROUP;
-          setLocoByNameUI(group);
-        } break;
-        case Action::RELEASE: {
-          dccExCS.releaseLoco(locos.remove());
-          // if the action after swipe release is prev/next and there's no active locos then go back to menu
-          if ((Settings.LocoUI.Swipe.release == Action::NEXT || Settings.LocoUI.Swipe.release == Action::PREV) && locos == 0) {
-            setMenuUI();
-          } else {
-            (static_cast<LocoUI*>(activeUI.get()))->dispatchEvent(LocoUI::Event::SWIPE_ACTION, &Settings.LocoUI.Swipe.release);
-          }
-        } break;
-        case Action::NEXT: {
-          locos.next();
+      switch (const auto action = *static_cast<uint8_t *>(parameter)) {
+      case Action::KEYPAD: {
+        setLocoKeypadUI([](void *) { setLocoUI(); });
+      } break;
+      case Action::NAME:
+      case Action::GROUP: {
+        bool group = action == Action::GROUP;
+        setLocoByNameUI(group);
+      } break;
+      case Action::RELEASE: {
+        dccExCS.releaseLoco(locos.remove());
+        if ((Settings.LocoUI.Swipe.release == Action::NEXT ||
+             Settings.LocoUI.Swipe.release == Action::PREV) &&
+            locos == 0) {
           setLocoUI();
-        } break;
-        case Action::PREV: {
-          locos.prev();
-          setLocoUI();
-        } break;
+        } else {
+          (static_cast<LocoUI *>(activeUI.get()))
+              ->dispatchEvent(LocoUI::Event::SWIPE_ACTION,
+                              &Settings.LocoUI.Swipe.release);
+        }
+      } break;
+      case Action::NEXT: {
+        locos.next();
+        setLocoUI();
+      } break;
+      case Action::PREV: {
+        locos.prev();
+        setLocoUI();
+      } break;
       }
     });
 
@@ -145,118 +192,60 @@ void setLocoUI() {
   };
 }
 
-void setAccessoryKeypadUI(bool state) {
-  setUI = [state] {
-    auto ui = std::make_unique<Keypad>("Accessory Address", 2044, 1);
-    ui->addEventListener(Keypad::Event::ENTER, [state](void* parameter) {
-      dccExCS.accessory(*static_cast<uint16_t*>(parameter), state);
-      setMenuUI();
-    });
-    ui->addEventListener(Keypad::Event::CANCEL, [](void*) {
-      setMenuUI();
-    });
-    return ui;
-  };
+void setSettingsUI() {
+  setPinUI(Settings.pin, [](void *) {
+    setUI = [] {
+      auto ui = std::make_unique<SettingsUI>();
+      ui->addEventListener(SettingsUI::Event::WIFI, [](void *) {
+        setPinUI(Settings.pin, [](void *) {
+          setUI = [] { return std::make_unique<WiFiUI>(); };
+        });
+      });
+      ui->addEventListener(SettingsUI::Event::ABOUT, [](void *) {
+        setUI = [] { return std::make_unique<AboutUI>(dccExCS); };
+      });
+      return ui;
+    };
+  });
 }
 
-void setMenuUI() {
-  setUI = [] {
-    isMenu = true;
-    auto ui = std::make_unique<MenuUI>(dccExCS, power);
-    ui->addEventListener(MenuUI::Event::SELECTED, [](void* parameter) {
-      switch (const auto button = *static_cast<MenuUI::Button*>(parameter)) {
-        case MenuUI::Button::LOCO_LOAD_BY_ADDRESS: {
-          setLocoKeypadUI([](void*) {
-            setMenuUI();
-          });
-        } break;
-        case MenuUI::Button::LOCO_LOAD_BY_NAME:
-        case MenuUI::Button::LOCO_LOAD_BY_GROUP: {
-          bool group = button == MenuUI::Button::LOCO_LOAD_BY_GROUP;
-          setLocoByNameUI(group);
-        } break;
-        case MenuUI::Button::LOCO_RELEASE: {
-          dccExCS.releaseLoco(locos.remove());
-        } break;
-        case MenuUI::Button::LOCO_PROGRAM: {
-          setUI = [] {
-            return std::make_unique<ProgramUI>(dccExCS);
-          };
-        } break;
-        case MenuUI::Button::ACCESSORY_ON:
-        case MenuUI::Button::ACCESSORY_OFF: {
-          bool state = button == MenuUI::Button::ACCESSORY_ON;
-          setAccessoryKeypadUI(state);
-        } break;
-        case MenuUI::Button::POWER_ON_ALL:
-        case MenuUI::Button::POWER_OFF_ALL: {
-          bool state = button == MenuUI::Button::POWER_ON_ALL;
-          dccExCS.setCSPower(DCCExCS::Power::ALL, state);
-        } break;
-        case MenuUI::Button::POWER_ON_MAIN:
-        case MenuUI::Button::POWER_OFF_MAIN: {
-          bool state = button == MenuUI::Button::POWER_ON_MAIN;
-          dccExCS.setCSPower(DCCExCS::Power::MAIN, state);
-        } break;
-        case MenuUI::Button::POWER_ON_PROG:
-        case MenuUI::Button::POWER_OFF_PROG: {
-          bool state = button == MenuUI::Button::POWER_ON_PROG;
-          dccExCS.setCSPower(DCCExCS::Power::PROG, state);
-        } break;
-        case MenuUI::Button::POWER_JOIN: {
-          dccExCS.setCSPower(DCCExCS::Power::JOIN, true);
-        } break;
-        case MenuUI::Button::WIFI: {
-          setPinUI(Settings.pin, [](void*) {
-            setUI = [] {
-              return std::make_unique<WiFiUI>();
-            };
-          });
-        } break;
-        case MenuUI::Button::SETTINGS: {
-          setPinUI(Settings.pin, [](void*) {
-            setUI = [] {
-              return std::make_unique<SettingsUI>();
-            };
-          });
-        } break;
-        case MenuUI::Button::ABOUT: {
-          setUI = [] {
-            return std::make_unique<AboutUI>(dccExCS);
-          };
-        } break;
-      }
-    });
-    return ui;
-  };
+void setAccessoriesUI() {
+  setUI = [] { return std::make_unique<AccessoriesUI>(dccExCS); };
 }
 
+void setPowerUI() {
+  setUI = [] { return std::make_unique<PowerUI>(dccExCS, power); };
+}
+
+#if !defined(CYD_ESP32)
 void IRAM_ATTR updateEncoderValue() {
   uint8_t MSB = digitalRead(ENCODER_A);
   uint8_t LSB = digitalRead(ENCODER_B);
 
   uint8_t encoded = (MSB << 1) | LSB;
-  uint8_t sum  = (encoderLastEncoded << 2) | encoded;
+  uint8_t sum = (encoderLastEncoded << 2) | encoded;
 
   switch (sum) {
-    case 0b1101:
-    case 0b0100:
-    case 0b0010:
-    case 0b1011: {
-      encoderCurrentValue++;
-    } break;
-    case 0b1110:
-    case 0b0111:
-    case 0b0001:
-    case 0b1000:
-      encoderCurrentValue--;
+  case 0b1101:
+  case 0b0100:
+  case 0b0010:
+  case 0b1011: {
+    encoderCurrentValue++;
+  } break;
+  case 0b1110:
+  case 0b0111:
+  case 0b0001:
+  case 0b1000:
+    encoderCurrentValue--;
   }
 
   encoderLastEncoded = encoded;
 }
+#endif
 
-// Based off the helpful blog post here, https://savjee.be/2020/02/esp32-keep-wifi-alive-with-freertos-task/
-void keepWiFiAlive(void*) {
+// Based off the helpful blog post here,
+// https://savjee.be/2020/02/esp32-keep-wifi-alive-with-freertos-task/
+void keepWiFiAlive(void *) {
   for (;;) {
     if (Settings.CS.valid()) { // Valid if we have SSID, Server & Port
       if (WiFi.status() != WL_CONNECTED) {
@@ -273,7 +262,7 @@ void connectToCS() {
   }
 }
 
-void powerCheck(void*) {
+void powerCheck(void *) {
   for (;;) {
     uint32_t total = 0;
     for (uint8_t i = 0; i < 10; i++) {
@@ -293,14 +282,19 @@ void powerCheck(void*) {
 void setRotation() {
   bool standard = Settings.rotation == SettingsClass::Rotation::STANDARD;
   if (Settings.rotation == SettingsClass::Rotation::ACCELEROMETER) {
-    standard = acce.enabled ? acce.last == DFRobot_LIS2DW12::eOrient_t::eYDown : true;
+    standard =
+        acce.enabled ? acce.last == DFRobot_LIS2DW12::eOrient_t::eYDown : true;
   }
 
   UI::tft->setRotation(standard ? 2 : 0);
+#if defined(CYD_ESP32)
+  ts.setRotation(standard ? 2 : 0);
+#else
   ts.setRotation(standard ? GT911::Rotate::_180 : GT911::Rotate::_0);
+#endif
 
   if (activeUI != nullptr) {
-    UI::tft->fillScreen(TFT_BLACK);
+    UI::tft->fillScreen(UI::COLOR_MAIN_BG);
     uiHeader->handleRedraw();
     activeUI->handleRedraw();
   }
@@ -310,18 +304,30 @@ void setup() {
   Serial.begin(115200);
 
   // Start file systems
-  SPIFFS.begin();
+  SPIFFS.begin(true);
+#if defined(CYD_ESP32)
+  pinMode(5, OUTPUT);
+  digitalWrite(5, HIGH);
+  pinMode(15, OUTPUT);
+  digitalWrite(15, HIGH);
+  pinMode(33, OUTPUT);
+  digitalWrite(33, HIGH);
+
+  UI::setBacklight(100); // 100% brightness
+#endif
+#if !defined(CYD_ESP32)
   uint8_t tries = 3;
   while (!SD.begin(D7) && tries-- > 0) {
     delay(100);
   }
+#endif
 
   // Start the TFT display
   UI::tft = &tft;
   UI::tft->init();
-  UI::tft->fillScreen(TFT_BLACK);
-  UI::tft->setTextColor(TFT_WHITE, TFT_BLACK);
-  UI::tft->loadFont("fonts/FreeSans-18");
+  UI::tft->fillScreen(UI::COLOR_MAIN_BG);
+  UI::tft->setTextColor(TFT_WHITE, UI::COLOR_MAIN_BG);
+  UI::tft->loadFont("/fonts/SegoeUI-20");
 
   // pinMode(12, OUTPUT);
   // digitalWrite(12, HIGH); // Keep backlight on
@@ -329,7 +335,12 @@ void setup() {
   // TODO, screen standby? can it remember buffer
 
   // Start the touchscreen
+#if defined(CYD_ESP32)
+  mySpi.begin(25, 39, 32, 33);
+  ts.begin(mySpi);
+#else
   ts.begin();
+#endif
 
   // Start the accelerometer
   if (acce.inst.begin()) {
@@ -344,23 +355,18 @@ void setup() {
     acce.last = acce.inst.getOrientation();
   }
 
+#if !defined(CYD_ESP32)
   // Setup encoder
   pinMode(ENCODER_BTN, INPUT);
   pinMode(ENCODER_A, INPUT_PULLUP);
   pinMode(ENCODER_B, INPUT_PULLUP);
   attachInterrupt(ENCODER_A, updateEncoderValue, CHANGE);
   attachInterrupt(ENCODER_B, updateEncoderValue, CHANGE);
+#endif
 
-  // Unable to mount SD card
+  // Unable to mount SD card - now optional
   if (SD.cardType() == CARD_NONE) {
-    UI::tft->setRotation(2);
-    ts.setRotation(GT911::Rotate::_180);
-
-    setUI = [] {
-      return std::make_unique<SDCardUI>();
-    };
-
-    return;
+    Serial.println("SD card not detected, running from SPIFFS only.");
   }
 
   // Load the settings
@@ -370,172 +376,209 @@ void setup() {
   setRotation();
 
   // Rotation settings change
-  Settings.addEventListener(SettingsClass::Event::ROTATION_CHANGE, [](void*) {
+  Settings.addEventListener(SettingsClass::Event::ROTATION_CHANGE, [](void *) {
     if (acce.enabled) {
       acce.last = acce.inst.getOrientation();
     }
-    setRotation();    
+    setRotation();
   });
+
+  // This will turn the back light on (full brightness)
+#define LCD_BACK_LIGHT_PIN 21
+  digitalWrite(LCD_BACK_LIGHT_PIN, HIGH);
 
   // Setup the WiFi
   WiFi.setHostname(Settings.AP.SSID.c_str());
   WiFi.persistent(false);
   WiFi.mode(WIFI_STA);
   WiFi.setSleep(false);
-  
+
   // WiFi connected
-  WiFi.onEvent([](WiFiEvent_t event, WiFiEventInfo_t info) {
-    uiHeader->setWiFiStatus(true);
-    connectToCS();
-  }, ARDUINO_EVENT_WIFI_STA_GOT_IP);
+  WiFi.onEvent(
+      [](WiFiEvent_t event, WiFiEventInfo_t info) {
+        uiHeader->setWiFiStatus(true);
+        connectToCS();
+      },
+      ARDUINO_EVENT_WIFI_STA_GOT_IP);
   // WiFi disconnected
-  WiFi.onEvent([](WiFiEvent_t event, WiFiEventInfo_t info) {
-    uiHeader->setWiFiStatus(false);
-  }, ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
+  WiFi.onEvent([](WiFiEvent_t event,
+                  WiFiEventInfo_t info) { uiHeader->setWiFiStatus(false); },
+               ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
   // CS connected
-  csClient.onConnect([](void* arg, AsyncClient* client) {
+  csClient.onConnect([](void *arg, AsyncClient *client) {
     uiHeader->setCSStatus(true);
     dccExCS.getCSPower(); // Get current power status
   });
   // CS disconnected
-  csClient.onDisconnect([](void* arg, AsyncClient* client) {
+  csClient.onDisconnect([](void *arg, AsyncClient *client) {
     uiHeader->setCSStatus(false);
     connectToCS();
   });
-  // If the connection to the CS times out then close it so it'll attempt a reconnect
-  csClient.onTimeout([](void* arg, AsyncClient* client, uint32_t time) {
-    csClient.close();
-  });
+  // If the connection to the CS times out then close it so it'll attempt a
+  // reconnect
+  csClient.onTimeout(
+      [](void *arg, AsyncClient *client, uint32_t time) { csClient.close(); });
   // CS data
-  csClient.onData([](void* arg, AsyncClient* client, void* data, uint16_t len) {
+  csClient.onData([](void *arg, AsyncClient *client, void *data, uint16_t len) {
     for (uint16_t i = 0; i < len; i++) {
-      if (static_cast<uint8_t*>(data)[i] == '<') { // Start of cmd
+      if (static_cast<uint8_t *>(data)[i] == '<') { // Start of cmd
         csBuffer[0] = '\0';
         csBufferLen = 0;
-      } else if (static_cast<uint8_t*>(data)[i] == '>') { // End of cmd, pass onto ex cs handler
+      } else if (static_cast<uint8_t *>(data)[i] ==
+                 '>') { // End of cmd, pass onto ex cs handler
         csBuffer[csBufferLen] = '\0';
         dccExCS.handleCS(csBuffer, csBufferLen);
       } else {
         // TODO, only add to buffer if we're in a command?
-        csBuffer[csBufferLen++] = static_cast<uint8_t*>(data)[i];
+        csBuffer[csBufferLen++] = static_cast<uint8_t *>(data)[i];
       }
     }
   });
 
   // Aquired loco count change
-  locos.addEventListener(Locos::Event::COUNT_CHANGE, [](void* parameter) {
-    auto count = *static_cast<uint8_t*>(parameter);
+  locos.addEventListener(Locos::Event::COUNT_CHANGE, [](void *parameter) {
+    auto count = *static_cast<uint8_t *>(parameter);
     uiHeader->setLocoCount(count);
   });
 
   // CS Power event
-  dccExCS.addEventListener(DCCExCS::Event::BROADCAST_POWER, [](void* parameter) {
-    power = *static_cast<DCCExCS::Power*>(parameter); // Remember current power states
-  });
+  dccExCS.addEventListener(DCCExCS::Event::BROADCAST_POWER,
+                           [](void *parameter) {
+                             power = *static_cast<DCCExCS::Power *>(
+                                 parameter); // Remember current power states
+                           });
 
-  // If the CS settings change we disconnect so the keep alive task will reconnect using new values
-  Settings.addEventListener(SettingsClass::Event::CS_CHANGE, [](void*) {
-    WiFi.disconnect();
-  });
+  // If the CS settings change we disconnect so the keep alive task will
+  // reconnect using new values
+  Settings.addEventListener(SettingsClass::Event::CS_CHANGE,
+                            [](void *) { WiFi.disconnect(); });
 
   xTaskCreatePinnedToCore(powerCheck, "powerCheck", 1024, NULL, 1, NULL, 1);
-  xTaskCreatePinnedToCore(keepWiFiAlive, "keepWiFiAlive", 2048, NULL, 1, NULL, 1);
+  xTaskCreatePinnedToCore(keepWiFiAlive, "keepWiFiAlive", 2048, NULL, 1, NULL,
+                          1);
 
   // Create UI Header
   uiHeader = std::make_unique<UIHeader>();
-  uiHeader->addEventListener(UIHeader::Event::MENU, [](void*) {
-    if (isMenu) {
-      if (locos != 0) { // If we're already on the menu and there's an active loco switch to the loco UI
+  uiHeader->addEventListener(UIHeader::Event::MENU, [](void *) {
+    if (bottomBar != nullptr) {
+      switch (bottomBar->getActiveTab()) {
+      case BottomBar::Tab::LOCO:
         setLocoUI();
+        break;
+      case BottomBar::Tab::ACCESSORIES:
+        setAccessoriesUI();
+        break;
+      case BottomBar::Tab::POWER:
+        setPowerUI();
+        break;
+      case BottomBar::Tab::SETTINGS:
+        setSettingsUI();
+        break;
       }
-    } else { // Load the menu UI
-      setMenuUI();
     }
   });
-  // Start with the menu
-  setMenuUI();
+
+  // Create Bottom Bar UI
+  bottomBar = std::make_unique<BottomBar>();
+  bottomBar->addEventListener(BottomBar::Event::NAVIGATE, [](void *parameter) {
+    auto tab = *static_cast<BottomBar::Tab *>(parameter);
+    switch (tab) {
+    case BottomBar::Tab::LOCO:
+      setLocoUI();
+      break;
+    case BottomBar::Tab::ACCESSORIES:
+      setAccessoriesUI();
+      break;
+    case BottomBar::Tab::POWER:
+      setPowerUI();
+      break;
+    case BottomBar::Tab::SETTINGS:
+      setSettingsUI();
+      break;
+    }
+  });
+
+  // Start with the Loco tab (shows Selector if locos == 0)
+  setLocoUI();
 }
 
 void loop() {
   if (setUI != nullptr) {
-    isMenu = false; // Any new UI resets this
-    UI::tft->fillRect(0, 30, 320, 450, TFT_BLACK);
+#if defined(CYD_ESP32)
+    UI::tft->fillRect(0, (30 * TFT_HEIGHT) / 480, TFT_WIDTH,
+                      TFT_HEIGHT - (30 * TFT_HEIGHT) / 480, UI::COLOR_MAIN_BG);
+#else
+    UI::tft->fillRect(0, 30, 320, 450, UI::COLOR_MAIN_BG);
+#endif
     activeUI.reset();
     activeUI = setUI();
     setUI = nullptr;
+    if (activeUI != nullptr) {
+      activeUI->handleRedraw();
+    }
+
+    if (bottomBar != nullptr) {
+      bottomBar->handleRedraw();
+    }
   }
 
+#if !defined(CYD_ESP32)
   // Encoder press
   encoderCurrentPinState = digitalRead(ENCODER_BTN);
   if (encoderCurrentPinState != encoderLastPinState) {
     if (millis() - encoderPressMillis > 50) { // Debounce
-      if (encoderCurrentPinState == LOW && encoderBtnState == UI::Encoder::ButtonState::IDLE) { // Press
+      if (encoderCurrentPinState == LOW &&
+          encoderBtnState == UI::Encoder::ButtonState::IDLE) { // Press
         encoderBtnState = UI::Encoder::ButtonState::PRESSED;
-      } else if (encoderCurrentPinState == HIGH && encoderBtnState == UI::Encoder::ButtonState::PRESSED) { // Release
+      } else if (encoderCurrentPinState == HIGH &&
+                 encoderBtnState ==
+                     UI::Encoder::ButtonState::PRESSED) { // Release
         encoderBtnState = UI::Encoder::ButtonState::RELEASED;
       }
     }
     encoderPressMillis = millis();
   }
   encoderLastPinState = encoderCurrentPinState;
+#endif
 
-  uint8_t touches = ts.touched(GT911_MODE_POLLING);
+  TouchPoint points[5];
+  uint8_t touches = getTouchPoints(points);
   if (touches) {
-    // Remember the original touch points so we can use later calls to check for swipes
-    GTPoint points[touches];
-    memcpy(points, ts.getPoints(), touches * sizeof(GTPoint));
-    // If menu press
-    if (uiHeader == nullptr || !uiHeader->handleTouch(touches, points, [] {
-      return ts.touched(GT911_MODE_POLLING);
-    })) {
-      // Attempt to detect swipe
-      UI::Swipe swipe = UI::Swipe::NONE;
-      delay(5);
-      uint32_t timeout = millis() + 150;
-      while (millis() < timeout && ts.touched(GT911_MODE_POLLING)) {
-        GTPoint p = ts.getPoint(0);
-        if (points[0].y - p.y > GESTURE_DISTANCE) {
-          swipe = UI::Swipe::UP;
-        } else if (p.y - points[0].y > GESTURE_DISTANCE) {
-          swipe = UI::Swipe::DOWN;
-        } else if (points[0].x - p.x > GESTURE_DISTANCE) {
-          swipe = UI::Swipe::LEFT;
-        } else if (p.x - points[0].x > GESTURE_DISTANCE) {
-          swipe = UI::Swipe::RIGHT;
-        }
-        if (swipe != UI::Swipe::NONE) {
-          while (ts.touched(GT911_MODE_POLLING)) {
-            delay(10);
-          }
-          break;
-        }
-      }
-
-      if (swipe == UI::Swipe::NONE) {
-        activeUI->handleTouch(touches, points, [] {
-          return ts.touched(GT911_MODE_POLLING);
-        });
+    if (uiHeader == nullptr ||
+        !uiHeader->handleTouch(touches, points, isTouched)) {
+#define NAV_BAR_Y (((425) * TFT_HEIGHT) / 480)
+      if (bottomBar != nullptr && points[0].y >= NAV_BAR_Y) {
+        bottomBar->handleTouch(touches, points, isTouched);
+      } else if (activeUI != nullptr) {
+        activeUI->handleTouch(touches, points, isTouched);
         Serial.println(ESP.getFreeHeap());
-      } else {
-        activeUI->handleSwipe(swipe);
       }
     }
+#if !defined(CYD_ESP32)
   } else if (encoderCurrentValue >= 3) {
     encoderCurrentValue = 0;
     activeUI->handleEncoderRotate(UI::Encoder::Rotation::CW);
   } else if (encoderCurrentValue <= -3) {
     encoderCurrentValue = 0;
     activeUI->handleEncoderRotate(UI::Encoder::Rotation::CCW);
-  } else if (encoderBtnState == UI::Encoder::ButtonState::PRESSED && millis() - encoderPressMillis > Settings.emergencyStop) { // Encoder pressed and held for set duration
+  } else if (encoderBtnState == UI::Encoder::ButtonState::PRESSED &&
+             millis() - encoderPressMillis >
+                 Settings.emergencyStop) { // Encoder pressed and held for set
+                                           // duration
     encoderBtnState = UI::Encoder::ButtonState::IDLE;
     dccExCS.emergencyStopAll(); // Stop all locos
     activeUI->handleEncoderPress(UI::Encoder::ButtonPress::LONG);
-  } else if (encoderBtnState == UI::Encoder::ButtonState::RELEASED && millis() - encoderPressMillis < 1000) { // Encoder pressed for less than 1 second
+  } else if (encoderBtnState == UI::Encoder::ButtonState::RELEASED &&
+             millis() - encoderPressMillis <
+                 1000) { // Encoder pressed for less than 1 second
     encoderBtnState = UI::Encoder::ButtonState::IDLE;
     activeUI->handleEncoderPress(UI::Encoder::ButtonPress::SHORT);
-  } else if (Settings.rotation == SettingsClass::Rotation::ACCELEROMETER && activeUI != nullptr && acce.enabled) {
+#endif
+  } else if (Settings.rotation == SettingsClass::Rotation::ACCELEROMETER &&
+             activeUI != nullptr && acce.enabled) {
     DFRobot_LIS2DW12::eOrient_t orientation = acce.inst.getOrientation();
-    if (orientation != acce.last && (orientation == DFRobot_LIS2DW12::eYDown || orientation == DFRobot_LIS2DW12::eYUp)) {
+    if (orientation != acce.last && (orientation == DFRobot_LIS2DW12::eYDown ||
+                                     orientation == DFRobot_LIS2DW12::eYUp)) {
       acce.last = orientation;
       setRotation();
     }

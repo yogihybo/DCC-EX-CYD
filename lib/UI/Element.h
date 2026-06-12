@@ -5,6 +5,19 @@
 #include <TFT_eSPI.h>
 #include <Touch.h>
 
+#if defined(CYD_ESP32)
+// Reference UI coordinates are based on 320x480 portrait screen
+#define REFERENCE_WIDTH  320
+#define REFERENCE_HEIGHT 480
+
+// Scale coordinates to target display width/height
+#define SCALE_X(x) (((x) * TFT_WIDTH) / REFERENCE_WIDTH)
+#define SCALE_Y(y) (((y) * TFT_HEIGHT) / REFERENCE_HEIGHT)
+#else
+#define SCALE_X(x) (x)
+#define SCALE_Y(y) (y)
+#endif
+
 class Element : public Touch {
   protected:
     uint16_t _x, _y;
@@ -17,7 +30,10 @@ class Element : public Touch {
       Header,
       Image,
       Input,
-      Label
+      Label,
+      TabButton,
+      LocoAddressCard,
+      SpeedDirectionCard
     };
 
     Element(uint16_t x, uint16_t y, uint16_t w, uint16_t h);

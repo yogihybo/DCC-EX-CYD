@@ -57,6 +57,7 @@ class Button : public Element {
 
     bool _latching;
     State _state;
+    uint16_t _bg;
   public:
     Button(int16_t x, int16_t y, uint16_t w, uint16_t h,
            Appearance idle, Appearance pressed,
@@ -84,6 +85,7 @@ class Button : public Element {
     void setLabel(const String& label, bool redraw = true);
     void setLabel(const String& label, State state, bool redraw = true);
     bool isLatching();
+    void setBg(uint16_t bg, bool redraw = true);
 };
 
 #endif

@@ -12,8 +12,13 @@ void Touch::onRelease(const EventCallback&& released) {
 }
 
 bool Touch::contains(uint16_t x, uint16_t y) {
+#if defined(CYD_ESP32)
+  return ((x >= max(0, (int)_x - _margin)) && (x <= min((int)TFT_WIDTH, _x + _w + _margin))
+      && (y >= max(0, (int)_y - _margin)) && (y <= min((int)TFT_HEIGHT, _y + _h + _margin)));
+#else
   return ((x >= max(0, _x - _margin)) && (x <= min(320, _x + _w + _margin))
       && (y >= max(0, _y - _margin)) && (y <= min(480, _y + _h + _margin)));
+#endif
 }
 
 void Touch::touched(void* parameter) {

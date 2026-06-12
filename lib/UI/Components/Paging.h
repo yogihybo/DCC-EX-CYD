@@ -19,7 +19,7 @@ class Paging : public Component, public Events {
       static constexpr uint8_t CHANGED = 0;
     };
 
-    Paging(uint8_t pages, uint16_t x = 0, uint16_t y = 435, uint16_t w = 320);
+    Paging(uint8_t pages, uint16_t x = 0, uint16_t y = 375, uint16_t w = 320);
     
     bool encoderRotate(Encoder::Rotation rotation);
     uint8_t getPage();

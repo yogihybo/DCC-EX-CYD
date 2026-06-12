@@ -4,7 +4,7 @@
 #include <UI.h>
 #include <Settings.h>
 
-class SettingsUI : public UI {
+class SettingsUI : public UI, public Events {
   private:
     class Page {
       protected:
@@ -35,11 +35,23 @@ class SettingsUI : public UI {
       void show();
     } Page2;
 
+    class Page3 : Page {
+      using Page::Page;
+    public:
+      void show();
+    } Page3;
+
     std::vector<std::function<void (void)>> _pages = {
       [this] { Page1.show(); },
-      [this] { Page2.show(); }
+      [this] { Page2.show(); },
+      [this] { Page3.show(); }
     };
   public:
+    struct Event {
+      static constexpr uint8_t WIFI = 0;
+      static constexpr uint8_t ABOUT = 1;
+    };
+
     SettingsUI();
     ~SettingsUI();
 };
