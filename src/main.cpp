@@ -312,8 +312,22 @@ void setup() {
   digitalWrite(15, HIGH);
   pinMode(33, OUTPUT);
   digitalWrite(33, HIGH);
+#define TFT_BL 21
 
-  UI::setBacklight(100); // 100% brightness
+  // Set the pin as an output and pull it HIGH to turn on the screen
+  pinMode(TFT_BL, OUTPUT);
+  digitalWrite(TFT_BL, HIGH);
+
+  // Now initialize the display
+  tft.init();
+  tft.setRotation(1);
+  tft.fillScreen(TFT_BLACK);
+  // pinMode(TFT_BL, OUTPUT);
+  // analogWrite(TFT_BL, 0);
+  // pinMode(TFT_RST, OUTPUT);
+  // TFT_SET_BL(100); // full brightness
+
+  // UI::setBacklight(100); // 100% brightness
 #endif
 #if !defined(CYD_ESP32)
   uint8_t tries = 3;
@@ -325,9 +339,9 @@ void setup() {
   // Start the TFT display
   UI::tft = &tft;
   UI::tft->init();
-  UI::tft->fillScreen(UI::COLOR_MAIN_BG);
-  UI::tft->setTextColor(TFT_WHITE, UI::COLOR_MAIN_BG);
-  UI::tft->loadFont("/fonts/SegoeUI-20");
+  // UI::tft->fillScreen(UI::COLOR_MAIN_BG);
+  // UI::tft->setTextColor(TFT_WHITE, UI::COLOR_MAIN_BG);
+  // UI::tft->loadFont("/fonts/SegoeUI-20");
 
   // pinMode(12, OUTPUT);
   // digitalWrite(12, HIGH); // Keep backlight on
@@ -384,8 +398,8 @@ void setup() {
   });
 
   // This will turn the back light on (full brightness)
-#define LCD_BACK_LIGHT_PIN 21
-  digitalWrite(LCD_BACK_LIGHT_PIN, HIGH);
+  // #define LCD_BACK_LIGHT_PIN 21
+  //   digitalWrite(LCD_BACK_LIGHT_PIN, HIGH);
 
   // Setup the WiFi
   WiFi.setHostname(Settings.AP.SSID.c_str());

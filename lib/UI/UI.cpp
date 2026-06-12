@@ -128,11 +128,12 @@ void UI::reset(bool redraw) {
   }
 }
 
-void UI::setBacklight(uint8_t percentage) {
-#if defined(CYD_ESP32)
-  if (percentage > 100) percentage = 100;
-  // Active-low: 0% brightness = 255 duty cycle, 100% brightness = 0 duty cycle
-  uint8_t duty = 255 - (percentage * 255) / 100;
-  analogWrite(TFT_BL, duty);
-#endif
-}
+// void UI::setBacklight(uint8_t percentage) {
+// #if defined(CYD_ESP32)
+//   if (percentage > 100)
+//     percentage = 100;
+//  Active-low: 0% brightness = 255 duty cycle, 100% brightness = 0 duty cycle
+// uint8_t duty = 255 - (percentage * 255) / 100;
+//  analogWrite(TFT_BL, duty);
+// #endif
+//}
