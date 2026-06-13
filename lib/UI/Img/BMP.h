@@ -14,7 +14,7 @@ class BMP : public ImgHandler {
     BMP(fs::File bmp);
     BMP(fs::File bmp, TFT_eSPI* tft, int16_t x, int16_t y);
     bool dimensions(uint32_t& w, uint32_t& h);
-    bool draw(TFT_eSPI* tft, int16_t x, int16_t y);
+    bool draw(TFT_eSPI* tft, int16_t x, int16_t y, int16_t target_w = -1, int16_t target_h = -1);
 };
 
 #endif

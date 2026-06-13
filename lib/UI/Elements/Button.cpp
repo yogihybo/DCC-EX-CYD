@@ -58,10 +58,13 @@ void Button::draw() {
     ImgHandler* img = ImgHandler::load(appearance.fs.open(appearance.icon));
     if (img != nullptr && *img) {
       uint32_t imgW, imgH;
-      if (img->dimensions(imgW, imgH) &&
-          img->draw(UI::tft, textX - (imgW / 2), Element::_y + ((Element::_h - imgH) / 2))) {
-        // Only change `textX` if the icon was loaded successfully
-        textX += (imgW / 2) + 2;
+      if (img->dimensions(imgW, imgH)) {
+        uint16_t scaledW = SCALE_X(imgW);
+        uint16_t scaledH = SCALE_Y(imgH);
+        if (img->draw(UI::tft, textX - (scaledW / 2), Element::_y + ((Element::_h - scaledH) / 2), scaledW, scaledH)) {
+          // Only change `textX` if the icon was loaded successfully
+          textX += (scaledW / 2) + 2;
+        }
       }
     }
     delete img;

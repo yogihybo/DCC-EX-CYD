@@ -13,7 +13,7 @@ Image::Image(uint16_t x, u_int16_t y, uint16_t w, uint16_t h, const String& path
 void Image::draw() {
   ImgHandler* img = ImgHandler::load(_fs.open(_path));
   if (img != nullptr && *img) {
-    img->draw(UI::tft, _x, _y);
+    img->draw(UI::tft, _x, _y, _w, _h);
   }
   delete img;
 }

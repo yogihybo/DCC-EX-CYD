@@ -29,7 +29,7 @@ bool BMP::dimensions(uint32_t& w, uint32_t& h) {
   return false;
 }
 
-bool BMP::draw(TFT_eSPI* tft, int16_t x, int16_t y) {
+bool BMP::draw(TFT_eSPI* tft, int16_t x, int16_t y, int16_t target_w, int16_t target_h) {
   if ((x >= tft->width()) || (y >= tft->height())) {
     return false;
   }
@@ -47,28 +47,40 @@ bool BMP::draw(TFT_eSPI* tft, int16_t x, int16_t y) {
     h = read32();
 
     if (read16() == 1 && read16() == 24 && read32() == 0) {
-      y += h - 1;
+      if (target_w == -1) target_w = w;
+      if (target_h == -1) target_h = h;
+
+      y += target_h - 1;
 
       bool oldSwapBytes = tft->getSwapBytes();
       tft->setSwapBytes(true);
-      _img.seek(seekOffset);
 
       uint16_t padding = (4 - ((w * 3) & 3)) & 3;
       uint8_t lineBuffer[w * 3 + padding];
+      uint16_t outLine[target_w];
 
-      for (row = 0; row < h; row++) {
+      int32_t h_ratio = (h << 8) / target_h;
+      int32_t w_ratio = (w << 8) / target_w;
+
+      for (int16_t trow = 0; trow < target_h; trow++) {
+        uint16_t src_row = (trow * h_ratio) >> 8;
+        if (src_row >= h) src_row = h - 1;
+        
+        _img.seek(seekOffset + (src_row * (w * 3 + padding)));
         _img.read(lineBuffer, sizeof(lineBuffer));
-        uint8_t*  bptr = lineBuffer;
-        uint16_t* tptr = reinterpret_cast<uint16_t*>(lineBuffer);
-        // Convert 24 to 16 bit colours
-        for (uint16_t col = 0; col < w; col++) {
-          b = *bptr++;
-          g = *bptr++;
-          r = *bptr++;
-          *tptr++ = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
+
+        for (int16_t tcol = 0; tcol < target_w; tcol++) {
+          uint16_t src_col = (tcol * w_ratio) >> 8;
+          if (src_col >= w) src_col = w - 1;
+          
+          uint16_t idx = src_col * 3;
+          b = lineBuffer[idx];
+          g = lineBuffer[idx + 1];
+          r = lineBuffer[idx + 2];
+          outLine[tcol] = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
         }
 
-        tft->pushImage(x, y--, w, 1, reinterpret_cast<uint16_t*>(lineBuffer));
+        tft->pushImage(x, y--, target_w, 1, outLine);
       }
       tft->setSwapBytes(oldSwapBytes);
     } else {

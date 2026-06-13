@@ -14,7 +14,7 @@ class ImgHandler {
     ImgHandler(fs::File img, TFT_eSPI* tft, int16_t x, int16_t y);
     virtual ~ImgHandler();
     virtual bool dimensions(uint32_t& w, uint32_t& h) = 0;
-    virtual bool draw(TFT_eSPI* tft, int16_t x, int16_t y) = 0;
+    virtual bool draw(TFT_eSPI* tft, int16_t x, int16_t y, int16_t target_w = -1, int16_t target_h = -1) = 0;
     operator bool() const;
 };
 
