@@ -15,7 +15,11 @@ class AboutUI : public UIView {
     lv_obj_t* _csShield;
     lv_obj_t* _csBuild;
 
-    static void close_btn_event_cb(lv_event_t * e);
+    lv_obj_t* _memLbl;
+    lv_obj_t* _wifiStat;
+    lv_timer_t* _updateTimer;
+
+    static void update_timer_cb(lv_timer_t* timer);
 
   public:
     AboutUI(DCCExCS& dccExCS, lv_obj_t* parent);

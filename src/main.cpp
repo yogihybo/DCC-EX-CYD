@@ -8,6 +8,7 @@
 #include <Locos.h>
 #include <Settings.h>
 #include <WiFi.h>
+#include <ThrottleServer.h>
 
 #include "LVGL_Layouts.h"
 
@@ -28,6 +29,7 @@ uint16_t csBufferLen = 0;
 DCCExCS dccExCS(csClient);
 DCCExCS::Power power;
 Locos locos;
+ThrottleServer throttleServer;
 
 LocoUI* locoUI;
 AccessoriesUI* accUI;
@@ -168,7 +170,9 @@ void setup() {
   // Aquired loco count change
   locos.addEventListener(Locos::Event::COUNT_CHANGE, [](void *parameter) {
     auto count = *static_cast<uint8_t *>(parameter);
-    if (xSemaphoreTake(lvgl_mutex, portMAX_DELAY) == pdTRUE) {
+    if (xTaskGetCurrentTaskHandle() == xSemaphoreGetMutexHolder(lvgl_mutex)) {
+        set_header_loco_count(count);
+    } else if (xSemaphoreTake(lvgl_mutex, portMAX_DELAY) == pdTRUE) {
         set_header_loco_count(count);
         xSemaphoreGive(lvgl_mutex);
     }
@@ -188,6 +192,7 @@ void setup() {
   xTaskCreatePinnedToCore(powerCheck, "powerCheck", 1024, NULL, 1, NULL, 1);
   xTaskCreatePinnedToCore(keepWiFiAlive, "keepWiFiAlive", 2048, NULL, 1, NULL, 1);
 
+  throttleServer.begin();
 }
 
 void loop() {

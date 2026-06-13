@@ -1,5 +1,6 @@
 #include <Settings.h>
 #include <SPIFFS.h>
+#include <SD.h>
 #include <Functions.h>
 
 void SettingsClass::load() {
@@ -20,6 +21,7 @@ void SettingsClass::load() {
     }
 
     rotation = doc["rotation"] | rotation;
+    storageMode = doc["storageMode"] | storageMode;
     brightness = doc["brightness"] | brightness;
     pin = doc["pin"] | pin;
     emergencyStop = doc["emergencyStop"] | emergencyStop;
@@ -37,6 +39,7 @@ void SettingsClass::save() {
 
   doc["version"] = version;
   doc["rotation"] = rotation;
+  doc["storageMode"] = storageMode;
   doc["brightness"] = brightness;
   doc["pin"] = pin;
   doc["emergencyStop"] = emergencyStop;
@@ -52,6 +55,12 @@ void SettingsClass::save() {
 
 void SettingsClass::init() {
   version = T3_VERSION;
+  
+  if (SD.cardType() != CARD_NONE) {
+    storageMode = StorageMode::SD_CARD;
+  } else {
+    storageMode = StorageMode::SPIFFS;
+  }
 
   // Generate ap ssid and password
   char buf[9] = { 0 };

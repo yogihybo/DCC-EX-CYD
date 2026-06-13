@@ -30,12 +30,19 @@ SettingsUI::SettingsUI(DCCExCS& dccExCS, lv_obj_t* parent) : _dccExCS(dccExCS), 
   // Tab 2: System
   lv_obj_set_flex_flow(tab2, LV_FLEX_FLOW_COLUMN);
 
-  lv_obj_t* rot_btn = lv_btn_create(tab2);
-  lv_obj_set_width(rot_btn, LV_PCT(100));
-  _rotationLbl = lv_label_create(rot_btn);
+  lv_obj_t* rotation_btn = lv_btn_create(tab2);
+  lv_obj_set_width(rotation_btn, LV_PCT(100));
+  _rotationLbl = lv_label_create(rotation_btn);
   lv_label_set_text_fmt(_rotationLbl, "Rotation: %d", Settings.rotation);
   lv_obj_center(_rotationLbl);
-  lv_obj_add_event_cb(rot_btn, rotation_event_cb, LV_EVENT_CLICKED, this);
+  lv_obj_add_event_cb(rotation_btn, rotation_event_cb, LV_EVENT_CLICKED, this);
+
+  lv_obj_t* storage_btn = lv_btn_create(tab2);
+  lv_obj_set_width(storage_btn, LV_PCT(100));
+  _storageModeLbl = lv_label_create(storage_btn);
+  lv_label_set_text_fmt(_storageModeLbl, "Storage: %s", Settings.storageMode == SettingsClass::StorageMode::SD_CARD ? "SD Card" : "Internal");
+  lv_obj_center(_storageModeLbl);
+  lv_obj_add_event_cb(storage_btn, storage_mode_event_cb, LV_EVENT_CLICKED, this);
 
   lv_obj_t* br_cont = lv_obj_create(tab2);
   lv_obj_set_width(br_cont, LV_PCT(100));
@@ -66,12 +73,7 @@ SettingsUI::SettingsUI(DCCExCS& dccExCS, lv_obj_t* parent) : _dccExCS(dccExCS), 
   lv_obj_center(wifi_lbl);
   lv_obj_add_event_cb(wifi_btn, wifi_setup_event_cb, LV_EVENT_CLICKED, this);
 
-  lv_obj_t* about_btn = lv_btn_create(tab3);
-  lv_obj_set_width(about_btn, LV_PCT(100));
-  lv_obj_t* about_lbl = lv_label_create(about_btn);
-  lv_label_set_text(about_lbl, "About Controller");
-  lv_obj_center(about_lbl);
-  lv_obj_add_event_cb(about_btn, about_event_cb, LV_EVENT_CLICKED, this);
+  _aboutUI = new AboutUI(_dccExCS, tab3);
 }
 
 SettingsUI::~SettingsUI() {
@@ -94,6 +96,12 @@ void SettingsUI::rotation_event_cb(lv_event_t * e) {
   Settings.dispatchEvent(SettingsClass::Event::ROTATION_CHANGE);
 }
 
+void SettingsUI::storage_mode_event_cb(lv_event_t * e) {
+  SettingsUI* ui = (SettingsUI*)lv_event_get_user_data(e);
+  Settings.storageMode = (Settings.storageMode == SettingsClass::StorageMode::SPIFFS) ? SettingsClass::StorageMode::SD_CARD : SettingsClass::StorageMode::SPIFFS;
+  lv_label_set_text_fmt(ui->_storageModeLbl, "Storage: %s", Settings.storageMode == SettingsClass::StorageMode::SD_CARD ? "SD Card" : "Internal");
+}
+
 void SettingsUI::brightness_event_cb(lv_event_t * e) {
   SettingsUI* ui = (SettingsUI*)lv_event_get_user_data(e);
   lv_obj_t* slider = (lv_obj_t*)lv_event_get_target(e);
@@ -113,9 +121,9 @@ void SettingsUI::wifi_setup_event_cb(lv_event_t * e) {
 
 void SettingsUI::about_event_cb(lv_event_t * e) {
   SettingsUI* ui = (SettingsUI*)lv_event_get_user_data(e);
-  if (!ui->_aboutUI) {
-      ui->_aboutUI = new AboutUI(ui->_dccExCS, ui->_container);
-  } else {
-      lv_obj_clear_flag(ui->_aboutUI->getContainer(), LV_OBJ_FLAG_HIDDEN);
+  if (ui->_aboutUI) {
+      delete ui->_aboutUI;
   }
+  // Use lv_layer_top() to guarantee it completely covers the full width of the screen over the header
+  ui->_aboutUI = new AboutUI(ui->_dccExCS, lv_layer_top());
 }

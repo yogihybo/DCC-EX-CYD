@@ -16,11 +16,13 @@ class SettingsUI : public UIView {
 
     lv_obj_t* _speedStepLbl;
     lv_obj_t* _rotationLbl;
+    lv_obj_t* _storageModeLbl;
     lv_obj_t* _pinBtn;
     lv_obj_t* _brightnessLbl;
 
     static void speed_step_event_cb(lv_event_t * e);
     static void rotation_event_cb(lv_event_t * e);
+    static void storage_mode_event_cb(lv_event_t * e);
     static void brightness_event_cb(lv_event_t * e);
     static void wifi_setup_event_cb(lv_event_t * e);
     static void about_event_cb(lv_event_t * e);

@@ -17,6 +17,7 @@ class LocoUI : public UIView {
 
     lv_obj_t* _container;
     lv_obj_t* _selectionMenu;
+    lv_obj_t* _nameMenu;
     lv_obj_t* _addressLabel;
     lv_obj_t* _nameLabel;
     
@@ -50,6 +51,13 @@ class LocoUI : public UIView {
     
     static void open_selection_event_cb(lv_event_t * e);
     static void close_selection_event_cb(lv_event_t * e);
+
+    static void name_btn_event_cb(lv_event_t * e);
+    static void close_name_menu_event_cb(lv_event_t * e);
+    static void loco_selected_event_cb(lv_event_t * e);
+
+    static void group_btn_event_cb(lv_event_t * e);
+    static void group_selected_event_cb(lv_event_t * e);
 
     static void nav_btn_event_cb(lv_event_t * e);
     static void dir_btn_event_cb(lv_event_t * e);

@@ -62,3 +62,24 @@ The project is configured out-of-the-box via `platformio.ini`.
 2. Select the `esp32-2432S028R` environment.
 3. Click **Build** and **Upload** to flash your CYD.
 4. *Important*: Remember to also run **Upload File System Image** (SPIFFS) to upload the necessary loco JSON definitions and system configurations to the ESP32 flash memory.
+
+---
+
+## Custom Icons (LVGL 9)
+
+Generating and importing custom icons into this project requires specific formatting to work properly with LVGL 9 and the C++ linker:
+
+1. **Size Constraints**: Size your icon appropriately (e.g., `30x30` pixels) *before* converting it. Do not rely on runtime `lv_image_set_scale` for small status bar icons, as it is computationally expensive and can lead to visual artifacts.
+2. **Format Generation**: Use an image converter (like the LVGL Online Image Converter) or generate the C array directly. The image must be exported using the `LV_COLOR_FORMAT_ARGB8888` format (or similar formats with alpha channels) if you want transparency. 
+3. **Mandatory Header Fields (The Stride Trap)**: If you generate the array yourself or modify an older LVGL 8 structure, you **must** explicitly define `.header.stride` in the nested `lv_image_dsc_t` header (e.g. `stride = 120` for a 30-pixel wide ARGB8888 image). If you omit this, LVGL 9 defaults the stride to `0`, which silently renders the image with a width of 0 (invisible).
+4. **Variable Naming (The Linker Trap)**: When the converter generates the `.c` file, it often uses a default variable name for the structure (like `download` or `image1`). You **must** rename this variable to match your intended usage in the C++ code (e.g., `const lv_image_dsc_t train_icon = {...}`). Failure to do so will result in an `undefined reference` linker error during compilation.
+4. **Header Declaration**: In your `.h` file, declare the icon struct using `extern "C"` so the C++ linker can find the C-compiled array:
+   ```cpp
+   #ifdef __cplusplus
+   extern "C" {
+   #endif
+   extern const lv_image_dsc_t train_icon;
+   #ifdef __cplusplus
+   }
+   #endif
+   ```

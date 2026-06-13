@@ -22,9 +22,14 @@ class SettingsClass : public Events {
       static constexpr uint8_t INVERTED = 1;
       static constexpr uint8_t ACCELEROMETER = 2;
     };
+    struct StorageMode {
+      static constexpr uint8_t SPIFFS = 0;
+      static constexpr uint8_t SD_CARD = 1;
+    };
 
     uint32_t version = 0;
     uint8_t rotation = Rotation::STANDARD;
+    uint8_t storageMode = StorageMode::SPIFFS;
     uint8_t brightness = 255;
     uint32_t pin = 0;
     uint16_t emergencyStop = 2000;

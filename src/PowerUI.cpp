@@ -27,10 +27,10 @@ PowerUI::PowerUI(DCCExCS& dccExCS, DCCExCS::Power& power, lv_obj_t* parent)
     return btn;
   };
 
-  _powerMain = create_btn(-80, 50, 140, 50, "Main", 1, _power.main);
-  _powerProg = create_btn(80, 50, 140, 50, "Prog", 2, _power.prog);
-  _powerAll = create_btn(0, 110, 300, 50, "All Tracks", 3, _power.main && _power.prog);
-  _powerJoin = create_btn(0, 170, 300, 50, "Join Tracks", 4, _power.join);
+  _powerMain = create_btn(-55, 40, 100, 45, "Main", 1, _power.main);
+  _powerProg = create_btn(55, 40, 100, 45, "Prog", 2, _power.prog);
+  _powerAll = create_btn(0, 95, 210, 45, "All Tracks", 3, _power.main && _power.prog);
+  _powerJoin = create_btn(0, 150, 210, 45, "Join Tracks", 4, _power.join);
 
   _broadcastPowerHandler = _dccExCS.addEventListener(DCCExCS::Event::BROADCAST_POWER, [this](void* parameter) {
     if (xSemaphoreTake(lvgl_mutex, portMAX_DELAY) == pdTRUE) {

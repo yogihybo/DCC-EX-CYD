@@ -79,8 +79,9 @@ void ThrottleServer::begin() {
       StaticJsonDocument<48> doc;
 
       auto addItemsFromFS = [&listDir, &filterDoc, &doc, &list](fs::FS& fs, String path) {
-        if (fs.exists(path)) {
-          listDir(fs.open(path), [&filterDoc, &doc, &list](File file) {
+        File dir = fs.open(path);
+        if (dir) {
+          listDir(dir, [&filterDoc, &doc, &list](File file) {
             ReadBufferingStream bufferedFile(file, doc.capacity());
             deserializeJson(doc, bufferedFile, DeserializationOption::Filter(filterDoc));
             JsonObject item = list.createNestedObject();
@@ -90,9 +91,11 @@ void ThrottleServer::begin() {
         }
       };
 
-      addItemsFromFS(SPIFFS, path);
-      if (SD.cardType() != CARD_NONE) {
+      bool useSD = (Settings.storageMode == SettingsClass::StorageMode::SD_CARD) && (SD.cardType() != CARD_NONE);
+      if (useSD) {
         addItemsFromFS(SD, path);
+      } else {
+        addItemsFromFS(SPIFFS, path);
       }
     }
 
@@ -101,39 +104,39 @@ void ThrottleServer::begin() {
   });
 
   on("^\\/locos\\/.+\\.json$", HTTP_HEAD, [](AsyncWebServerRequest* request) {
-    bool exists = SPIFFS.exists(request->url()) || (SD.cardType() != CARD_NONE && SD.exists(request->url()));
+    bool useSD = (Settings.storageMode == SettingsClass::StorageMode::SD_CARD) && (SD.cardType() != CARD_NONE);
+    bool exists = useSD ? SD.exists(request->url()) : SPIFFS.exists(request->url());
     request->send(exists ? 204 : 404);
   });
 
   on("^(?:\\/\\$)?\\/(?:(?:locos|fns|icons)\\/.+|groups)\\.(?:json|bmp)$", HTTP_GET, [](AsyncWebServerRequest* request) {
+    bool useSD = (Settings.storageMode == SettingsClass::StorageMode::SD_CARD) && (SD.cardType() != CARD_NONE);
+    fs::FS& fs = useSD ? (fs::FS&)SD : (fs::FS&)SPIFFS;
+
     if (request->url().endsWith(".bmp")) { // Bit hacky but allows us to use the built in ETag and Cache-Control code
       AsyncStaticWebHandler* handler;
       if (request->url().startsWith("/$/")) {
-        handler = new AsyncStaticWebHandler(request->url().c_str(), SPIFFS, request->url().c_str() + 2, "max-age=604800");
+        handler = new AsyncStaticWebHandler(request->url().c_str(), fs, request->url().c_str() + 2, "max-age=604800");
       } else {
-        if (SPIFFS.exists(request->url())) {
-          handler = new AsyncStaticWebHandler("", SPIFFS, "", "max-age=604800");
-        } else {
-          handler = new AsyncStaticWebHandler("", SD, "", "max-age=604800");
-        }
+        handler = new AsyncStaticWebHandler("", fs, "", "max-age=604800");
       }
       handler->canHandle(request);
       handler->handleRequest(request);
     } else {
-      if (SPIFFS.exists(request->url())) {
-        request->send(SPIFFS, request->url());
+      if (fs.exists(request->url())) {
+        request->send(fs, request->url());
       } else {
-        request->send(SD, request->url());
+        request->send(404);
       }
     }
   });
 
   on("^\\/(?:locos|fns|icons)\\/.+\\.(?:json|bmp)$", HTTP_DELETE, [](AsyncWebServerRequest* request) {
+    bool useSD = (Settings.storageMode == SettingsClass::StorageMode::SD_CARD) && (SD.cardType() != CARD_NONE);
+    fs::FS& fs = useSD ? (fs::FS&)SD : (fs::FS&)SPIFFS;
     bool success = false;
-    if (SPIFFS.exists(request->url())) {
-      success = SPIFFS.remove(request->url());
-    } else if (SD.cardType() != CARD_NONE && SD.exists(request->url())) {
-      success = SD.remove(request->url());
+    if (fs.exists(request->url())) {
+      success = fs.remove(request->url());
     }
     request->send(success ? 204 : 404);
   });
@@ -142,7 +145,8 @@ void ThrottleServer::begin() {
 
   }, NULL, [](AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
     if (!request->_tempFile) {
-      if (SD.cardType() != CARD_NONE) {
+      bool useSD = (Settings.storageMode == SettingsClass::StorageMode::SD_CARD) && (SD.cardType() != CARD_NONE);
+      if (useSD) {
         request->_tempFile = SD.open(request->url(), "w", true);
       } else {
         request->_tempFile = SPIFFS.open(request->url(), "w", true);
