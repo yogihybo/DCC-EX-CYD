@@ -1,9 +1,9 @@
-# EX-T3-WiFi
+# EX-T3-WiFi port to CYD ESP32 hardware 
 
 A powerful, touch-enabled WiFi throttle for DCC-EX Command Stations, built natively on **LVGL** for the ESP32 Cheap Yellow Display (CYD).
 
 ## Overview
-EX-T3-WiFi transforms an ESP32-2432S028R into a robust, handheld model railway controller. It communicates asynchronously via WiFi directly to a DCC-EX Command Station. The firmware has been meticulously architected using **FreeRTOS** and **LVGL 9** to provide a fluid, flicker-free, and thread-safe user experience.
+EX-T3-WiFi port that transforms an ESP32-2432S028R into a handheld model railway controller. It communicates asynchronously via WiFi directly to a DCC-EX Command Station. The firmware has been architected using **FreeRTOS** and **LVGL 9** to provide a fluid, flicker-free, and thread-safe user experience.
 
 ## Hardware Requirements
 - **ESP32-2432S028R** (Also known as the CYD / Cheap Yellow Display)
