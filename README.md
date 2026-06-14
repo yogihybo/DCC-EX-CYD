@@ -1,4 +1,4 @@
-# EX-T3-WiFi port to CYD ESP32 hardware 
+# EX-T3-WiFi port to CYD ESP32 hardware for use with DCC-EX 
 
 A powerful, touch-enabled WiFi throttle for DCC-EX Command Stations, built natively on **LVGL** for the ESP32 Cheap Yellow Display (CYD).
 
