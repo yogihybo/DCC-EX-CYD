@@ -11,9 +11,6 @@
 ThrottleServer::ThrottleServer() : AsyncWebServer(80) { }
 
 void ThrottleServer::begin() {
-  serveStatic("/", WebsiteFS, "/www/")
-    .setCacheControl("max-age=604800")
-    .setDefaultFile("index.html");
 
   on("/cs", HTTP_HEAD, [](AsyncWebServerRequest* request) {
     request->send(Settings.CS.valid() ? 200 : 404);
@@ -67,6 +64,9 @@ void ThrottleServer::begin() {
       listDir(ConfigFS.open(path), [&list](File file) {
         list.add("/$" + String(file.path()));
       });
+      listDir(WebsiteFS.open(path), [&list](File file) {
+        list.add("/$" + String(file.path()));
+      });
 
       if (SD.cardType() != CARD_NONE) {
         listDir(SD.open(path), [&list](File file) {
@@ -104,13 +104,18 @@ void ThrottleServer::begin() {
   });
 
   on("^(?:\\/\\$)?\\/(?:(?:locos|fns|icons)\\/.+|groups)\\.(?:json|bmp)$", HTTP_GET, [](AsyncWebServerRequest* request) {
-    fs::FS& fs = Settings.getFS();
+    String path = request->url();
+    if (path.startsWith("/$/")) {
+      path = path.substring(2);
+    }
+    
+    fs::FS* fsPtr = &Settings.getFS();
+    if (!fsPtr->exists(path) && WebsiteFS.exists(path)) {
+      fsPtr = &WebsiteFS;
+    }
+    fs::FS& fs = *fsPtr;
 
-    if (request->url().endsWith(".bmp")) {
-      String path = request->url();
-      if (path.startsWith("/$/")) {
-        path = path.substring(2);
-      }
+    if (path.endsWith(".bmp")) {
       if (fs.exists(path)) {
         AsyncWebServerResponse *response = request->beginResponse(fs, path, "image/bmp");
         response->addHeader("Cache-Control", "max-age=604800");
@@ -119,8 +124,8 @@ void ThrottleServer::begin() {
         request->send(404);
       }
     } else {
-      if (fs.exists(request->url())) {
-        request->send(fs, request->url());
+      if (fs.exists(path)) {
+        request->send(fs, path);
       } else {
         request->send(404);
       }
@@ -150,6 +155,10 @@ void ThrottleServer::begin() {
       request->send(204);
     }
   });
+
+  serveStatic("/", WebsiteFS, "/www/")
+    .setCacheControl("max-age=604800")
+    .setDefaultFile("index.html");
 
   AsyncWebServer::begin();
 }

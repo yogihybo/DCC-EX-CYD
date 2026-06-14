@@ -130,7 +130,7 @@ void LocoUI::buildControlScreen() {
     
     fs::FS& fs = Settings.getFS();
 
-    if (fs.exists(path)) {
+    if (_loco.address != 0 && fs.exists(path)) {
         File locoFile = fs.open(path);
         deserializeJson(_locoDoc, locoFile);
         locoFile.close();
@@ -254,7 +254,13 @@ void LocoUI::buildFunctionButtons() {
             const char* fnPath = _locoDoc["functions"].as<const char*>();
             if (fs.exists(fnPath)) functionFile = fs.open(fnPath);
         }
-        if (!functionFile) functionFile = fs.open("/default.json");
+        if (!functionFile) {
+            if (WebsiteFS.exists("/default.json")) {
+                functionFile = WebsiteFS.open("/default.json");
+            } else if (fs.exists("/default.json")) {
+                functionFile = fs.open("/default.json");
+            }
+        }
 
         if (functionFile) {
             StaticJsonDocument<16> filter;
@@ -269,56 +275,64 @@ void LocoUI::buildFunctionButtons() {
         for (JsonObjectConst const& fn : row) {
             uint8_t func = fn["fn"];
             bool latching = fn["latching"] | true;
-            const char* label = fn["btn"]["idle"]["label"].as<const char*>();
-            const char* icon = fn["btn"]["idle"]["icon"].as<const char*>();
+            const char* idle_label = fn["btn"]["idle"]["label"].as<const char*>();
+            const char* idle_icon = fn["btn"]["idle"]["icon"].as<const char*>();
+            const char* pressed_label = fn["btn"]["pressed"]["label"].as<const char*>();
+            const char* pressed_icon = fn["btn"]["pressed"]["icon"].as<const char*>();
             
             lv_obj_t* btn = lv_btn_create(_container);
             lv_obj_set_size(btn, 42, 30);
             
             if (latching) lv_obj_add_flag(btn, LV_OBJ_FLAG_CHECKABLE);
-            if (_loco.functions.test(func)) lv_obj_add_state(btn, LV_STATE_CHECKED);
-
-            if (icon && strlen(icon) > 0) {
-                String fsPath = "";
-                if (icon[0] != '/') fsPath += "/icons/";
-                fsPath += icon;
-                if (!fsPath.endsWith(".bmp")) fsPath += ".bmp";
-                
-                String fullIconPath = "";
-                if (WebsiteFS.exists(fsPath)) {
-                    fullIconPath = "W:" + fsPath;
-                } else if (Settings.getFS().exists(fsPath)) {
-                    fullIconPath = "S:" + fsPath;
-                }
-                
-                if (fullIconPath.length() > 0) {
-                    lv_obj_t* img = lv_image_create(btn);
-                    char* pathBuf = (char*)malloc(fullIconPath.length() + 1);
-                    strcpy(pathBuf, fullIconPath.c_str());
-                    lv_image_set_src(img, pathBuf);
-                    lv_obj_center(img);
+            
+            auto create_visual = [btn, func](const char* icon, const char* label) -> lv_obj_t* {
+                lv_obj_t* visual_obj = nullptr;
+                if (icon && strlen(icon) > 0) {
+                    String fsPath = icon;
+                    if (fsPath.startsWith("/$/")) fsPath = fsPath.substring(2);
+                    if (!fsPath.startsWith("/")) fsPath = "/icons/" + fsPath;
+                    if (!fsPath.endsWith(".bmp")) fsPath += ".bmp";
                     
-                    lv_obj_add_event_cb(img, [](lv_event_t* e) {
-                        char* buf = (char*)lv_event_get_user_data(e);
-                        if (buf) free(buf);
-                    }, LV_EVENT_DELETE, pathBuf);
-                } else {
-                    lv_obj_t* lbl = lv_label_create(btn);
-                    if (label && strlen(label) > 0) {
-                        lv_label_set_text(lbl, label); 
-                    } else {
-                        lv_label_set_text_fmt(lbl, "F%d", func);
+                    String fullIconPath = "";
+                    if (WebsiteFS.exists(fsPath)) fullIconPath = "W:" + fsPath;
+                    else if (Settings.getFS().exists(fsPath)) fullIconPath = "S:" + fsPath;
+                    
+                    if (fullIconPath.length() > 0) {
+                        visual_obj = lv_image_create(btn);
+                        char* pathBuf = (char*)malloc(fullIconPath.length() + 1);
+                        strcpy(pathBuf, fullIconPath.c_str());
+                        lv_image_set_src(visual_obj, pathBuf);
+                        lv_obj_center(visual_obj);
+                        lv_obj_add_event_cb(visual_obj, [](lv_event_t* e) {
+                            char* buf = (char*)lv_event_get_user_data(e);
+                            if (buf) free(buf);
+                        }, LV_EVENT_DELETE, pathBuf);
+                        return visual_obj;
                     }
-                    lv_obj_center(lbl);
                 }
+                
+                visual_obj = lv_label_create(btn);
+                if (label && strlen(label) > 0) lv_label_set_text(visual_obj, label);
+                else lv_label_set_text_fmt(visual_obj, "F%d", func);
+                lv_obj_center(visual_obj);
+                return visual_obj;
+            };
+
+            lv_obj_t* idle_obj = create_visual(idle_icon, idle_label);
+            lv_obj_t* pressed_obj = nullptr;
+
+            if ((pressed_label && strlen(pressed_label) > 0) || (pressed_icon && strlen(pressed_icon) > 0)) {
+                pressed_obj = create_visual(pressed_icon, pressed_label);
             } else {
-                lv_obj_t* lbl = lv_label_create(btn);
-                if (label && strlen(label) > 0) {
-                    lv_label_set_text(lbl, label); 
-                } else {
-                    lv_label_set_text_fmt(lbl, "F%d", func); // Fallback to F%d
-                }
-                lv_obj_center(lbl);
+                pressed_obj = create_visual(idle_icon, idle_label);
+            }
+
+            bool is_checked = _loco.functions.test(func);
+            if (is_checked) {
+                lv_obj_add_state(btn, LV_STATE_CHECKED);
+                lv_obj_add_flag(idle_obj, LV_OBJ_FLAG_HIDDEN);
+            } else {
+                lv_obj_add_flag(pressed_obj, LV_OBJ_FLAG_HIDDEN);
             }
 
             lv_obj_set_user_data(btn, (void*)(uintptr_t)func);
@@ -359,10 +373,22 @@ void LocoUI::toggleFunctionButtons(std::bitset<32> toggle) {
     for (auto child : _fnButtons) {
         uint8_t func = (uintptr_t)lv_obj_get_user_data(child);
         if (toggle.test(func)) {
-            if (_loco.functions.test(func)) {
+            bool is_checked = _loco.functions.test(func);
+            if (is_checked) {
                 lv_obj_add_state(child, LV_STATE_CHECKED);
             } else {
                 lv_obj_clear_state(child, LV_STATE_CHECKED);
+            }
+            if (lv_obj_get_child_cnt(child) >= 2) {
+                lv_obj_t* idle_obj = lv_obj_get_child(child, 0);
+                lv_obj_t* pressed_obj = lv_obj_get_child(child, 1);
+                if (is_checked) {
+                    lv_obj_add_flag(idle_obj, LV_OBJ_FLAG_HIDDEN);
+                    lv_obj_clear_flag(pressed_obj, LV_OBJ_FLAG_HIDDEN);
+                } else {
+                    lv_obj_add_flag(pressed_obj, LV_OBJ_FLAG_HIDDEN);
+                    lv_obj_clear_flag(idle_obj, LV_OBJ_FLAG_HIDDEN);
+                }
             }
         }
     }
@@ -763,6 +789,21 @@ void LocoUI::fn_btn_event_cb(lv_event_t * e) {
     lv_obj_t* btn = (lv_obj_t*)lv_event_get_target(e);
     uint8_t func = (uintptr_t)lv_obj_get_user_data(btn);
     bool is_checked = lv_obj_has_state(btn, LV_STATE_CHECKED);
+
+    if (lv_event_get_code(e) == LV_EVENT_VALUE_CHANGED) {
+        if (lv_obj_get_child_cnt(btn) >= 2) {
+            lv_obj_t* idle_obj = lv_obj_get_child(btn, 0);
+            lv_obj_t* pressed_obj = lv_obj_get_child(btn, 1);
+            if (is_checked) {
+                lv_obj_add_flag(idle_obj, LV_OBJ_FLAG_HIDDEN);
+                lv_obj_clear_flag(pressed_obj, LV_OBJ_FLAG_HIDDEN);
+            } else {
+                lv_obj_add_flag(pressed_obj, LV_OBJ_FLAG_HIDDEN);
+                lv_obj_clear_flag(idle_obj, LV_OBJ_FLAG_HIDDEN);
+            }
+        }
+    }
+
     ui->_dccExCS.setLocoFn(ui->_loco.address, func, is_checked);
 }
 

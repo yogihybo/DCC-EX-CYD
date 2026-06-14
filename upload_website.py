@@ -25,7 +25,7 @@ if offset:
         dependencies=None,
         actions=[
             "pio run -t buildfs",
-            f"pio pkg exec -p tool-esptoolpy -- esptool.py --chip esp32 {port_arg} --baud $UPLOAD_SPEED write_flash {offset} $BUILD_DIR/littlefs.bin"
+            f"pio pkg exec -p tool-esptoolpy -- esptool.py --chip esp32 {port_arg} --baud $UPLOAD_SPEED write_flash {offset} \"$BUILD_DIR/littlefs.bin\""
         ],
         title="Upload Website FS",
         description="Builds and uploads the website filesystem to the correct partition"
