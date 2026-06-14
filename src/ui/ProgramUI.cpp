@@ -144,6 +144,7 @@ void ProgramUI::newStep(Step step, const String& title, uint16_t max, uint16_t m
   clearMsgBox();
 
   _msgbox = lv_msgbox_create(_container);
+  lv_obj_set_width(_msgbox, LV_PCT(100)); // Scale to fit screen width
   lv_obj_align(_msgbox, LV_ALIGN_TOP_MID, 0, 10);
   lv_obj_add_event_cb(_msgbox, msgbox_delete_cb, LV_EVENT_DELETE, this);
   lv_msgbox_add_title(_msgbox, title.c_str());

@@ -65,13 +65,27 @@ The project is configured out-of-the-box via `platformio.ini`.
 
 ---
 
+## Known Hardware Limitations (CYD)
+
+### SD Card / Touch Screen SPI Conflict
+The ESP32 Cheap Yellow Display (CYD) has a notorious hardware limitation: **The SD Card reader and the Resistive Touch Screen physically share the same SPI hardware controller (VSPI) but are wired to completely different pins.**
+- **Touch Pins**: `CLK=25`, `MISO=39`, `MOSI=32`, `CS=33`
+- **SD Card Pins**: `CLK=18`, `MISO=19`, `MOSI=23`, `CS=5`
+
+Because the `LVGL_CYD` library initializes the VSPI bus for the touch screen, attempting to mount the SD card via the standard hardware SPI library (`SD.begin()`) will trigger an ESP32 core panic (`addApbChangeCallback duplicate`) or fail to mount because the pins cannot be simultaneously routed to two different configurations without manual multiplexing. 
+For this reason, **SD Card functionality is currently disabled/unsupported** on this specific hardware port to maintain touch stability.
+
+---
+
 ## Custom Icons (LVGL 9)
 
 Generating and importing custom icons into this project requires specific formatting to work properly with LVGL 9 and the C++ linker:
 
 1. **Size Constraints**: Size your icon appropriately (e.g., `30x30` pixels) *before* converting it. Do not rely on runtime `lv_image_set_scale` for small status bar icons, as it is computationally expensive and can lead to visual artifacts.
-2. **Format Generation**: Use an image converter (like the LVGL Online Image Converter) or generate the C array directly. The image must be exported using the `LV_COLOR_FORMAT_ARGB8888` format (or similar formats with alpha channels) if you want transparency. 
-3. **Mandatory Header Fields (The Stride Trap)**: If you generate the array yourself or modify an older LVGL 8 structure, you **must** explicitly define `.header.stride` in the nested `lv_image_dsc_t` header (e.g. `stride = 120` for a 30-pixel wide ARGB8888 image). If you omit this, LVGL 9 defaults the stride to `0`, which silently renders the image with a width of 0 (invisible).
+2. **Format Generation**: Use an image converter (like the [LVGL Online Image Converter](https://lvgl.github.io/lv_img_conv/)) or generate the C array directly. 
+   - Use `LV_COLOR_FORMAT_ARGB8888` for full-color images with transparency.
+   - Use `LV_COLOR_FORMAT_A8` (Alpha 8-bit) if you want to dynamically tint/recolor the image at runtime using `lv_obj_set_style_image_recolor()`. This format treats the array as a transparency mask rather than literal color data.
+3. **Mandatory Header Fields (The Stride Trap)**: If you generate the array yourself or modify an older LVGL 8 structure, you **must** explicitly define `.header.stride` in the nested `lv_image_dsc_t` header (e.g. `stride = 120` for a 30-pixel wide ARGB8888 image, or `stride = 30` for A8). If you omit this, LVGL 9 defaults the stride to `0`, which silently renders the image with a width of 0 (invisible).
 4. **Variable Naming (The Linker Trap)**: When the converter generates the `.c` file, it often uses a default variable name for the structure (like `download` or `image1`). You **must** rename this variable to match your intended usage in the C++ code (e.g., `const lv_image_dsc_t train_icon = {...}`). Failure to do so will result in an `undefined reference` linker error during compilation.
 4. **Header Declaration**: In your `.h` file, declare the icon struct using `extern "C"` so the C++ linker can find the C-compiled array:
    ```cpp

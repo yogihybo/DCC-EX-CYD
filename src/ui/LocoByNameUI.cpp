@@ -1,0 +1,155 @@
+#include <LocoByNameUI.h>
+#include <SPIFFS.h>
+#include <SD.h>
+#include <StreamUtils.h>
+#include <Functions.h>
+#include <Components/Paging.h>
+#include <Elements/Header.h>
+
+LocoByNameUI::LocoByNameUI(bool groups) {
+  _elements.reserve(9);
+  
+  addElement<Header>(0, 40, 320, 18, "Select Loco");
+
+  if (groups) { // Load by groups
+    if (SPIFFS.exists("/groups.json")) {
+      File groupsFile = SPIFFS.open("/groups.json");
+      ReadBufferingStream bufferedFile(groupsFile, _doc.capacity());
+      deserializeJson(_doc, bufferedFile);
+      groupsFile.close();
+    } else if (SD.exists("/groups.json")) {
+      File groupsFile = SD.open("/groups.json");
+      ReadBufferingStream bufferedFile(groupsFile, _doc.capacity());
+      deserializeJson(_doc, bufferedFile);
+      groupsFile.close();
+    }
+
+    _btnsDoc = _doc.as<JsonArray>();
+  } else { // Enum locos directory
+    _btnsDoc = _doc.to<JsonArray>();
+    
+    // Read from SPIFFS
+    if (SPIFFS.exists("/locos")) {
+      File locoDir = SPIFFS.open("/locos");
+      File locoFile;
+
+      while ((locoFile = locoDir.openNextFile())) {
+        if (!locoFile.isDirectory()) {
+          addLoco(locoFile);
+          locoFile.close();
+        }
+      }
+      locoDir.close();
+    }
+
+    // Read from SD
+    if (SD.cardType() != CARD_NONE && SD.exists("/locos")) {
+      File locoDir = SD.open("/locos");
+      File locoFile;
+
+      while ((locoFile = locoDir.openNextFile())) {
+        if (!locoFile.isDirectory()) {
+          uint16_t address = strtoul(locoFile.name(), (char**)NULL, 10);
+          bool exists = false;
+          for (JsonObjectConst const& btn : _btnsDoc) {
+            if (btn["loco"].as<uint16_t>() == address) {
+              exists = true;
+              break;
+            }
+          }
+          if (!exists) {
+            addLoco(locoFile);
+          }
+          locoFile.close();
+        }
+      }
+      locoDir.close();
+    }
+  }
+
+  drawPagingAndButtons();
+}
+
+void LocoByNameUI::addLoco(File& locoFile) {
+  StaticJsonDocument<16> filterDoc;
+  filterDoc["name"] = true;
+  StaticJsonDocument<64> locoDoc;
+
+  ReadBufferingStream bufferedFile(locoFile, locoDoc.capacity());
+  deserializeJson(locoDoc, bufferedFile, DeserializationOption::Filter(filterDoc));
+
+  uint16_t address = strtoul(locoFile.name(), (char**)NULL, 10);
+  String name = "#";
+  name += address;
+  name += " - ";
+  name += locoDoc["name"].as<const char*>();
+  JsonObject btn = _btnsDoc.createNestedObject();
+  btn["name"] = name;
+  btn["loco"] = address;
+}
+
+void LocoByNameUI::drawPagingAndButtons() {
+  uint8_t count = _btnsDoc.size();
+
+  if (count > 7) { // If there's more than 7 buttons we need paging
+    uint8_t pages = divideAndCeil(count, 6);
+    auto paging = addComponent<Paging>(pages);
+    paging->addEventListener(Paging::Event::CHANGED, [this](void* parameter) {
+      destroyButtons();
+      drawButtons(*static_cast<uint8_t*>(parameter));
+    });
+  }
+
+  drawButtons();
+}
+
+void LocoByNameUI::drawButtons(uint8_t page) {
+  UI::tft->fillRect(0, 90, 320, 344, UI::COLOR_MAIN_BG); // Clear buttons
+
+  uint16_t y = 70;
+  uint8_t i = 0;
+  bool paging = _btnsDoc.size() > 7;
+  
+  for (JsonObjectConst const& btn : _btnsDoc) {
+    if (!paging || divideAndCeil(++i, 6) == page) {
+      addElement<Button>(0, y, 320, 42, btn["name"].as<const char*>())
+        ->onRelease([this, btn](void*) {
+          if (btn.containsKey("locos")) {
+            loadGroup(btn["locos"].as<JsonArrayConst>());
+          } else {
+            uint16_t address = btn["loco"].as<uint16_t>();
+            dispatchEvent(Event::SELECTED, &address);
+          }
+        });
+      y += 52;
+    }
+  }
+}
+
+void LocoByNameUI::destroyButtons() {
+  _elements.erase(std::remove_if(_elements.begin(), _elements.end(), [](const auto &element) {
+    return element->getType() == Element::Type::Button;
+  }), _elements.end());
+}
+
+void LocoByNameUI::loadGroup(JsonArrayConst locos) {
+  _btnsDoc.clear();
+  for (uint16_t address : locos) {
+    char path[32];
+    sprintf(path, "/locos/%d.json", address);
+    if (SPIFFS.exists(path)) {
+      File loco = SPIFFS.open(path);
+      addLoco(loco);
+      loco.close();
+    } else if (SD.exists(path)) {
+      File loco = SD.open(path);
+      addLoco(loco);
+      loco.close();
+    }
+  }
+
+  UI::tft->fillRect(0, 375, 320, 42, UI::COLOR_MAIN_BG); // Clear paging
+  _components.clear();
+  destroyButtons();
+  drawPagingAndButtons();
+}

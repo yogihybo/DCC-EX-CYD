@@ -197,7 +197,7 @@ void setup() {
   Settings.addEventListener(SettingsClass::Event::CS_CHANGE,
                             [](void *) { WiFi.disconnect(); });
 
-  xTaskCreatePinnedToCore(powerCheck, "powerCheck", 1024, NULL, 1, NULL, 1);
+  xTaskCreatePinnedToCore(powerCheck, "powerCheck", 4096, NULL, 1, NULL, 1);
   xTaskCreatePinnedToCore(keepWiFiAlive, "keepWiFiAlive", 2048, NULL, 1, NULL, 1);
 
   throttleServer.begin();

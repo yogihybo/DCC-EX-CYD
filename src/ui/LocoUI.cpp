@@ -21,7 +21,7 @@ LocoUI::LocoUI(DCCExCS& dccExCS, Locos& locos, lv_obj_t* parent)
     if (_loco.address == 0) {
         buildControlScreen();
         buildSelectionMenu();
-        lv_obj_clear_flag(_selectionMenu, LV_OBJ_FLAG_HIDDEN);
+        // lv_obj_clear_flag(_selectionMenu, LV_OBJ_FLAG_HIDDEN); // Keep hidden so throttle page is default
     } else {
         _broadcastLocoHandler = _dccExCS.addEventListener(DCCExCS::Event::BROADCAST_LOCO, [this](void* parameter) {
             if (xSemaphoreTake(lvgl_mutex, portMAX_DELAY) == pdTRUE) {

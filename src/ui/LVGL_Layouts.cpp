@@ -51,12 +51,14 @@ void setup_lvgl_layouts() {
     lv_image_set_src(train_img, &train_icon);
     lv_obj_set_style_pad_left(train_img, 10, 0);
 
-    loco_label = lv_label_create(loco_group);
-    lv_label_set_text(loco_label, "0");
+    // Make loco_label a child of the icon itself so we can overlay it
+    loco_label = lv_label_create(train_img);
+    lv_label_set_text(loco_label, "000");
+    lv_obj_set_style_text_font(loco_label, &lv_font_montserrat_10, 0);
+    lv_obj_align(loco_label, LV_ALIGN_BOTTOM_MID, -5, 1); // Move text left 5 pixels, up 3 pixels
 
     cs_icon = lv_image_create(header_bar);
     lv_image_set_src(cs_icon, &dcc_icon);
-    lv_image_set_scale(cs_icon, 180); // scale down to ~70% size
     lv_obj_set_style_image_recolor_opa(cs_icon, LV_OPA_COVER, 0);
     lv_obj_set_style_image_recolor(cs_icon, lv_color_make(255, 0, 0), 0);
 
@@ -97,7 +99,7 @@ void setup_lvgl_layouts() {
 }
 
 void set_header_loco_count(int count) {
-    if (loco_label) lv_label_set_text_fmt(loco_label, "%d", count);
+    if (loco_label) lv_label_set_text_fmt(loco_label, "%03d", count);
 }
 
 void set_header_wifi_status(bool connected, int rssi) {
@@ -127,6 +129,8 @@ void set_header_power_status(float voltage) {
         else if (voltage >= 3.75) sym = LV_SYMBOL_BATTERY_2;
         else if (voltage >= 3.60) sym = LV_SYMBOL_BATTERY_1;
         
-        lv_label_set_text_fmt(power_label, "%s %.2fV", sym, voltage);
+        char buf[16];
+        snprintf(buf, sizeof(buf), "%s %.2fV", sym, voltage);
+        lv_label_set_text(power_label, buf);
     }
 }

@@ -17,7 +17,7 @@ class SettingsUI : public UIView {
     lv_obj_t* _speedStepLbl;
     lv_obj_t* _rotationLbl;
     lv_obj_t* _storageModeLbl;
-    lv_obj_t* _pinBtn;
+
     lv_obj_t* _brightnessLbl;
     lv_obj_t* _formatMsgbox = nullptr;
 
