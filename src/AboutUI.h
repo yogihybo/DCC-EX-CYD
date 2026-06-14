@@ -20,6 +20,7 @@ class AboutUI : public UIView {
     lv_timer_t* _updateTimer;
 
     static void update_timer_cb(lv_timer_t* timer);
+    static void close_btn_event_cb(lv_event_t * e);
 
   public:
     AboutUI(DCCExCS& dccExCS, lv_obj_t* parent);

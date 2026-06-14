@@ -1,5 +1,5 @@
-#ifndef TRAIN_ICON_H
-#define TRAIN_ICON_H
+#ifndef DCC_ICON_H
+#define DCC_ICON_H
 
 #include <lvgl.h>
 
@@ -7,7 +7,7 @@
 extern "C" {
 #endif
 
-extern const lv_image_dsc_t train_icon;
+extern const lv_image_dsc_t dcc_icon;
 
 #ifdef __cplusplus
 }

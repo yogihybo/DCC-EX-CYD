@@ -38,11 +38,19 @@ SettingsUI* setUI_ptr;
 
 void keepWiFiAlive(void *) {
   for (;;) {
+    bool connected = (WiFi.status() == WL_CONNECTED);
     if (Settings.CS.valid()) { // Valid if we have SSID, Server & Port
-      if (WiFi.status() != WL_CONNECTED) {
+      if (!connected) {
         WiFi.begin(Settings.CS.SSID().c_str(), Settings.CS.password().c_str());
       }
     }
+    
+    // Dynamically update WiFi UI with RSSI
+    if (xSemaphoreTake(lvgl_mutex, portMAX_DELAY) == pdTRUE) {
+        set_header_wifi_status(connected, connected ? WiFi.RSSI() : 0);
+        xSemaphoreGive(lvgl_mutex);
+    }
+    
     vTaskDelay(CONNECTION_ALIVE_DELAY / portTICK_PERIOD_MS);
   }
 }
@@ -118,7 +126,7 @@ void setup() {
   WiFi.onEvent(
       [](WiFiEvent_t event, WiFiEventInfo_t info) {
         if (xSemaphoreTake(lvgl_mutex, portMAX_DELAY) == pdTRUE) {
-            set_header_wifi_status(true);
+            set_header_wifi_status(true, WiFi.RSSI());
             xSemaphoreGive(lvgl_mutex);
         }
         connectToCS();
@@ -128,7 +136,7 @@ void setup() {
   WiFi.onEvent([](WiFiEvent_t event,
                   WiFiEventInfo_t info) { 
         if (xSemaphoreTake(lvgl_mutex, portMAX_DELAY) == pdTRUE) {
-            set_header_wifi_status(false); 
+            set_header_wifi_status(false, 0); 
             xSemaphoreGive(lvgl_mutex);
         }
   }, ARDUINO_EVENT_WIFI_STA_DISCONNECTED);

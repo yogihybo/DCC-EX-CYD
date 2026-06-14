@@ -1,17 +1,39 @@
 #include "AboutUI.h"
 #include <Version.h>
 #include <WiFi.h>
+#include <Settings.h>
 
 AboutUI::AboutUI(DCCExCS& dccExCS, lv_obj_t* parent) : _dccExCS(dccExCS) {
   _container = lv_obj_create(parent);
-  lv_obj_set_size(_container, LV_PCT(100), LV_SIZE_CONTENT);
+  lv_obj_set_size(_container, LV_PCT(100), LV_PCT(100));
   lv_obj_align(_container, LV_ALIGN_CENTER, 0, 0);
   lv_obj_set_style_pad_all(_container, 0, 0);
   lv_obj_set_style_border_width(_container, 0, 0);
-  lv_obj_set_style_bg_opa(_container, 0, 0);
+  lv_obj_set_style_bg_opa(_container, LV_OPA_COVER, 0);
+
   lv_obj_set_flex_flow(_container, LV_FLEX_FLOW_COLUMN);
   lv_obj_set_style_pad_row(_container, 2, 0);
   lv_obj_clear_flag(_container, LV_OBJ_FLAG_SCROLLABLE);
+
+  // Top header with Back button
+  lv_obj_t* header = lv_obj_create(_container);
+  lv_obj_set_width(header, LV_PCT(100));
+  lv_obj_set_height(header, 50);
+  lv_obj_set_style_pad_all(header, 0, 0);
+  lv_obj_set_style_border_width(header, 0, 0);
+  lv_obj_clear_flag(header, LV_OBJ_FLAG_SCROLLABLE);
+
+  lv_obj_t* title = lv_label_create(header);
+  lv_label_set_text(title, "About");
+  lv_obj_align(title, LV_ALIGN_LEFT_MID, 10, 0);
+
+  lv_obj_t* close_btn = lv_btn_create(header);
+  lv_obj_align(close_btn, LV_ALIGN_RIGHT_MID, -10, 0);
+  lv_obj_set_style_bg_color(close_btn, lv_color_make(200, 50, 50), 0);
+  lv_obj_t* close_lbl = lv_label_create(close_btn);
+  lv_label_set_text(close_lbl, "Back");
+  lv_obj_center(close_lbl);
+  lv_obj_add_event_cb(close_btn, close_btn_event_cb, LV_EVENT_CLICKED, this);
 
 #if LV_USE_FONT_MONTSERRAT_12
   lv_obj_set_style_text_font(_container, &lv_font_montserrat_12, 0);
@@ -36,6 +58,9 @@ AboutUI::AboutUI(DCCExCS& dccExCS, lv_obj_t* parent) : _dccExCS(dccExCS) {
   } else {
       lv_label_set_text(_wifiStat, "WiFi: Disconnected");
   }
+
+  lv_obj_t* apStat = lv_label_create(_container);
+  lv_label_set_text_fmt(apStat, "AP Name: %s\nAP Password: %s", Settings.AP.SSID.c_str(), Settings.AP.password.c_str());
 
   _updateTimer = lv_timer_create(update_timer_cb, 2000, this);
 
@@ -86,4 +111,7 @@ void AboutUI::update_timer_cb(lv_timer_t* timer) {
   }
 }
 
-
+void AboutUI::close_btn_event_cb(lv_event_t * e) {
+  AboutUI* ui = (AboutUI*)lv_event_get_user_data(e);
+  lv_obj_add_flag(ui->_container, LV_OBJ_FLAG_HIDDEN);
+}

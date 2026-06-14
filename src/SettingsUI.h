@@ -8,11 +8,11 @@
 class SettingsUI : public UIView {
   private:
     lv_obj_t* _container;
-    lv_obj_t* _tabview;
     DCCExCS& _dccExCS;
 
     class WiFiUI* _wifiUI;
     class AboutUI* _aboutUI;
+    class ProgramUI* _programUI;
 
     lv_obj_t* _speedStepLbl;
     lv_obj_t* _rotationLbl;
@@ -23,9 +23,11 @@ class SettingsUI : public UIView {
     static void speed_step_event_cb(lv_event_t * e);
     static void rotation_event_cb(lv_event_t * e);
     static void storage_mode_event_cb(lv_event_t * e);
+    static void brightness_btn_event_cb(lv_event_t * e);
     static void brightness_event_cb(lv_event_t * e);
     static void wifi_setup_event_cb(lv_event_t * e);
     static void about_event_cb(lv_event_t * e);
+    static void programming_setup_event_cb(lv_event_t * e);
 
   public:
     SettingsUI(DCCExCS& dccExCS, lv_obj_t* parent);

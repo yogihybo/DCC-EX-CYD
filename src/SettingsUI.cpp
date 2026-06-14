@@ -1,85 +1,98 @@
 #include "SettingsUI.h"
 #include "WiFiUI.h"
 #include "AboutUI.h"
+#include "ProgramUI.h"
 
-SettingsUI::SettingsUI(DCCExCS& dccExCS, lv_obj_t* parent) : _dccExCS(dccExCS), _wifiUI(nullptr), _aboutUI(nullptr) {
+SettingsUI::SettingsUI(DCCExCS& dccExCS, lv_obj_t* parent) : _dccExCS(dccExCS), _wifiUI(nullptr), _aboutUI(nullptr), _programUI(nullptr) {
   _container = lv_obj_create(parent);
   lv_obj_set_size(_container, LV_PCT(100), LV_PCT(100));
   lv_obj_align(_container, LV_ALIGN_CENTER, 0, 0);
-  lv_obj_set_style_pad_all(_container, 0, 0);
+  lv_obj_set_style_pad_all(_container, 10, 0);
   lv_obj_set_style_border_width(_container, 0, 0);
-
-  _tabview = lv_tabview_create(_container);
-  lv_tabview_set_tab_bar_position(_tabview, LV_DIR_TOP);
-  lv_tabview_set_tab_bar_size(_tabview, 40);
-
-  lv_obj_t* tab1 = lv_tabview_add_tab(_tabview, "Loco");
-  lv_obj_t* tab2 = lv_tabview_add_tab(_tabview, "System");
-  lv_obj_t* tab3 = lv_tabview_add_tab(_tabview, "Conn");
-
-  // Tab 1: Loco Options
-  lv_obj_set_flex_flow(tab1, LV_FLEX_FLOW_COLUMN);
   
-  lv_obj_t* speed_btn = lv_btn_create(tab1);
+  // Set up the container as a vertically scrolling flex list
+  lv_obj_set_flex_flow(_container, LV_FLEX_FLOW_COLUMN);
+  lv_obj_set_flex_align(_container, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+
+  // Helper lambda for category headers
+  auto add_category = [this](const char* title) {
+    lv_obj_t* lbl = lv_label_create(_container);
+    lv_label_set_text_fmt(lbl, "--- %s ---", title);
+    lv_obj_set_style_text_color(lbl, lv_color_make(150, 150, 150), 0);
+    lv_obj_set_style_pad_top(lbl, 10, 0);
+    lv_obj_set_style_pad_bottom(lbl, 5, 0);
+  };
+
+  // --- LOCO OPTIONS ---
+  add_category("Locomotive");
+
+  lv_obj_t* speed_btn = lv_btn_create(_container);
   lv_obj_set_width(speed_btn, LV_PCT(100));
   _speedStepLbl = lv_label_create(speed_btn);
   lv_label_set_text_fmt(_speedStepLbl, "Speed Step: %d", Settings.LocoUI.speedStep);
   lv_obj_center(_speedStepLbl);
   lv_obj_add_event_cb(speed_btn, speed_step_event_cb, LV_EVENT_CLICKED, this);
 
-  // Tab 2: System
-  lv_obj_set_flex_flow(tab2, LV_FLEX_FLOW_COLUMN);
+  lv_obj_t* program_btn = lv_btn_create(_container);
+  lv_obj_set_width(program_btn, LV_PCT(100));
+  lv_obj_t* program_lbl = lv_label_create(program_btn);
+  lv_label_set_text(program_lbl, "Programming Setup");
+  lv_obj_center(program_lbl);
+  lv_obj_add_event_cb(program_btn, programming_setup_event_cb, LV_EVENT_CLICKED, this);
 
-  lv_obj_t* rotation_btn = lv_btn_create(tab2);
+  // --- SYSTEM OPTIONS ---
+  add_category("System");
+
+  lv_obj_t* rotation_btn = lv_btn_create(_container);
   lv_obj_set_width(rotation_btn, LV_PCT(100));
   _rotationLbl = lv_label_create(rotation_btn);
   lv_label_set_text_fmt(_rotationLbl, "Rotation: %d", Settings.rotation);
   lv_obj_center(_rotationLbl);
   lv_obj_add_event_cb(rotation_btn, rotation_event_cb, LV_EVENT_CLICKED, this);
 
-  lv_obj_t* storage_btn = lv_btn_create(tab2);
+  lv_obj_t* storage_btn = lv_btn_create(_container);
   lv_obj_set_width(storage_btn, LV_PCT(100));
   _storageModeLbl = lv_label_create(storage_btn);
   lv_label_set_text_fmt(_storageModeLbl, "Storage: %s", Settings.storageMode == SettingsClass::StorageMode::SD_CARD ? "SD Card" : "Internal");
   lv_obj_center(_storageModeLbl);
   lv_obj_add_event_cb(storage_btn, storage_mode_event_cb, LV_EVENT_CLICKED, this);
 
-  lv_obj_t* br_cont = lv_obj_create(tab2);
-  lv_obj_set_width(br_cont, LV_PCT(100));
-  lv_obj_set_height(br_cont, 80);
-  _brightnessLbl = lv_label_create(br_cont);
+  lv_obj_t* br_btn = lv_btn_create(_container);
+  lv_obj_set_width(br_btn, LV_PCT(100));
+  _brightnessLbl = lv_label_create(br_btn);
   lv_label_set_text_fmt(_brightnessLbl, "Brightness: %d%%", (Settings.brightness * 100) / 255);
-  lv_obj_align(_brightnessLbl, LV_ALIGN_TOP_MID, 0, 0);
-  lv_obj_t* br_slider = lv_slider_create(br_cont);
-  lv_obj_set_width(br_slider, 180);
-  lv_obj_align(br_slider, LV_ALIGN_BOTTOM_MID, 0, -10);
-  lv_slider_set_range(br_slider, 10, 255);
-  lv_slider_set_value(br_slider, Settings.brightness, LV_ANIM_OFF);
-  lv_obj_add_event_cb(br_slider, brightness_event_cb, LV_EVENT_VALUE_CHANGED, this);
+  lv_obj_center(_brightnessLbl);
+  lv_obj_add_event_cb(br_btn, brightness_btn_event_cb, LV_EVENT_CLICKED, this);
 
-  _pinBtn = lv_btn_create(tab2);
+  _pinBtn = lv_btn_create(_container);
   lv_obj_set_width(_pinBtn, LV_PCT(100));
   lv_obj_t* pin_lbl = lv_label_create(_pinBtn);
   lv_label_set_text(pin_lbl, Settings.pin == 0 ? "Pin: Not Set" : "Pin: Set");
   lv_obj_center(pin_lbl);
 
-  // Tab 3: Connections
-  lv_obj_set_flex_flow(tab3, LV_FLEX_FLOW_COLUMN);
+  // --- CONNECTIONS ---
+  add_category("Connections");
 
-  lv_obj_t* wifi_btn = lv_btn_create(tab3);
+  lv_obj_t* wifi_btn = lv_btn_create(_container);
   lv_obj_set_width(wifi_btn, LV_PCT(100));
   lv_obj_t* wifi_lbl = lv_label_create(wifi_btn);
   lv_label_set_text(wifi_lbl, "WiFi Setup");
   lv_obj_center(wifi_lbl);
   lv_obj_add_event_cb(wifi_btn, wifi_setup_event_cb, LV_EVENT_CLICKED, this);
 
-  _aboutUI = new AboutUI(_dccExCS, tab3);
+  lv_obj_t* about_btn = lv_btn_create(_container);
+  lv_obj_set_width(about_btn, LV_PCT(100));
+  lv_obj_t* about_lbl = lv_label_create(about_btn);
+  lv_label_set_text(about_lbl, "About EX-T3");
+  lv_obj_center(about_lbl);
+  lv_obj_add_event_cb(about_btn, about_event_cb, LV_EVENT_CLICKED, this);
 }
 
 SettingsUI::~SettingsUI() {
   Settings.save();
   if (_wifiUI) delete _wifiUI;
   if (_aboutUI) delete _aboutUI;
+  if (_programUI) delete _programUI;
   if (_container) lv_obj_del(_container);
 }
 
@@ -102,6 +115,21 @@ void SettingsUI::storage_mode_event_cb(lv_event_t * e) {
   lv_label_set_text_fmt(ui->_storageModeLbl, "Storage: %s", Settings.storageMode == SettingsClass::StorageMode::SD_CARD ? "SD Card" : "Internal");
 }
 
+void SettingsUI::brightness_btn_event_cb(lv_event_t * e) {
+  SettingsUI* ui = (SettingsUI*)lv_event_get_user_data(e);
+  
+  lv_obj_t* mbox = lv_msgbox_create(lv_layer_top());
+  lv_msgbox_add_title(mbox, "Brightness");
+  lv_msgbox_add_close_button(mbox);
+  
+  lv_obj_t* slider = lv_slider_create(mbox);
+  lv_obj_set_width(slider, LV_PCT(90));
+  lv_obj_set_style_margin_top(slider, 20, 0);
+  lv_slider_set_range(slider, 10, 255);
+  lv_slider_set_value(slider, Settings.brightness, LV_ANIM_OFF);
+  lv_obj_add_event_cb(slider, brightness_event_cb, LV_EVENT_VALUE_CHANGED, ui);
+}
+
 void SettingsUI::brightness_event_cb(lv_event_t * e) {
   SettingsUI* ui = (SettingsUI*)lv_event_get_user_data(e);
   lv_obj_t* slider = (lv_obj_t*)lv_event_get_target(e);
@@ -113,7 +141,7 @@ void SettingsUI::brightness_event_cb(lv_event_t * e) {
 void SettingsUI::wifi_setup_event_cb(lv_event_t * e) {
   SettingsUI* ui = (SettingsUI*)lv_event_get_user_data(e);
   if (!ui->_wifiUI) {
-      ui->_wifiUI = new WiFiUI(ui->_container);
+      ui->_wifiUI = new WiFiUI(lv_layer_top());
   } else {
       lv_obj_clear_flag(ui->_wifiUI->getContainer(), LV_OBJ_FLAG_HIDDEN);
   }
@@ -126,4 +154,12 @@ void SettingsUI::about_event_cb(lv_event_t * e) {
   }
   // Use lv_layer_top() to guarantee it completely covers the full width of the screen over the header
   ui->_aboutUI = new AboutUI(ui->_dccExCS, lv_layer_top());
+}
+
+void SettingsUI::programming_setup_event_cb(lv_event_t * e) {
+  SettingsUI* ui = (SettingsUI*)lv_event_get_user_data(e);
+  if (ui->_programUI) {
+      delete ui->_programUI;
+  }
+  ui->_programUI = new ProgramUI(ui->_dccExCS, lv_layer_top());
 }

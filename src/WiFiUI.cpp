@@ -6,8 +6,7 @@ WiFiUI::WiFiUI(lv_obj_t* parent) : server(80) {
   lv_obj_align(_container, LV_ALIGN_CENTER, 0, 0);
   lv_obj_set_style_pad_all(_container, 0, 0);
   lv_obj_set_style_border_width(_container, 0, 0);
-  lv_obj_set_style_bg_color(_container, lv_color_make(30, 30, 30), 0); // Opaque background
-  lv_obj_set_style_bg_opa(_container, LV_OPA_COVER, 0);
+
 
   WiFi.mode(WIFI_AP_STA);
   WiFi.softAP(Settings.AP.SSID.c_str(), Settings.AP.password.c_str());
@@ -63,6 +62,7 @@ WiFiUI::WiFiUI(lv_obj_t* parent) : server(80) {
   
   lv_obj_t* l2 = lv_label_create(_container); lv_label_set_text(l2, "Password:");
   _textareaPassword = create_textarea("Password", Settings.CS.password().c_str(), 1);
+  lv_textarea_set_password_mode(_textareaPassword, true);
   
   lv_obj_t* l3 = lv_label_create(_container); lv_label_set_text(l3, "Server IP:");
   _textareaServer = create_textarea("Server IP", Settings.CS.server().c_str(), 2);
@@ -74,7 +74,8 @@ WiFiUI::WiFiUI(lv_obj_t* parent) : server(80) {
   lv_label_set_text(_labelIP, WiFi.isConnected() ? String("IP: " + WiFi.localIP().toString()).c_str() : "IP: Not Connected");
 
   lv_obj_t* ap_lbl = lv_label_create(_container);
-  lv_label_set_text_fmt(ap_lbl, "AP: %s | Pw: %s", Settings.AP.SSID.c_str(), Settings.AP.password.c_str());
+  lv_label_set_text_fmt(ap_lbl, "AP: %s\nPw: %s", Settings.AP.SSID.c_str(), Settings.AP.password.c_str());
+  lv_obj_set_style_text_align(ap_lbl, LV_TEXT_ALIGN_CENTER, 0);
 
   _qr = lv_qrcode_create(_container);
   lv_qrcode_set_size(_qr, 100);
@@ -84,7 +85,7 @@ WiFiUI::WiFiUI(lv_obj_t* parent) : server(80) {
   String qr_data = "WIFI:S:" + Settings.AP.SSID + ";T:WPA;P:" + Settings.AP.password + ";;";
   lv_qrcode_update(_qr, qr_data.c_str(), qr_data.length());
 
-  _keyboard = lv_keyboard_create(lv_scr_act());
+  _keyboard = lv_keyboard_create(lv_layer_top());
   lv_obj_add_flag(_keyboard, LV_OBJ_FLAG_HIDDEN);
   lv_obj_add_event_cb(_keyboard, kb_event_cb, LV_EVENT_ALL, this);
 

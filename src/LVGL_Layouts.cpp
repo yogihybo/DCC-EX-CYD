@@ -1,5 +1,6 @@
 #include "LVGL_Layouts.h"
 #include "train_icon.h"
+#include "dcc_icon.h"
 
 SemaphoreHandle_t lvgl_mutex = NULL;
 
@@ -12,7 +13,7 @@ lv_obj_t* pwr_tab;
 lv_obj_t* set_tab;
 
 static lv_obj_t* wifi_label;
-static lv_obj_t* cs_label;
+static lv_obj_t* cs_icon;
 static lv_obj_t* power_label;
 static lv_obj_t* loco_label;
 
@@ -43,20 +44,20 @@ void setup_lvgl_layouts() {
     lv_obj_set_style_bg_opa(loco_group, 0, 0);
     lv_obj_set_flex_flow(loco_group, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(loco_group, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_pad_column(loco_group, 5, 0); // Tighter gap
+    lv_obj_set_style_pad_column(loco_group, 0, 0); // Tighter gap
     lv_obj_clear_flag(loco_group, LV_OBJ_FLAG_SCROLLABLE);
 
     lv_obj_t* train_img = lv_image_create(loco_group);
     lv_image_set_src(train_img, &train_icon);
-    lv_obj_set_style_text_color(train_img, lv_color_make(255, 255, 255), 0);
     lv_obj_set_style_pad_left(train_img, 10, 0);
 
     loco_label = lv_label_create(loco_group);
     lv_label_set_text(loco_label, "0");
 
-    cs_label = lv_label_create(header_bar);
-    lv_label_set_text(cs_label, LV_SYMBOL_LOOP);
-    lv_obj_set_style_text_color(cs_label, lv_color_make(255, 0, 0), 0);
+    cs_icon = lv_image_create(header_bar);
+    lv_image_set_src(cs_icon, &dcc_icon);
+    lv_obj_set_style_image_recolor_opa(cs_icon, LV_OPA_COVER, 0);
+    lv_obj_set_style_image_recolor(cs_icon, lv_color_make(255, 0, 0), 0);
 
     lv_obj_t* spacer = lv_obj_create(header_bar);
     lv_obj_set_height(spacer, 0);
@@ -98,20 +99,33 @@ void set_header_loco_count(int count) {
     if (loco_label) lv_label_set_text_fmt(loco_label, "%d", count);
 }
 
-void set_header_wifi_status(bool connected) {
+void set_header_wifi_status(bool connected, int rssi) {
     if (wifi_label) {
         lv_label_set_text(wifi_label, LV_SYMBOL_WIFI);
-        lv_obj_set_style_text_color(wifi_label, connected ? lv_color_make(0, 255, 0) : lv_color_make(255, 0, 0), 0);
+        if (!connected) {
+            lv_obj_set_style_text_color(wifi_label, lv_color_make(255, 0, 0), 0);
+        } else {
+            if (rssi > -60) lv_obj_set_style_text_color(wifi_label, lv_color_make(50, 255, 50), 0);
+            else if (rssi > -80) lv_obj_set_style_text_color(wifi_label, lv_color_make(255, 255, 50), 0);
+            else lv_obj_set_style_text_color(wifi_label, lv_color_make(255, 50, 50), 0);
+        }
     }
 }
 
 void set_header_cs_status(bool connected) {
-    if (cs_label) {
-        lv_label_set_text(cs_label, LV_SYMBOL_LOOP);
-        lv_obj_set_style_text_color(cs_label, connected ? lv_color_make(0, 255, 0) : lv_color_make(255, 0, 0), 0);
+    if (cs_icon) {
+        lv_obj_set_style_image_recolor(cs_icon, connected ? lv_color_make(0, 255, 0) : lv_color_make(255, 0, 0), 0);
     }
 }
 
 void set_header_power_status(float voltage) {
-    if (power_label) lv_label_set_text_fmt(power_label, LV_SYMBOL_BATTERY_FULL " %.2fV", voltage);
+    if (power_label) {
+        const char* sym = LV_SYMBOL_BATTERY_EMPTY;
+        if (voltage >= 4.10) sym = LV_SYMBOL_BATTERY_FULL;
+        else if (voltage >= 3.90) sym = LV_SYMBOL_BATTERY_3;
+        else if (voltage >= 3.75) sym = LV_SYMBOL_BATTERY_2;
+        else if (voltage >= 3.60) sym = LV_SYMBOL_BATTERY_1;
+        
+        lv_label_set_text_fmt(power_label, "%s %.2fV", sym, voltage);
+    }
 }
