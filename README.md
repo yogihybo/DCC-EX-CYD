@@ -23,10 +23,10 @@ The firmware uses **FreeRTOS** and **LVGL 9** to provide a robust and clean UI
 
 ## Core Architecture & Key Functions
 
-The system is constructed around a single, persistent root layout. The core UI modules are instantiated once into memory during boot, completely eliminating visual teardowns, loading flickers, and latency. 
+The system is constructed around a single, persistent root layout. The core UI modules are loaded once into memory during boot, completely eliminating visual teardowns, loading flickers, and latency. 
 
 ### 1. System Initialization & Concurrency (`main.cpp`)
-The absolute root of the firmware. 
+The entry point of the firmware. 
 - Initializes the ESP32 hardware, the TFT/CYD drivers, and LVGL.
 - Spawns asynchronous FreeRTOS background tasks (`keepWiFiAlive`, `powerCheck`).
 - Intercepts incoming network streams from `AsyncTCP` and routes DCC-EX packets.
@@ -34,7 +34,7 @@ The absolute root of the firmware.
 
 ### 2. Global View Manager (`LVGL_Layouts.cpp / .h`)
 Replaces the legacy view-swapper with a unified native LVGL container system.
-- **Top Status Bar**: Displays real-time battery voltage, WiFi state, Command Station connection, and active locomotive count utilizing dynamic LVGL symbolic icons (`LV_SYMBOL_WIFI`, `LV_SYMBOL_BATTERY_FULL`, etc).
+- **Top Status Bar**: Displays real-time battery voltage, WiFi state, Command Station connection, and active locomotive count utilizing dynamic LVGL symbolic icons (`LV_SYMBOL_WIFI`, `LV_SYMBOL_BATTERY_FULL`, custom Loco and DCC connection icons).
 - **Navigation**: Deploys an `lv_tabview` anchored to the bottom of the screen. It seamlessly hosts the 4 permanent sub-applications, enabling native physical swiping between them.
 
 ### 3. Loco Control (`LocoUI.cpp`)
@@ -51,9 +51,8 @@ A fast-access manager for layout turnouts and switch machines. Tapping ON/OFF dy
 Binds natively to incoming `BROADCAST_POWER` events from the Command Station. Features tactile toggle switches to safely manipulate power across the Main Track, Programming Track, or electronically join them together.
 
 ### 6. Settings & Network Hub (`SettingsUI.cpp`)
-The central configuration layer, structured as its own nested `lv_tabview`.
 - Controls hardware variables like screen brightness (hooked directly into the CYD backlight driver).
-- **Nested Popups**: Contains heavy-duty sub-modules (`WiFiUI.cpp` and `AboutUI.cpp`) that dynamically spawn as opaque overlays over the settings UI. `WiFiUI` renders local AP configuration portals or QR codes, while `AboutUI` cleanly tracks live hardware specs and parses Command Station firmware hashes.
+- **Nested Popups**: Contains heavy-duty sub-modules (`WiFiUI.cpp` and `AboutUI.cpp`) that dynamically popul over the settings UI. `WiFiUI` renders local AP configuration portals or QR codes, while `AboutUI` cleanly tracks live hardware specs and parses Command Station firmware hashes.
 
 ---
 
@@ -83,7 +82,7 @@ For this reason, **SD Card functionality is currently disabled/unsupported** on 
 
 Generating and importing custom icons into this project requires specific formatting to work properly with LVGL 9 and the C++ linker:
 
-1. **Size Constraints**: Size your icon appropriately (e.g., `30x30` pixels) *before* converting it. Do not rely on runtime `lv_image_set_scale` for small status bar icons, as it is computationally expensive and can lead to visual artifacts.
+1. **Size Constraints**: Size your icon appropriately (status bar 21x21 pixels, elsewhere 30x30 pixels) *before* converting it. Do not rely on runtime `lv_image_set_scale` for small status bar icons, as it is computationally expensive and can lead to visual artifacts.
 2. **Format Generation**: Use an image converter (like the [LVGL Online Image Converter](https://lvgl.github.io/lv_img_conv/)) or generate the C array directly. 
    - Use `LV_COLOR_FORMAT_ARGB8888` for full-color images with transparency.
    - Use `LV_COLOR_FORMAT_A8` (Alpha 8-bit) if you want to dynamically tint/recolor the image at runtime using `lv_obj_set_style_image_recolor()`. This format treats the array as a transparency mask rather than literal color data.
