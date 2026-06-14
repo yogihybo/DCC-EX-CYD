@@ -44,6 +44,13 @@ SettingsUI::SettingsUI(DCCExCS& dccExCS, lv_obj_t* parent) : _dccExCS(dccExCS), 
   // --- SYSTEM OPTIONS ---
   add_category("System");
 
+  lv_obj_t* theme_btn = lv_btn_create(_container);
+  lv_obj_set_width(theme_btn, LV_PCT(100));
+  _themeLbl = lv_label_create(theme_btn);
+  lv_label_set_text_fmt(_themeLbl, "Theme: %s", Settings.theme == SettingsClass::Theme::DARK ? "Dark" : "Light");
+  lv_obj_center(_themeLbl);
+  lv_obj_add_event_cb(theme_btn, theme_event_cb, LV_EVENT_CLICKED, this);
+
   lv_obj_t* rotation_btn = lv_btn_create(_container);
   lv_obj_set_width(rotation_btn, LV_PCT(100));
   _rotationLbl = lv_label_create(rotation_btn);
@@ -105,12 +112,22 @@ void SettingsUI::speed_step_event_cb(lv_event_t * e) {
   SettingsUI* ui = (SettingsUI*)lv_event_get_user_data(e);
   if (++Settings.LocoUI.speedStep > 2) Settings.LocoUI.speedStep = 0;
   lv_label_set_text_fmt(ui->_speedStepLbl, "Throttle Speed Step: %d", Settings.LocoUI.speedStep);
+  Settings.save();
+}
+
+void SettingsUI::theme_event_cb(lv_event_t * e) {
+  SettingsUI* ui = (SettingsUI*)lv_event_get_user_data(e);
+  Settings.theme = (Settings.theme == SettingsClass::Theme::DARK) ? SettingsClass::Theme::LIGHT : SettingsClass::Theme::DARK;
+  lv_label_set_text_fmt(ui->_themeLbl, "Theme: %s", Settings.theme == SettingsClass::Theme::DARK ? "Dark" : "Light");
+  Settings.save();
+  Settings.dispatchEvent(SettingsClass::Event::THEME_CHANGE);
 }
 
 void SettingsUI::rotation_event_cb(lv_event_t * e) {
   SettingsUI* ui = (SettingsUI*)lv_event_get_user_data(e);
   if (++Settings.rotation > 2) Settings.rotation = 0;
   lv_label_set_text_fmt(ui->_rotationLbl, "Rotation: %d", Settings.rotation);
+  Settings.save();
   Settings.dispatchEvent(SettingsClass::Event::ROTATION_CHANGE);
 }
 
@@ -180,7 +197,7 @@ void SettingsUI::brightness_btn_event_cb(lv_event_t * e) {
   lv_msgbox_add_close_button(mbox);
   
   lv_obj_t* slider = lv_slider_create(mbox);
-  lv_obj_set_width(slider, LV_PCT(90));
+  lv_obj_set_width(slider, 180);
   lv_obj_set_style_margin_top(slider, 20, 0);
   lv_slider_set_range(slider, 10, 255);
   lv_slider_set_value(slider, Settings.brightness, LV_ANIM_OFF);
@@ -192,6 +209,7 @@ void SettingsUI::brightness_event_cb(lv_event_t * e) {
   lv_obj_t* slider = (lv_obj_t*)lv_event_get_target(e);
   Settings.brightness = lv_slider_get_value(slider);
   lv_label_set_text_fmt(ui->_brightnessLbl, "Brightness: %d%%", (Settings.brightness * 100) / 255);
+  Settings.save();
   Settings.dispatchEvent(SettingsClass::Event::BRIGHTNESS_CHANGE);
 }
 

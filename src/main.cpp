@@ -11,6 +11,7 @@
 #include <ThrottleServer.h>
 
 #include "LVGL_Layouts.h"
+#include "lv_port_fs.h"
 
 #include "LocoUI.h"
 #include "AccessoriesUI.h"
@@ -95,6 +96,9 @@ void setup() {
 
   // Initialize LVGL_CYD framework (handles Display, Touch, Backlight)
   LVGL_CYD::begin(USB_DOWN);
+  
+  // Initialize LVGL file system driver
+  lv_port_fs_init();
 
   setup_lvgl_layouts();
 
@@ -105,6 +109,11 @@ void setup() {
 
   // Load the settings
   Settings.load();
+
+  apply_theme();
+  Settings.addEventListener(SettingsClass::Event::THEME_CHANGE, [](void*) {
+      apply_theme();
+  });
 
   apply_rotation();
   Settings.addEventListener(SettingsClass::Event::ROTATION_CHANGE, [](void*) {

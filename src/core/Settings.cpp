@@ -22,6 +22,7 @@ void SettingsClass::load() {
 
     rotation = doc["rotation"] | rotation;
     storageMode = doc["storageMode"] | storageMode;
+    theme = doc["theme"] | theme;
     brightness = doc["brightness"] | brightness;
     pin = doc["pin"] | pin;
     emergencyStop = doc["emergencyStop"] | emergencyStop;
@@ -40,6 +41,7 @@ void SettingsClass::save() {
   doc["version"] = version;
   doc["rotation"] = rotation;
   doc["storageMode"] = storageMode;
+  doc["theme"] = theme;
   doc["brightness"] = brightness;
   doc["pin"] = pin;
   doc["emergencyStop"] = emergencyStop;

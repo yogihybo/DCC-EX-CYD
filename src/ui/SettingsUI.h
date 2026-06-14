@@ -16,6 +16,7 @@ class SettingsUI : public UIView {
 
     lv_obj_t* _speedStepLbl;
     lv_obj_t* _rotationLbl;
+    lv_obj_t* _themeLbl;
     lv_obj_t* _storageModeLbl;
 
     lv_obj_t* _brightnessLbl;
@@ -23,6 +24,7 @@ class SettingsUI : public UIView {
 
     static void speed_step_event_cb(lv_event_t * e);
     static void rotation_event_cb(lv_event_t * e);
+    static void theme_event_cb(lv_event_t * e);
     static void storage_mode_event_cb(lv_event_t * e);
     static void sd_format_event_cb(lv_event_t * e);
     static void sd_format_confirm_event_cb(lv_event_t * e);

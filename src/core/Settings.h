@@ -17,6 +17,7 @@ class SettingsClass : public Events {
       static constexpr uint8_t CS_CHANGE = 0;
       static constexpr uint8_t ROTATION_CHANGE = 1;
       static constexpr uint8_t BRIGHTNESS_CHANGE = 2;
+      static constexpr uint8_t THEME_CHANGE = 3;
     };
     struct Rotation {
       static constexpr uint8_t STANDARD = 0;
@@ -27,10 +28,15 @@ class SettingsClass : public Events {
       static constexpr uint8_t SPIFFS = 0;
       static constexpr uint8_t SD_CARD = 1;
     };
+    struct Theme {
+      static constexpr uint8_t LIGHT = 0;
+      static constexpr uint8_t DARK = 1;
+    };
 
     uint32_t version = 0;
     uint8_t rotation = Rotation::STANDARD;
     uint8_t storageMode = StorageMode::SPIFFS;
+    uint8_t theme = Theme::DARK;
     uint8_t brightness = 255;
     uint32_t pin = 0;
     uint16_t emergencyStop = 2000;

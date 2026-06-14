@@ -70,10 +70,13 @@ void LocoUI::broadcast(void* parameter) {
 
 void LocoUI::buildSelectionMenu() {
     _selectionMenu = lv_obj_create(_container);
-    lv_obj_set_size(_selectionMenu, LV_PCT(100), LV_PCT(100));
+    lv_obj_set_size(_selectionMenu, LV_PCT(90), LV_PCT(90));
     lv_obj_align(_selectionMenu, LV_ALIGN_CENTER, 0, 0);
     lv_obj_set_style_pad_all(_selectionMenu, 0, 0);
     lv_obj_set_style_border_width(_selectionMenu, 0, 0);
+    lv_obj_set_style_radius(_selectionMenu, 12, 0);
+    lv_obj_set_style_shadow_width(_selectionMenu, 30, 0);
+    lv_obj_set_style_shadow_opa(_selectionMenu, LV_OPA_50, 0);
     lv_obj_add_flag(_selectionMenu, LV_OBJ_FLAG_HIDDEN); // Hidden by default
 
     // Title Row
@@ -97,24 +100,24 @@ void LocoUI::buildSelectionMenu() {
     lv_obj_add_event_cb(close_btn, close_selection_event_cb, LV_EVENT_CLICKED, this);
 
     lv_obj_t* btn_addr = lv_btn_create(_selectionMenu);
-    lv_obj_set_size(btn_addr, 200, 50);
-    lv_obj_align(btn_addr, LV_ALIGN_TOP_MID, 0, 60);
+    lv_obj_set_size(btn_addr, 200, 40);
+    lv_obj_align(btn_addr, LV_ALIGN_TOP_MID, 0, 50);
     lv_obj_t* lbl_addr = lv_label_create(btn_addr);
     lv_label_set_text(lbl_addr, "By Address");
     lv_obj_center(lbl_addr);
     lv_obj_add_event_cb(btn_addr, addr_btn_event_cb, LV_EVENT_CLICKED, this);
 
     lv_obj_t* btn_name = lv_btn_create(_selectionMenu);
-    lv_obj_set_size(btn_name, 200, 50);
-    lv_obj_align(btn_name, LV_ALIGN_TOP_MID, 0, 120);
+    lv_obj_set_size(btn_name, 200, 40);
+    lv_obj_align(btn_name, LV_ALIGN_TOP_MID, 0, 100);
     lv_obj_t* lbl_name = lv_label_create(btn_name);
     lv_label_set_text(lbl_name, "By Name");
     lv_obj_center(lbl_name);
     lv_obj_add_event_cb(btn_name, name_btn_event_cb, LV_EVENT_CLICKED, this);
 
     lv_obj_t* btn_group = lv_btn_create(_selectionMenu);
-    lv_obj_set_size(btn_group, 200, 50);
-    lv_obj_align(btn_group, LV_ALIGN_TOP_MID, 0, 180);
+    lv_obj_set_size(btn_group, 200, 40);
+    lv_obj_align(btn_group, LV_ALIGN_TOP_MID, 0, 150);
     lv_obj_t* lbl_group = lv_label_create(btn_group);
     lv_label_set_text(lbl_group, "By Group");
     lv_obj_center(lbl_group);
@@ -267,6 +270,7 @@ void LocoUI::buildFunctionButtons() {
             uint8_t func = fn["fn"];
             bool latching = fn["latching"] | true;
             const char* label = fn["btn"]["idle"]["label"].as<const char*>();
+            const char* icon = fn["btn"]["idle"]["icon"].as<const char*>();
             
             lv_obj_t* btn = lv_btn_create(_container);
             lv_obj_set_size(btn, 42, 30);
@@ -274,13 +278,38 @@ void LocoUI::buildFunctionButtons() {
             if (latching) lv_obj_add_flag(btn, LV_OBJ_FLAG_CHECKABLE);
             if (_loco.functions.test(func)) lv_obj_add_state(btn, LV_STATE_CHECKED);
 
-            lv_obj_t* lbl = lv_label_create(btn);
-            lv_label_set_text_fmt(lbl, "F%d", func); // Fallback to F%d
-            if (label) {
-                // If it's a known symbol or short text, we can use it
-                lv_label_set_text(lbl, label); 
+            if (icon && strlen(icon) > 0) {
+                lv_obj_t* img = lv_image_create(btn);
+                // The icon is stored as "/icons/something.bmp", so we prepend the S: drive letter
+                String iconPath = "S:";
+                iconPath += icon;
+                // lv_image_set_src requires a string that lives as long as the image.
+                // We must allocate it or since we are reading it from file, LVGL creates a copy?
+                // Wait, LVGL in v9 requires a permanent buffer for the path string if passed as const char*.
+                // To be safe, we should allocate memory for the path and attach it as user_data.
+                // Or better, since `String` goes out of scope, use malloc or a static buffer?
+                // `icon` pointer from ArduinoJson is valid as long as `_locoDoc` is valid!
+                // So we can format the string using an allocated buffer.
+                char* pathBuf = (char*)malloc(strlen(icon) + 3);
+                strcpy(pathBuf, "S:");
+                strcat(pathBuf, icon);
+                lv_image_set_src(img, pathBuf);
+                lv_obj_center(img);
+                
+                // Add an event to free the memory when the button is deleted
+                lv_obj_add_event_cb(img, [](lv_event_t* e) {
+                    char* buf = (char*)lv_event_get_user_data(e);
+                    if (buf) free(buf);
+                }, LV_EVENT_DELETE, pathBuf);
+            } else {
+                lv_obj_t* lbl = lv_label_create(btn);
+                if (label && strlen(label) > 0) {
+                    lv_label_set_text(lbl, label); 
+                } else {
+                    lv_label_set_text_fmt(lbl, "F%d", func); // Fallback to F%d
+                }
+                lv_obj_center(lbl);
             }
-            lv_obj_center(lbl);
 
             lv_obj_set_user_data(btn, (void*)(uintptr_t)func);
             lv_obj_add_event_cb(btn, fn_btn_event_cb, LV_EVENT_VALUE_CHANGED, this);
@@ -434,10 +463,13 @@ void LocoUI::name_btn_event_cb(lv_event_t * e) {
     }
 
     ui->_nameMenu = lv_obj_create(ui->_container);
-    lv_obj_set_size(ui->_nameMenu, LV_PCT(100), LV_PCT(100));
+    lv_obj_set_size(ui->_nameMenu, LV_PCT(90), LV_PCT(90));
     lv_obj_align(ui->_nameMenu, LV_ALIGN_CENTER, 0, 0);
     lv_obj_set_style_pad_all(ui->_nameMenu, 0, 0);
     lv_obj_set_style_border_width(ui->_nameMenu, 0, 0);
+    lv_obj_set_style_radius(ui->_nameMenu, 12, 0);
+    lv_obj_set_style_shadow_width(ui->_nameMenu, 30, 0);
+    lv_obj_set_style_shadow_opa(ui->_nameMenu, LV_OPA_50, 0);
     lv_obj_set_flex_flow(ui->_nameMenu, LV_FLEX_FLOW_COLUMN);
 
     lv_obj_t* title_row = lv_obj_create(ui->_nameMenu);
@@ -537,10 +569,13 @@ void LocoUI::group_btn_event_cb(lv_event_t * e) {
     }
 
     ui->_nameMenu = lv_obj_create(ui->_container);
-    lv_obj_set_size(ui->_nameMenu, LV_PCT(100), LV_PCT(100));
+    lv_obj_set_size(ui->_nameMenu, LV_PCT(90), LV_PCT(90));
     lv_obj_align(ui->_nameMenu, LV_ALIGN_CENTER, 0, 0);
     lv_obj_set_style_pad_all(ui->_nameMenu, 0, 0);
     lv_obj_set_style_border_width(ui->_nameMenu, 0, 0);
+    lv_obj_set_style_radius(ui->_nameMenu, 12, 0);
+    lv_obj_set_style_shadow_width(ui->_nameMenu, 30, 0);
+    lv_obj_set_style_shadow_opa(ui->_nameMenu, LV_OPA_50, 0);
     lv_obj_set_flex_flow(ui->_nameMenu, LV_FLEX_FLOW_COLUMN);
 
     lv_obj_t* title_row = lv_obj_create(ui->_nameMenu);

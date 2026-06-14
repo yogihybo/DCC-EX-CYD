@@ -16,6 +16,25 @@ static lv_obj_t* wifi_label;
 static lv_obj_t* cs_icon;
 static lv_obj_t* power_label;
 static lv_obj_t* loco_label;
+static lv_obj_t* train_img;
+
+#include <Settings.h>
+
+void apply_theme() {
+    bool is_dark = (Settings.theme == SettingsClass::Theme::DARK);
+    lv_disp_t * disp = lv_disp_get_default();
+    lv_theme_t * th = lv_theme_default_init(disp, 
+        lv_color_make(50, 150, 255),  /* Palette primary */
+        lv_color_make(255, 50, 50),   /* Palette secondary */
+        is_dark, 
+        &lv_font_montserrat_14);
+    lv_disp_set_theme(disp, th);
+
+    if (train_img) {
+        lv_obj_set_style_image_recolor_opa(train_img, LV_OPA_COVER, 0);
+        lv_obj_set_style_image_recolor(train_img, is_dark ? lv_color_make(255, 255, 255) : lv_color_make(0, 0, 0), 0);
+    }
+}
 
 void setup_lvgl_layouts() {
     lvgl_mutex = xSemaphoreCreateMutex();
@@ -47,7 +66,7 @@ void setup_lvgl_layouts() {
     lv_obj_set_style_pad_column(loco_group, 0, 0); // Tighter gap
     lv_obj_clear_flag(loco_group, LV_OBJ_FLAG_SCROLLABLE);
 
-    lv_obj_t* train_img = lv_image_create(loco_group);
+    train_img = lv_image_create(loco_group);
     lv_image_set_src(train_img, &train_icon);
     lv_obj_set_style_pad_left(train_img, 10, 0);
 
