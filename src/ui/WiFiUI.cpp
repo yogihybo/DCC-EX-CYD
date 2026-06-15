@@ -1,6 +1,6 @@
 #include "WiFiUI.h"
 
-WiFiUI::WiFiUI(lv_obj_t* parent) : server(80) {
+WiFiUI::WiFiUI(lv_obj_t* parent) {
   _container = lv_obj_create(parent);
   lv_obj_set_size(_container, LV_PCT(100), LV_PCT(100));
   lv_obj_align(_container, LV_ALIGN_CENTER, 0, 0);
@@ -11,7 +11,7 @@ WiFiUI::WiFiUI(lv_obj_t* parent) : server(80) {
   WiFi.mode(WIFI_AP_STA);
   WiFi.softAP(Settings.AP.SSID.c_str(), Settings.AP.password.c_str());
   dns.start(53, Settings.AP.SSID.c_str(), WiFi.softAPIP());
-  server.begin();
+
 
   _ipGotHandler = WiFi.onEvent([this](WiFiEvent_t event, WiFiEventInfo_t info) {
     if (_labelIP) lv_label_set_text_fmt(_labelIP, "IP: %s", WiFi.localIP().toString().c_str());
@@ -96,7 +96,7 @@ WiFiUI::~WiFiUI() {
   lv_timer_del(_loop_timer);
   WiFi.mode(WIFI_STA);
   dns.stop();
-  server.end();
+
   WiFi.removeEvent(_ipGotHandler);
   WiFi.removeEvent(_ipDisconnectedHandler);
   Settings.removeEventListener(SettingsClass::Event::CS_CHANGE, _updatedHandler);

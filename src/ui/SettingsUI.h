@@ -23,6 +23,7 @@ class SettingsUI : public UIView {
 
     lv_obj_t* _brightnessLbl;
     lv_obj_t* _formatMsgbox = nullptr;
+    lv_obj_t* _calMsgbox = nullptr;
 
     static void speed_step_event_cb(lv_event_t * e);
     static void rotation_event_cb(lv_event_t * e);

@@ -256,19 +256,62 @@ void SettingsUI::programming_setup_event_cb(lv_event_t * e) {
 
 void SettingsUI::calibrate_event_cb(lv_event_t * e) {
   SettingsUI* ui = (SettingsUI*)lv_event_get_user_data(e);
-  if (!ui->_calibrationUI) {
-      ui->_calibrationUI = new CalibrationUI();
-  }
-  ui->_calibrationUI->show();
+  if (ui->_calMsgbox) return; // Prevent multiple dialogs
+  
+  ui->_calMsgbox = lv_msgbox_create(lv_layer_top());
+  lv_msgbox_add_title(ui->_calMsgbox, "Touch Calibration");
+  lv_msgbox_add_text(ui->_calMsgbox, "You are about to recalibrate the touchscreen.\n\nUse a stylus or pen to precisely tap the targets.\nIncorrect calibration will make the screen unusable!");
+  
+  lv_obj_t* start_btn = lv_msgbox_add_footer_button(ui->_calMsgbox, "Start");
+  lv_obj_add_event_cb(start_btn, [](lv_event_t* e) {
+      SettingsUI* ui = (SettingsUI*)lv_event_get_user_data(e);
+      if (ui->_calMsgbox) {
+          lv_msgbox_close(ui->_calMsgbox);
+          ui->_calMsgbox = nullptr;
+      }
+      if (!ui->_calibrationUI) {
+          ui->_calibrationUI = new CalibrationUI();
+      }
+      ui->_calibrationUI->show();
+  }, LV_EVENT_CLICKED, ui);
+  
+  lv_obj_t* cancel_btn = lv_msgbox_add_footer_button(ui->_calMsgbox, "Cancel");
+  lv_obj_add_event_cb(cancel_btn, [](lv_event_t* e) {
+      SettingsUI* ui = (SettingsUI*)lv_event_get_user_data(e);
+      if (ui->_calMsgbox) {
+          lv_msgbox_close(ui->_calMsgbox);
+          ui->_calMsgbox = nullptr;
+      }
+  }, LV_EVENT_CLICKED, ui);
+  
+  lv_obj_center(ui->_calMsgbox);
 }
 
 static void screenshot_timer_cb(lv_timer_t* timer) {
   lv_timer_del(timer);
-  bool success = saveScreenshot("/screenshot.bmp");
+  
+  static int counter = 1;
+  char filename[32];
+  snprintf(filename, sizeof(filename), "/screenshot_%d.bmp", counter);
+  
+  // Find the next available sequential filename
+  while(SD.exists(filename)) {
+      counter++;
+      snprintf(filename, sizeof(filename), "/screenshot_%d.bmp", counter);
+  }
+
+  bool success = saveScreenshot(filename);
   
   lv_obj_t* mbox = lv_msgbox_create(lv_layer_top());
   lv_msgbox_add_title(mbox, success ? "Screenshot Saved" : "Screenshot Failed");
-  lv_msgbox_add_text(mbox, success ? "Screenshot saved to /screenshot.bmp" : "Failed to save screenshot. Check SD Card.");
+  
+  char msg[64];
+  if (success) {
+      snprintf(msg, sizeof(msg), "Screenshot saved to %s", filename);
+  } else {
+      snprintf(msg, sizeof(msg), "Failed to save screenshot. Check SD Card.");
+  }
+  lv_msgbox_add_text(mbox, msg);
   
   lv_obj_t* ok_btn = lv_msgbox_add_footer_button(mbox, "OK");
   lv_obj_add_event_cb(ok_btn, [](lv_event_t* e) {

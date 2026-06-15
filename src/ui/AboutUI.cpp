@@ -36,40 +36,49 @@ AboutUI::AboutUI(DCCExCS& dccExCS, lv_obj_t* parent) : _dccExCS(dccExCS) {
   lv_obj_center(close_lbl);
   lv_obj_add_event_cb(close_btn, close_btn_event_cb, LV_EVENT_CLICKED, this);
 
+  // Scrollable Content Area
+  lv_obj_t* content = lv_obj_create(_container);
+  lv_obj_set_width(content, LV_PCT(100));
+  lv_obj_set_flex_grow(content, 1); // Take up remaining height
+  lv_obj_set_style_pad_all(content, 5, 0);
+  lv_obj_set_style_border_width(content, 0, 0);
+  lv_obj_set_flex_flow(content, LV_FLEX_FLOW_COLUMN);
+  lv_obj_set_style_pad_row(content, 2, 0);
+
 #if LV_USE_FONT_MONTSERRAT_12
-  lv_obj_set_style_text_font(_container, &lv_font_montserrat_12, 0);
+  lv_obj_set_style_text_font(content, &lv_font_montserrat_12, 0);
 #endif
 
   // Content
   String version("T3-EX-WiFi Version: ");
   version += T3_VERSION_MAJOR; version += "."; version += T3_VERSION_MINOR; version += "."; version += T3_VERSION_PATCH;
-  lv_obj_t* t3_ver = lv_label_create(_container);
+  lv_obj_t* t3_ver = lv_label_create(content);
   lv_label_set_text(t3_ver, version.c_str());
 
-  lv_obj_t* platform_lbl = lv_label_create(_container);
+  lv_obj_t* platform_lbl = lv_label_create(content);
   lv_label_set_text_fmt(platform_lbl, "Platform: ESP32 (%s)", ESP.getChipModel());
 
-  _memLbl = lv_label_create(_container);
+  _memLbl = lv_label_create(content);
   lv_label_set_text_fmt(_memLbl, "Free RAM: %d KB", ESP.getFreeHeap() / 1024);
 
   // WiFi Status
-  _wifiStat = lv_label_create(_container);
+  _wifiStat = lv_label_create(content);
   if (WiFi.status() == WL_CONNECTED) {
       lv_label_set_text_fmt(_wifiStat, "WiFi: Connected\nIP: %s", WiFi.localIP().toString().c_str());
   } else {
       lv_label_set_text(_wifiStat, "WiFi: Disconnected");
   }
 
-  lv_obj_t* apStat = lv_label_create(_container);
+  lv_obj_t* apStat = lv_label_create(content);
   lv_label_set_text_fmt(apStat, "AP Name: %s\nAP Password: %s", Settings.AP.SSID.c_str(), Settings.AP.password.c_str());
 
   // SD Card Info
-  lv_obj_t* sd_title = lv_label_create(_container);
+  lv_obj_t* sd_title = lv_label_create(content);
   lv_label_set_text(sd_title, "SD Card Info");
   lv_obj_set_style_text_color(sd_title, lv_color_make(52, 204, 211), 0); // Cyan color
   lv_obj_set_style_pad_top(sd_title, 10, 0);
 
-  lv_obj_t* sdStat = lv_label_create(_container);
+  lv_obj_t* sdStat = lv_label_create(content);
   _sdStat = sdStat;
   
   uint8_t cardType = SD.cardType();
@@ -88,18 +97,18 @@ AboutUI::AboutUI(DCCExCS& dccExCS, lv_obj_t* parent) : _dccExCS(dccExCS) {
   _updateTimer = lv_timer_create(update_timer_cb, 2000, this);
 
   // DCC EX Section
-  lv_obj_t* cs_title = lv_label_create(_container);
+  lv_obj_t* cs_title = lv_label_create(content);
   lv_label_set_text(cs_title, "About DCC-EX Command Station");
   lv_obj_set_style_text_color(cs_title, lv_color_make(52, 204, 211), 0); // Cyan color
   lv_obj_set_style_pad_top(cs_title, 10, 0);
 
-  _csVersion = lv_label_create(_container);
+  _csVersion = lv_label_create(content);
   lv_label_set_text(_csVersion, "Version: Loading...");
-  _csBoard = lv_label_create(_container);
+  _csBoard = lv_label_create(content);
   lv_label_set_text(_csBoard, "Board: Loading...");
-  _csShield = lv_label_create(_container);
+  _csShield = lv_label_create(content);
   lv_label_set_text(_csShield, "Shield: Loading...");
-  _csBuild = lv_label_create(_container);
+  _csBuild = lv_label_create(content);
   lv_label_set_text(_csBuild, "Build: Loading...");
 
   _csVersionHandler = _dccExCS.addEventListener(DCCExCS::Event::VERSION, [this](void* parameter) {

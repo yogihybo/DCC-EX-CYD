@@ -4,7 +4,7 @@
 #include <Settings.h>
 #include <WiFi.h>
 #include <DNSServer.h>
-#include <ESPAsyncWebServer.h>
+
 #include "LVGL_Layouts.h"
 
 class WiFiUI : public UIView {
@@ -20,7 +20,6 @@ class WiFiUI : public UIView {
     lv_obj_t* _keyboard;
 
     DNSServer dns;
-    AsyncWebServer server;
 
     wifi_event_id_t _ipGotHandler;
     wifi_event_id_t _ipDisconnectedHandler;
