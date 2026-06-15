@@ -31,12 +31,9 @@ class LocoUI : public UIView {
     std::vector<lv_obj_t*> _fnButtons;
     uint8_t _fnPage = 0; 
 
-    StaticJsonDocument<10240> _locoDoc;
-    JsonArrayConst _locoFunctions;
-
     void buildSelectionMenu();
     void buildControlScreen();
-    void buildFunctionButtons();
+    void buildFunctionButtons(JsonDocument& locoDoc);
     void renderFunctionPage();
     void toggleFunctionButtons(std::bitset<32> toggle);
 

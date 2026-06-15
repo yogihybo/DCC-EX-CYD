@@ -69,6 +69,9 @@ void setup_lvgl_layouts() {
     train_img = lv_image_create(loco_group);
     lv_image_set_src(train_img, &train_icon);
     lv_obj_set_style_pad_left(train_img, 10, 0);
+    bool is_dark = (Settings.theme == SettingsClass::Theme::DARK);
+    lv_obj_set_style_image_recolor_opa(train_img, LV_OPA_COVER, 0);
+    lv_obj_set_style_image_recolor(train_img, is_dark ? lv_color_make(255, 255, 255) : lv_color_make(0, 0, 0), 0);
 
     // Make loco_label a child of the icon itself so we can overlay it
     loco_label = lv_label_create(train_img);

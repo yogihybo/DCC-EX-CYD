@@ -97,6 +97,13 @@ SettingsUI::SettingsUI(DCCExCS& dccExCS, lv_obj_t* parent) : _dccExCS(dccExCS), 
   // --- CONNECTIONS ---
   add_category("Connections");
 
+  lv_obj_t* ap_btn = lv_btn_create(_container);
+  lv_obj_set_width(ap_btn, LV_PCT(100));
+  _apModeLbl = lv_label_create(ap_btn);
+  lv_label_set_text_fmt(_apModeLbl, "Access Point (SoftAP): %s", Settings.AP.enabled ? "ON" : "OFF");
+  lv_obj_center(_apModeLbl);
+  lv_obj_add_event_cb(ap_btn, ap_mode_event_cb, LV_EVENT_CLICKED, this);
+
   lv_obj_t* wifi_btn = lv_btn_create(_container);
   lv_obj_set_width(wifi_btn, LV_PCT(100));
   lv_obj_t* wifi_lbl = lv_label_create(wifi_btn);
@@ -107,7 +114,7 @@ SettingsUI::SettingsUI(DCCExCS& dccExCS, lv_obj_t* parent) : _dccExCS(dccExCS), 
   lv_obj_t* about_btn = lv_btn_create(_container);
   lv_obj_set_width(about_btn, LV_PCT(100));
   lv_obj_t* about_lbl = lv_label_create(about_btn);
-  lv_label_set_text(about_lbl, "About EX-T3");
+  lv_label_set_text(about_lbl, "About DCC-EX-CYD");
   lv_obj_center(about_lbl);
   lv_obj_add_event_cb(about_btn, about_event_cb, LV_EVENT_CLICKED, this);
 }
@@ -148,8 +155,17 @@ void SettingsUI::storage_mode_event_cb(lv_event_t * e) {
   SettingsUI* ui = (SettingsUI*)lv_event_get_user_data(e);
   Settings.storageMode = Settings.storageMode == SettingsClass::StorageMode::SD_CARD ? SettingsClass::StorageMode::LITTLEFS : SettingsClass::StorageMode::SD_CARD;
   lv_label_set_text_fmt(ui->_storageModeLbl, "Storage: %s", Settings.storageMode == SettingsClass::StorageMode::SD_CARD ? "SD Card" : "Internal");
+  Settings.save();
 }
 
+void SettingsUI::ap_mode_event_cb(lv_event_t * e) {
+  SettingsUI* ui = (SettingsUI*)lv_event_get_user_data(e);
+  Settings.AP.enabled = !Settings.AP.enabled;
+  lv_label_set_text_fmt(ui->_apModeLbl, "Access Point (SoftAP): %s", Settings.AP.enabled ? "ON" : "OFF");
+  Settings.save();
+  // Dispatch CS_CHANGE to trigger network stack updates in main.cpp
+  Settings.dispatchEvent(SettingsClass::Event::CS_CHANGE);
+}
 void SettingsUI::sd_format_event_cb(lv_event_t * e) {
     SettingsUI* ui = (SettingsUI*)lv_event_get_user_data(e);
     if (ui->_formatMsgbox) return; // Prevent multiple dialogs

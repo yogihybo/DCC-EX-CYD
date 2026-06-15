@@ -8,12 +8,14 @@
 #include <Locos.h>
 #include <Settings.h>
 #include <WiFi.h>
+#include <DNSServer.h>
 #include <ThrottleServer.h>
 #include "XPT2046_Bitbang.h"
 
 #include "LVGL_Layouts.h"
 #include "lv_port_fs.h"
 
+#include "logo.h"
 #include "LocoUI.h"
 #include "AccessoriesUI.h"
 #include "PowerUI.h"
@@ -72,6 +74,8 @@ DCCExCS dccExCS(csClient);
 DCCExCS::Power power;
 Locos locos;
 ThrottleServer throttleServer;
+DNSServer dns;
+bool ap_active = false;
 
 std::unique_ptr<LocoUI> locoUI;
 std::unique_ptr<AccessoriesUI> accUI;
@@ -138,6 +142,7 @@ void setup() {
 
   // Initialize LVGL_CYD framework (handles Display, Touch, Backlight)
   LVGL_CYD::begin(USB_DOWN);
+  LVGL_CYD::backlight(0); // Immediately turn off backlight to hide the white startup screen flash
   
   // Initialize bit-bang touch screen
   touchscreen.begin();
@@ -157,13 +162,6 @@ void setup() {
   // Initialize LVGL file system driver
   lv_port_fs_init();
 
-  setup_lvgl_layouts();
-
-  locoUI = std::make_unique<LocoUI>(dccExCS, locos, loco_tab);
-  accUI = std::make_unique<AccessoriesUI>(dccExCS, acc_tab);
-  pwrUI = std::make_unique<PowerUI>(dccExCS, power, pwr_tab);
-  setUI_ptr = std::make_unique<SettingsUI>(dccExCS, set_tab);
-
   // Load the settings
   Settings.load();
 
@@ -177,16 +175,64 @@ void setup() {
       apply_rotation();
   });
 
-  LVGL_CYD::backlight(Settings.brightness);
   Settings.addEventListener(SettingsClass::Event::BRIGHTNESS_CHANGE, [](void*) {
       LVGL_CYD::backlight(Settings.brightness);
   });
 
+  // --- SPLASH SCREEN ---
+  lv_obj_t* splash_img = lv_image_create(lv_scr_act());
+  lv_image_set_src(splash_img, &logo);
+  lv_obj_set_style_image_recolor_opa(splash_img, LV_OPA_COVER, 0);
+  lv_obj_set_style_image_recolor(splash_img, lv_color_make(50, 150, 255), 0); // DCC-EX-CYD blue theme color
+  lv_obj_center(splash_img);
+  
+  lv_timer_handler(); // Render splash screen
+  LVGL_CYD::backlight(Settings.brightness); // Fade in / turn on backlight now that the frame is ready
+  delay(2000);
+  
+  lv_obj_del(splash_img);
+
+  setup_lvgl_layouts();
+
+  locoUI = std::make_unique<LocoUI>(dccExCS, locos, loco_tab);
+  accUI = std::make_unique<AccessoriesUI>(dccExCS, acc_tab);
+  pwrUI = std::make_unique<PowerUI>(dccExCS, power, pwr_tab);
+  setUI_ptr = std::make_unique<SettingsUI>(dccExCS, set_tab);
+
   // Setup the WiFi
   WiFi.setHostname(Settings.AP.SSID.c_str());
   WiFi.persistent(false);
-  WiFi.mode(WIFI_STA);
+  
+  if (Settings.AP.enabled) {
+      WiFi.mode(WIFI_AP_STA);
+      WiFi.softAP(Settings.AP.SSID.c_str(), Settings.AP.password.c_str());
+      dns.start(53, Settings.AP.SSID.c_str(), WiFi.softAPIP());
+      ap_active = true;
+  } else {
+      WiFi.mode(WIFI_STA);
+  }
+  
   WiFi.setSleep(false);
+  
+  Settings.addEventListener(SettingsClass::Event::CS_CHANGE, [](void*) {
+      if (Settings.AP.enabled && !ap_active) {
+          bool connected = (WiFi.status() == WL_CONNECTED);
+          WiFi.mode(connected ? WIFI_AP_STA : WIFI_AP);
+          WiFi.softAP(Settings.AP.SSID.c_str(), Settings.AP.password.c_str());
+          dns.start(53, Settings.AP.SSID.c_str(), WiFi.softAPIP());
+          ap_active = true;
+      } else if (!Settings.AP.enabled && ap_active) {
+          dns.stop();
+          WiFi.mode(WIFI_STA);
+          ap_active = false;
+      }
+  });
+
+  lv_timer_create([](lv_timer_t* t) {
+      if (ap_active) {
+          dns.processNextRequest();
+      }
+  }, 50, NULL);
 
   // WiFi connected
   WiFi.onEvent(

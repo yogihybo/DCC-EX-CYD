@@ -81,7 +81,7 @@ void SettingsClass::init() {
   // Generate ap ssid and password
   char buf[9] = { 0 };
   randomChars(buf, 4);
-  AP.SSID = "DCCEx-T3-";
+  AP.SSID = "DCC-EX-CYD-";
   AP.SSID += buf;
 
   randomChars(buf, 8);
@@ -107,11 +107,13 @@ void SettingsClass::upgrade(JsonDocument& doc) {
 void SettingsClass::AP::load(const JsonObject& obj) {
   SSID = obj["ssid"].as<const char*>();
   password = obj["password"].as<const char*>();
+  enabled = obj["enabled"] | false;
 }
 
 void SettingsClass::AP::save(const JsonObject& obj) {
   obj["ssid"] = SSID;
   obj["password"] = password;
+  obj["enabled"] = enabled;
 }
 
 bool SettingsClass::CS::valid() {

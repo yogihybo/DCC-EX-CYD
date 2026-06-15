@@ -61,6 +61,7 @@ class SettingsClass : public Events {
 
       String SSID;
       String password;
+      bool enabled = false;
 
       private:
         void load(const JsonObject& obj);

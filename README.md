@@ -1,9 +1,18 @@
-# EX-T3-WiFi port to CYD ESP32 hardware for use with DCC-EX 
+# DCC-EX-CYD port to CYD ESP32 hardware for use with DCC-EX 
+
+![Interface Demo](icons/interface_demo.gif)
+
+### 🚂 Navigation & Tabs
+The interface is split into four primary tabs anchored to the bottom of the screen:
+- **Locomotive**: Drive your trains with a touch speedometer, toggle F0-F28 functions, and swap active locos quickly.
+- **Accessories**: Fast-access control to toggle layout turnouts and accessories using their DCC address.
+- **Power**: Control and monitor the DCC-EX Command Station track power (Main, Prog, Join).
+- **Settings**: Configure WiFi connections, screen brightness, rotation, touch calibration, and more.
 
 A powerful, touch-enabled WiFi throttle for DCC-EX Command Stations, built natively on **LVGL** for the ESP32 Cheap Yellow Display (CYD).
 
 ## Overview
-EX-T3-WiFi port that transforms an ESP32-2432S028R into a handheld model railway controller. It communicates asynchronously via WiFi directly to a DCC-EX Command Station. 
+DCC-EX-CYD port that transforms an ESP32-2432S028R into a handheld model railway controller. It communicates asynchronously via WiFi directly to a DCC-EX Command Station. 
 
 The firmware uses **FreeRTOS** and **LVGL 9** to provide a robust and clean UI
 

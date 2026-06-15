@@ -138,7 +138,7 @@ export default {
             <svg width="16" height="16" fill="currentColor">
               <use xlink:href="bs.icons.svg#info-circle"/>
             </svg>
-            About T3-EX-WiFi
+            About DCC-EX-CYD
           </div>
           <div class="card-body">
             <ul class="list-group list-group-flush">

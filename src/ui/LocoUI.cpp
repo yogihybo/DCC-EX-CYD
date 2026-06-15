@@ -134,7 +134,7 @@ void LocoUI::buildSelectionMenu() {
 }
 
 void LocoUI::buildControlScreen() {
-    _locoDoc.clear();
+    DynamicJsonDocument locoDoc(10240);
 
     char path[32];
     sprintf(path, "/locos/%d.json", _loco.address);
@@ -143,12 +143,12 @@ void LocoUI::buildControlScreen() {
 
     if (_loco.address != 0 && fs.exists(path)) {
         File locoFile = fs.open(path);
-        deserializeJson(_locoDoc, locoFile);
+        deserializeJson(locoDoc, locoFile);
         locoFile.close();
     }
 
     String nameStr = "Unknown Loco";
-    if (_locoDoc.containsKey("name")) nameStr = _locoDoc["name"].as<const char*>();
+    if (locoDoc.containsKey("name")) nameStr = locoDoc["name"].as<const char*>();
 
     // 1. Top Section (Name & Address Arrows)
     _nameLabel = lv_label_create(_container);
@@ -250,19 +250,20 @@ void LocoUI::buildControlScreen() {
     lv_obj_add_event_cb(page_btn, page_btn_event_cb, LV_EVENT_CLICKED, this);
 
     // 4. Build Function Buttons
-    buildFunctionButtons();
+    buildFunctionButtons(locoDoc);
     renderFunctionPage();
 }
 
-void LocoUI::buildFunctionButtons() {
-    if (_locoDoc["functions"].is<JsonArray>()) {
-        _locoFunctions = _locoDoc["functions"].as<JsonArray>();
+void LocoUI::buildFunctionButtons(JsonDocument& locoDoc) {
+    JsonArrayConst locoFunctions;
+    if (locoDoc["functions"].is<JsonArray>()) {
+        locoFunctions = locoDoc["functions"].as<JsonArray>();
     } else {
         File functionFile;
         fs::FS& fs = Settings.getFS();
         
-        if (_locoDoc.containsKey("functions")) {
-            const char* fnPath = _locoDoc["functions"].as<const char*>();
+        if (locoDoc.containsKey("functions")) {
+            const char* fnPath = locoDoc["functions"].as<const char*>();
             if (fs.exists(fnPath)) functionFile = fs.open(fnPath);
         }
         if (!functionFile) {
@@ -276,13 +277,13 @@ void LocoUI::buildFunctionButtons() {
         if (functionFile) {
             StaticJsonDocument<16> filter;
             filter["functions"] = true;
-            deserializeJson(_locoDoc, functionFile, DeserializationOption::Filter(filter));
-            _locoFunctions = _locoDoc["functions"].as<JsonArray>();
+            deserializeJson(locoDoc, functionFile, DeserializationOption::Filter(filter));
+            locoFunctions = locoDoc["functions"].as<JsonArray>();
             functionFile.close();
         }
     }
 
-    for (JsonArrayConst const& row : _locoFunctions) {
+    for (JsonArrayConst const& row : locoFunctions) {
         for (JsonObjectConst const& fn : row) {
             uint8_t func = fn["fn"];
             bool latching = fn["latching"] | true;
@@ -655,10 +656,11 @@ void LocoUI::group_btn_event_cb(lv_event_t * e) {
 
     if (fs.exists("/groups.json")) {
         File groupsFile = fs.open("/groups.json");
-        deserializeJson(ui->_locoDoc, groupsFile);
+        DynamicJsonDocument groupsDoc(4096);
+        deserializeJson(groupsDoc, groupsFile);
         groupsFile.close();
 
-        JsonArray groups = ui->_locoDoc.as<JsonArray>();
+        JsonArray groups = groupsDoc.as<JsonArray>();
         int index = 0;
         for (JsonObjectConst group : groups) {
             lv_obj_t* btn = lv_btn_create(list);
@@ -683,8 +685,15 @@ void LocoUI::group_selected_event_cb(lv_event_t * e) {
     lv_obj_t* btn = (lv_obj_t*)lv_event_get_target(e);
     int index = (uintptr_t)lv_obj_get_user_data(btn);
     
-    // We expect ui->_locoDoc to still contain the /groups.json array
-    JsonArray groups = ui->_locoDoc.as<JsonArray>();
+    fs::FS& fs = Settings.getFS();
+    if (!fs.exists("/groups.json")) return;
+    
+    File groupsFile = fs.open("/groups.json");
+    DynamicJsonDocument groupsDoc(4096);
+    deserializeJson(groupsDoc, groupsFile);
+    groupsFile.close();
+
+    JsonArray groups = groupsDoc.as<JsonArray>();
     if (index >= 0 && index < groups.size()) {
         JsonObjectConst group = groups[index];
         JsonArrayConst locos = group["locos"];

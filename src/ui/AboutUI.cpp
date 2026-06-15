@@ -50,7 +50,7 @@ AboutUI::AboutUI(DCCExCS& dccExCS, lv_obj_t* parent) : _dccExCS(dccExCS) {
 #endif
 
   // Content
-  String version("T3-EX-WiFi Version: ");
+  String version("DCC-EX-CYD Version: ");
   version += T3_VERSION_MAJOR; version += "."; version += T3_VERSION_MINOR; version += "."; version += T3_VERSION_PATCH;
   lv_obj_t* t3_ver = lv_label_create(content);
   lv_label_set_text(t3_ver, version.c_str());

@@ -19,8 +19,6 @@ class WiFiUI : public UIView {
     
     lv_obj_t* _keyboard;
 
-    DNSServer dns;
-
     wifi_event_id_t _ipGotHandler;
     wifi_event_id_t _ipDisconnectedHandler;
     uint8_t _updatedHandler;
@@ -28,9 +26,6 @@ class WiFiUI : public UIView {
     static void ta_event_cb(lv_event_t * e);
     static void kb_event_cb(lv_event_t * e);
     static void close_btn_event_cb(lv_event_t * e);
-    static void loop_timer_cb(lv_timer_t* timer);
-
-    lv_timer_t* _loop_timer;
 
   public:
     WiFiUI(lv_obj_t* parent);

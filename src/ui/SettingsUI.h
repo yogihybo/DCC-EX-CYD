@@ -25,6 +25,9 @@ class SettingsUI : public UIView {
     lv_obj_t* _formatMsgbox = nullptr;
     lv_obj_t* _calMsgbox = nullptr;
 
+    lv_obj_t* _apModeLbl;
+    static void ap_mode_event_cb(lv_event_t * e);
+
     static void speed_step_event_cb(lv_event_t * e);
     static void rotation_event_cb(lv_event_t * e);
     static void theme_event_cb(lv_event_t * e);
