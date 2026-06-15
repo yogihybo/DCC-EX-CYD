@@ -7,7 +7,7 @@
 #include <ArduinoJson.h>
 #include <StreamUtils.h>
 #include <Settings.h>
-
+#include <Version.h>
 ThrottleServer::ThrottleServer() : AsyncWebServer(80) { }
 
 void ThrottleServer::begin() {
@@ -24,6 +24,13 @@ void ThrottleServer::begin() {
     cs["password"] = Settings.CS.password();
     cs["server"] = Settings.CS.server();
     cs["port"] = Settings.CS.port();
+    
+    String version("v");
+    version += T3_VERSION_MAJOR; version += "."; version += T3_VERSION_MINOR; version += "."; version += T3_VERSION_PATCH;
+    cs["version"] = version;
+    cs["platform"] = String("ESP32 (") + ESP.getChipModel() + ")";
+    cs["free_ram"] = ESP.getFreeHeap() / 1024;
+    cs["ip"] = WiFi.status() == WL_CONNECTED ? WiFi.localIP().toString() : WiFi.softAPIP().toString();
 
     response->setLength();
     request->send(response);

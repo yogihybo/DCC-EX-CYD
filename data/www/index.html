@@ -29,9 +29,12 @@
         padding: 0.5rem;
         border-radius: 2rem;
         box-shadow: var(--shadow-sm);
-        display: inline-flex;
+        display: flex;
+        width: 100%;
       }
       .nav-tabs .nav-link {
+        flex: 1;
+        text-align: center;
         border: none;
         color: #6c757d;
         border-radius: 2rem;
@@ -62,7 +65,7 @@
         transition: background-color var(--transition-speed) ease;
         border-left: none;
         border-right: none;
-        padding: 1rem 1.25rem;
+        padding: 0.5rem 0.75rem;
       }
       .list-group-item:first-child {
         border-top: none;
@@ -118,7 +121,7 @@
     </style>
   </head>
   <body>
-    <div class="container py-3" id="app">
+    <div class="container py-2" id="app">
       <div class="nav nav-tabs justify-content-center mb-3">
         <button type="button" class="nav-link" :class="{ active: tab === 1, disabled: locked }" @click="tab = 1">
           Locos
@@ -133,7 +136,7 @@
           Icons
         </button>
         <button type="button" class="nav-link" :class="{ active: tab === 5, disabled: locked }" @click="tab = 5">
-          CS <span class="badge bg-warning" :class="{ 'd-none': cs }">!</span>
+          Settings <span class="badge bg-warning" :class="{ 'd-none': cs }">!</span>
         </button>
       </div>
       <div class="tab-content">

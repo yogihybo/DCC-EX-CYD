@@ -277,47 +277,28 @@ export default {
   },
   template: `
   <div>
-    <div class="row">
-      <div class="col-md-5 mx-auto">
-        <div class="row">
-          <div class="col d-flex align-items-center">
-            <div class="position-relative px-3">
-              <h1 class="display-5">
-                Groups
-              </h1>
-              <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary mt-2">
-                {{ groups.length }}
-              </span>
-            </div>
-          </div>
-          <div class="col-auto">
-            <a download href="/groups.json" class="btn btn-link text-primary p-0" title="Download group config">
-              <svg width="32" height="32" fill="currentColor">
-                <use xlink:href="bs.icons.svg#download"/>
-              </svg>
-            </a>
-            <label class="btn btn-link text-primary p-0" title="Upload group config">
-              <svg width="32" height="32" fill="currentColor">
-                <use xlink:href="bs.icons.svg#upload"/>
-              </svg>
-              <input @change="upload" type="file" accept="application/json" class="d-none" />
-            </label>
-            <button @click="addGroup" class="btn btn-link text-success p-0">
-              <svg width="64" height="64" fill="currentColor">
-                <use xlink:href="bs.icons.svg#plus-lg"/>
-              </svg>
-            </button>
-          </div>
-        </div>
+    <div class="row mb-2">
+      <div class="col-12 d-flex justify-content-end align-items-center pe-3">
+        <a download href="/groups.json" class="btn btn-link text-primary p-0" title="Download group config">
+          <svg width="16" height="16" fill="currentColor">
+            <use xlink:href="bs.icons.svg#download"/>
+          </svg>
+        </a>
+        <label class="btn btn-link text-primary p-0" title="Upload group config">
+          <svg width="16" height="16" fill="currentColor">
+            <use xlink:href="bs.icons.svg#upload"/>
+          </svg>
+          <input @change="upload" type="file" accept="application/json" class="d-none" />
+        </label>
+        <button @click="addGroup" type="button" class="btn btn-link text-success p-0" title="Add new group">
+          <svg width="16" height="16" fill="currentColor">
+            <use xlink:href="bs.icons.svg#plus-lg"/>
+          </svg>
+        </button>
       </div>
     </div>
     <div class="row">
-      <div class="col-md-5 mx-auto">
-        <hr class="bg-secondary" />
-      </div>
-    </div>
-    <div class="row">
-      <div class="col-md-5 mx-auto">
+      <div class="col-12">
         <ul @dragstart="dragStart" @dragover="dragOver" @dragend="dragEnd" class="list-group list-group-flush" :class="{ loading: isLoading }">
           <li v-for="({ locos: groupLocos, expand, key }, groupIndex) of groups" :key="key" class="list-group-item" draggable="true">
             <div class="row">
@@ -392,7 +373,7 @@ export default {
       </div>
     </div>
     <div class="row">
-      <div class="col-md-5 mx-auto text-end">
+      <div class="col-12 text-end">
         <hr class="mt-2 bg-secondary" />
         <button @click="discard" class="btn btn-secondary me-2">Discard Changes</button>
         <button @click="save" class="btn btn-primary">Save</button>

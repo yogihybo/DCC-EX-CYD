@@ -17,19 +17,37 @@
 }
 
 .fn-icons {
-  position: relative;
   display: block;
-  height: 66px;
-}
-.fn-icons > div {
-  left: 0;
-  right: 0;
-  height: 68px;
-  white-space: nowrap;
-  overflow-x: scroll;
+  max-height: 140px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  background-color: var(--bg-color);
+  padding: 0.5rem;
 }
 .fn-icons img {
   pointer-events: none;
+}
+
+.add-btn {
+  border: 2px dashed #6c757d;
+  background-color: transparent;
+  color: #6c757d;
+  transition: all 0.2s ease;
+  height: 42px;
+}
+.add-btn:hover {
+  background-color: rgba(108, 117, 125, 0.1);
+  color: #495057;
+  border-color: #495057;
+}
+.add-row-btn {
+  border: 2px dashed #0d6efd;
+  color: #0d6efd;
+  background-color: transparent;
+}
+.add-row-btn:hover {
+  background-color: rgba(13, 110, 253, 0.1);
 }
 
 .fn-button button {
@@ -70,65 +88,41 @@
 }
 
 .fn-grid {
-  width: 300px;
+  width: 100%;
   min-height: 58px;
-  margin-left: -32px;
-  background-color: #000;
+  background-color: var(--bg-color);
+  border-radius: 0.5rem;
+  padding: 0.5rem;
 }
 .fn-grid:empty::before {
-  content: 'No Rows, drag one in';
+  content: 'No Rows, add one below';
   position: relative;
+  display: block;
+  text-align: center;
   top: 14px;
-  color: #FFF;
+  color: #6c757d;
 }
-.fn-grid > .row {
+.fn-row {
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  background: var(--card-bg);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 0.5rem;
   min-height: 42px;
 }
-/* Bit clunky but wanted to avoid using JS to show text hints */
-.fn-grid > .row:empty::before {
-  content: 'Empty row, drag a button in';
-  position: relative;
-  top: 6px;
-  width: 100%;
-  color: #fff;
-}
-.fn-grid > .row:is(:nth-child(8):not(:last-child), :nth-child(7n+15))::before {
-  content: 'Page Break';
-  width: 100%;
-  margin-bottom: 10px;
-  background: linear-gradient(90deg, rgba(255,255,255,1) 0%, rgba(255,255,255,1) 30%, rgba(0,0,0,1) 35%, rgba(0,0,0,1) 65%, rgba(255,255,255,1) 70%, rgba(255,255,255,1) 100%);
-  background-size: 100% 2px;
-  background-repeat: no-repeat;
-  background-position-y: 12px;
-  color: #fff;
-}
-.fn-grid > .row:is(:nth-child(8):not(:last-child), :nth-child(7n+15)):empty::before {
-  content: 'Page Break\00000a\00000aEmpty row, drag a button in';
-  line-height: 20px;
-  margin-top: -6px;
-  padding-top: 2px;
-  padding-bottom: 10px;
-  white-space: pre;
-}
-.fn-grid > .row::after {
+.fn-row::after {
   content: '';
   position: absolute;
   width: 32px;
   height: 32px;
-  right: -40px;
-  bottom: 5px;
+  left: -15px;
+  top: calc(50% - 16px);
   padding: 8px;
-  border-top-right-radius: 10px;
-  border-bottom-right-radius: 10px;
+  border-radius: 5px;
   background: #ddd;
   background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M3.646 10.146a.5.5 0 0 1 .708 0L8 13.793l3.646-3.647a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4-4a.5.5 0 0 1 0-.708zm0-4.292a.5.5 0 0 0 .708 0L8 2.207l3.646 3.647a.5.5 0 0 0 .708-.708l-4-4a.5.5 0 0 0-.708 0l-4 4a.5.5 0 0 0 0 .708zM1 8a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 0 1h-13A.5.5 0 0 1 1 8z"/></svg>');
   background-repeat: no-repeat;
   background-position: 7px 7px;
   cursor: pointer;
-}
-.fn-grid > .row:last-child {
-  margin-bottom: 0 !important;
-}
-.fn-grid > .row > .col:last-child {
-  padding-right: 0;
+  z-index: 10;
 }

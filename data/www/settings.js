@@ -8,6 +8,10 @@ export default {
       password: '',
       server: '',
       port: 0,
+      version: '',
+      platform: '',
+      free_ram: 0,
+      ip: '',
     }
   },
   watch: {
@@ -35,7 +39,11 @@ export default {
           ssid: this.ssid,
           password: this.password,
           server: this.server,
-          port: this.port
+          port: this.port,
+          version: this.version,
+          platform: this.platform,
+          free_ram: this.free_ram,
+          ip: this.ip
         } = await response.json());
       }
     },
@@ -63,21 +71,9 @@ export default {
     },
   },
   template: `
-  <form @submit.prevent="save">
+  <form @submit.prevent="save" class="mt-2">
     <div class="row">
-      <div class="col-md-5 mx-auto">
-        <h1 class="display-5">
-          CS Settings
-        </h1>
-      </div>
-    </div>
-    <div class="row">
-      <div class="col-md-5 mx-auto">
-        <hr class="bg-secondary" />
-      </div>
-    </div>
-    <div class="row">
-      <div class="col-md-4 mx-auto">
+      <div class="col-12">
         <div class="mb-3 row">
           <div class="col pe-0">
             <div class="form-floating">
@@ -95,28 +91,28 @@ export default {
         <div class="mb-2 row">
           <div class="col pe-0">
             <div class="form-floating">
-              <input v-model="server" @input="lock" type="text" class="form-control" required placeholder="CS Server Host/IP" />
-              <label>CS Server Host/IP</label>
+              <input v-model="server" @input="lock" type="text" class="form-control" required placeholder="Command Station Server Host/IP" />
+              <label>Command Station Server Host/IP</label>
             </div>
           </div>
           <div class="col">
             <div class="form-floating">
-              <input v-model="port" @input="lock" type="text" class="form-control" required placeholder="CS Server Port" />
-              <label>CS Server Port</label>
+              <input v-model="port" @input="lock" type="text" class="form-control" required placeholder="Command Station Server Port" />
+              <label>Command Station Server Port</label>
             </div>
           </div>
         </div>
       </div>
     </div>
     <div class="row">
-      <div class="col-md-5 mx-auto text-end">
+      <div class="col-12 text-end">
         <hr class="mt-2 bg-secondary" />
         <button @click="discard" class="btn btn-secondary me-2">Discard Changes</button>
         <button type="submit" class="btn btn-primary">Save</button>
       </div>
     </div>
     <div class="row mt-3">
-      <div class="col-md-5 mx-auto">
+      <div class="col-12">
         <div class="card">
           <div class="card-header">
             <svg width="16" height="16" fill="currentColor">
@@ -126,10 +122,46 @@ export default {
           </div>
           <div class="card-body">
             <ul class="list-group list-group-flush">
-              <li class="list-group-item">If your CS connects to your home WiFi the defaults for Server Host/IP &amp; Port are 
+              <li class="list-group-item">If your Command Station connects to your home WiFi the defaults for Server Host/IP &amp; Port are 
                 <span class="badge text-bg-secondary">dccex</span> and <span class="badge text-bg-secondary">2560</span></li>
-              <li class="list-group-item">If your CS is in AP mode the defaults for Server Host/IP &amp; Port are 
+              <li class="list-group-item">If your Command Station is in AP mode the defaults for Server Host/IP &amp; Port are 
                 <span class="badge text-bg-secondary">192.168.4.1</span> and <span class="badge text-bg-secondary">2560</span></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row mt-3">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header">
+            <svg width="16" height="16" fill="currentColor">
+              <use xlink:href="bs.icons.svg#info-circle"/>
+            </svg>
+            About T3-EX-WiFi
+          </div>
+          <div class="card-body">
+            <ul class="list-group list-group-flush">
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                Version
+                <span class="badge text-bg-secondary">{{ version || 'Unknown' }}</span>
+              </li>
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                Platform
+                <span class="badge text-bg-secondary">{{ platform || 'Unknown' }}</span>
+              </li>
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                IP Address
+                <span class="badge text-bg-secondary">{{ ip || 'Unknown' }}</span>
+              </li>
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                Command Station Connection
+                <span class="badge text-bg-secondary">{{ server ? server + ':' + port : 'Unknown' }}</span>
+              </li>
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                Free RAM
+                <span class="badge text-bg-secondary">{{ free_ram ? free_ram + ' KB' : 'Unknown' }}</span>
+              </li>
             </ul>
           </div>
         </div>

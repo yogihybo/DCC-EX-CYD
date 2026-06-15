@@ -74,37 +74,18 @@ export default {
   },
   template: `
   <div>
-    <div class="row">
-      <div class="col-md-5 mx-auto">
-        <div class="row">
-          <div class="col d-flex align-items-center">
-            <div class="position-relative px-3">
-              <h1 class="display-5">
-                Icons
-              </h1>
-              <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary mt-2">
-                {{ icons.length }}
-              </span>
-            </div>
-          </div>
-          <div class="col-auto">
-            <label class="btn btn-link text-success p-0">
-              <svg width="64" height="64" fill="currentColor">
-                <use xlink:href="bs.icons.svg#plus-lg"/>
-              </svg>
-              <input @change="upload" type="file" accept="image/bmp" class="d-none" />
-            </label>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="row">
-      <div class="col-md-5 mx-auto">
-        <hr class="bg-secondary" />
+    <div class="row mb-2">
+      <div class="col-12 d-flex justify-content-end align-items-center pe-3">
+        <label class="btn btn-link text-success p-0" title="Upload new icon">
+          <svg width="16" height="16" fill="currentColor">
+            <use xlink:href="bs.icons.svg#plus-lg"/>
+          </svg>
+          <input @change="upload" type="file" accept="image/bmp" class="d-none" />
+        </label>
       </div>
     </div>
     <div class="row mb-3">
-      <div class="col-md-5 mx-auto">
+      <div class="col-12">
         <div class="card">
           <div class="card-header">
             <svg width="16" height="16" fill="currentColor">
@@ -119,7 +100,7 @@ export default {
       </div>
     </div>
     <div class="row">
-      <div class="col-md-5 mx-auto">
+      <div class="col-12">
         <ul :class="{ loading: isLoading }" class="list-group list-group-flush">
           <li v-for="(icon, idx) of icons" :key="icon.file" class="list-group-item">
             <div class="row">
