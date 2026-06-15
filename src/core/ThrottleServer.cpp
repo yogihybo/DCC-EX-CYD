@@ -10,6 +10,140 @@
 #include <Version.h>
 ThrottleServer::ThrottleServer() : AsyncWebServer(80) { }
 
+class ThrottleAPIHandler : public AsyncWebHandler {
+public:
+  ThrottleAPIHandler() {}
+  virtual ~ThrottleAPIHandler() {}
+
+  bool canHandle(AsyncWebServerRequest *request) const override {
+    String url = request->url();
+    if (url.startsWith("/$/")) url = url.substring(2);
+
+    if (request->method() == HTTP_GET) {
+      if (url == "/locos" || url == "/fns" || url == "/icons") return true;
+      if (url.endsWith(".json") || url.endsWith(".bmp")) {
+        if (url.startsWith("/locos/") || url.startsWith("/fns/") || url.startsWith("/icons/") || url == "/groups.json" || url == "/groups.bmp") return true;
+      }
+    } else if (request->method() == HTTP_HEAD) {
+      if (url.startsWith("/locos/") && url.endsWith(".json")) return true;
+    } else if (request->method() == HTTP_DELETE) {
+      if (url.endsWith(".json") || url.endsWith(".bmp")) {
+        if (url.startsWith("/locos/") || url.startsWith("/fns/") || url.startsWith("/icons/")) return true;
+      }
+    } else if (request->method() == HTTP_PUT) {
+      if (url.endsWith(".json") || url.endsWith(".bmp")) {
+        if (url.startsWith("/locos/") || url.startsWith("/fns/") || url.startsWith("/icons/") || url == "/groups.json" || url == "/groups.bmp") return true;
+      }
+    }
+    return false;
+  }
+
+  void handleRequest(AsyncWebServerRequest *request) override {
+    String url = request->url();
+    if (url.startsWith("/$/")) url = url.substring(2);
+
+    if (request->method() == HTTP_GET) {
+      if (url == "/locos" || url == "/fns" || url == "/icons") {
+        AsyncJsonResponse* response = new AsyncJsonResponse(true, 4096);
+        JsonVariant& list = response->getRoot();
+
+        auto listDir = [](File dir, auto cb) {
+          while (File file = dir.openNextFile()) {
+            if (!file.isDirectory()) {
+              cb(file);
+            }
+            file.close();
+          }
+          dir.close();
+        };
+
+        if (url == "/icons") {
+          listDir(ConfigFS.open(url), [&list](File file) {
+            list.add("/$" + String(file.path()));
+          });
+          listDir(WebsiteFS.open(url), [&list](File file) {
+            list.add("/$" + String(file.path()));
+          });
+
+          if (SD.cardType() != CARD_NONE) {
+            listDir(SD.open(url), [&list](File file) {
+              list.add(String(file.path()));
+            });
+          }
+        } else {
+          StaticJsonDocument<16> filterDoc;
+          filterDoc["name"] = true;
+          StaticJsonDocument<48> doc;
+
+          auto addItemsFromFS = [&listDir, &filterDoc, &doc, &list](fs::FS& fs, String path) {
+            File dir = fs.open(path);
+            if (dir) {
+              listDir(dir, [&filterDoc, &doc, &list](File file) {
+                ReadBufferingStream bufferedFile(file, doc.capacity());
+                deserializeJson(doc, bufferedFile, DeserializationOption::Filter(filterDoc));
+                JsonObject item = list.createNestedObject();
+                item["file"] = String(file.path());
+                item["name"] = String(doc["name"].as<const char*>());
+              });
+            }
+          };
+
+          addItemsFromFS(Settings.getFS(), url);
+        }
+
+        response->setLength();
+        request->send(response);
+      } else {
+        fs::FS* fsPtr = &Settings.getFS();
+        if (!fsPtr->exists(url) && WebsiteFS.exists(url)) {
+          fsPtr = &WebsiteFS;
+        }
+        fs::FS& fs = *fsPtr;
+
+        if (url.endsWith(".bmp")) {
+          if (fs.exists(url)) {
+            AsyncWebServerResponse *response = request->beginResponse(fs, url, "image/bmp");
+            response->addHeader("Cache-Control", "max-age=604800");
+            request->send(response);
+          } else {
+            request->send(404);
+          }
+        } else {
+          if (fs.exists(url)) {
+            request->send(fs, url);
+          } else {
+            request->send(404);
+          }
+        }
+      }
+    } else if (request->method() == HTTP_HEAD) {
+      bool exists = Settings.getFS().exists(url);
+      request->send(exists ? 204 : 404);
+    } else if (request->method() == HTTP_DELETE) {
+      fs::FS& fs = Settings.getFS();
+      bool success = false;
+      if (fs.exists(url)) {
+        success = fs.remove(url);
+      }
+      request->send(success ? 204 : 404);
+    } else if (request->method() == HTTP_PUT) {
+      request->send(204);
+    }
+  }
+
+  void handleBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) override {
+    if (request->method() == HTTP_PUT) {
+      if (!request->_tempFile) {
+        request->_tempFile = Settings.getFS().open(request->url(), "w", true);
+      }
+      request->_tempFile.write(data, len);
+      if (len + index == total) {
+        request->_tempFile.close();
+      }
+    }
+  }
+};
+
 void ThrottleServer::begin() {
 
   on("/cs", HTTP_HEAD, [](AsyncWebServerRequest* request) {
@@ -52,116 +186,7 @@ void ThrottleServer::begin() {
     }
   }));
 
-  on("^(\\/(?:locos|fns|icons))$", HTTP_GET, [](AsyncWebServerRequest* request) {
-    AsyncJsonResponse* response = new AsyncJsonResponse(true, 4096);
-    JsonVariant& list = response->getRoot();
-    String path = request->pathArg(0);
-
-    auto listDir = [](File dir, auto cb) {
-      while (File file = dir.openNextFile()) {
-        if (!file.isDirectory()) {
-          cb(file);
-        }
-        file.close();
-      }
-      dir.close();
-    };
-
-    if (path.startsWith("/icons")) {
-      listDir(ConfigFS.open(path), [&list](File file) {
-        list.add("/$" + String(file.path()));
-      });
-      listDir(WebsiteFS.open(path), [&list](File file) {
-        list.add("/$" + String(file.path()));
-      });
-
-      if (SD.cardType() != CARD_NONE) {
-        listDir(SD.open(path), [&list](File file) {
-          list.add(String(file.path()));
-        });
-      }
-    } else {
-      StaticJsonDocument<16> filterDoc;
-      filterDoc["name"] = true;
-      StaticJsonDocument<48> doc;
-
-      auto addItemsFromFS = [&listDir, &filterDoc, &doc, &list](fs::FS& fs, String path) {
-        File dir = fs.open(path);
-        if (dir) {
-          listDir(dir, [&filterDoc, &doc, &list](File file) {
-            ReadBufferingStream bufferedFile(file, doc.capacity());
-            deserializeJson(doc, bufferedFile, DeserializationOption::Filter(filterDoc));
-            JsonObject item = list.createNestedObject();
-            item["file"] = String(file.path());
-            item["name"] = String(doc["name"].as<const char*>());
-          });
-        }
-      };
-
-      addItemsFromFS(Settings.getFS(), path);
-    }
-
-    response->setLength();
-    request->send(response);
-  });
-
-  on("^\\/locos\\/.+\\.json$", HTTP_HEAD, [](AsyncWebServerRequest* request) {
-    bool exists = Settings.getFS().exists(request->url());
-    request->send(exists ? 204 : 404);
-  });
-
-  on("^(?:\\/\\$)?\\/(?:(?:locos|fns|icons)\\/.+|groups)\\.(?:json|bmp)$", HTTP_GET, [](AsyncWebServerRequest* request) {
-    String path = request->url();
-    if (path.startsWith("/$/")) {
-      path = path.substring(2);
-    }
-    
-    fs::FS* fsPtr = &Settings.getFS();
-    if (!fsPtr->exists(path) && WebsiteFS.exists(path)) {
-      fsPtr = &WebsiteFS;
-    }
-    fs::FS& fs = *fsPtr;
-
-    if (path.endsWith(".bmp")) {
-      if (fs.exists(path)) {
-        AsyncWebServerResponse *response = request->beginResponse(fs, path, "image/bmp");
-        response->addHeader("Cache-Control", "max-age=604800");
-        request->send(response);
-      } else {
-        request->send(404);
-      }
-    } else {
-      if (fs.exists(path)) {
-        request->send(fs, path);
-      } else {
-        request->send(404);
-      }
-    }
-  });
-
-  on("^\\/(?:locos|fns|icons)\\/.+\\.(?:json|bmp)$", HTTP_DELETE, [](AsyncWebServerRequest* request) {
-    fs::FS& fs = Settings.getFS();
-    bool success = false;
-    if (fs.exists(request->url())) {
-      success = fs.remove(request->url());
-    }
-    request->send(success ? 204 : 404);
-  });
-
-  on("^\\/(?:(?:locos|fns|icons)\\/.+|groups)\\.(?:json|bmp)$", HTTP_PUT, [](AsyncWebServerRequest* request) {
-
-  }, NULL, [](AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
-    if (!request->_tempFile) {
-      request->_tempFile = Settings.getFS().open(request->url(), "w", true);
-    }
-
-    request->_tempFile.write(data, len);
-
-    if (len + index == total) {
-      request->_tempFile.close();
-      request->send(204);
-    }
-  });
+  addHandler(new ThrottleAPIHandler());
 
   serveStatic("/", WebsiteFS, "/www/")
     .setCacheControl("max-age=604800")
