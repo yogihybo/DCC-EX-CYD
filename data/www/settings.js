@@ -12,6 +12,9 @@ export default {
       platform: '',
       free_ram: 0,
       ip: '',
+      storageMode: 0,
+      has_sd: false,
+      migrating: false,
     }
   },
   watch: {
@@ -43,7 +46,9 @@ export default {
           version: this.version,
           platform: this.platform,
           free_ram: this.free_ram,
-          ip: this.ip
+          ip: this.ip,
+          storageMode: this.storageMode,
+          has_sd: this.has_sd
         } = await response.json());
       }
     },
@@ -57,11 +62,37 @@ export default {
           ssid: this.ssid,
           password: this.password,
           server: this.server,
-          port: this.port
+          port: this.port,
+          storageMode: this.storageMode
         })
       });
 
       if (response.ok) {
+        this.unlock(true);
+      }
+    },
+    async migrateConfigs() {
+      const dir = this.storageMode === 1 ? 'SD Card' : 'Internal Memory';
+      if (!confirm(`Are you sure you want to migrate your JSON configs to ${dir}? The existing files will be backed up.`)) return;
+      
+      this.migrating = true;
+      try {
+        const response = await fetch('/migrate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ to: this.storageMode })
+        });
+        
+        if (response.ok) {
+          alert('Configs successfully migrated!');
+          this.load();
+        } else {
+          alert('Failed to migrate configs.');
+        }
+      } catch (err) {
+        alert('An error occurred during migration.');
+      } finally {
+        this.migrating = false;
         this.unlock(true);
       }
     },
@@ -100,6 +131,24 @@ export default {
               <input v-model="port" @input="lock" type="text" class="form-control" required placeholder="Command Station Server Port" />
               <label>Command Station Server Port</label>
             </div>
+          </div>
+        </div>
+        <div class="mb-2 row">
+          <div class="col-8 pe-0">
+            <div class="form-floating">
+              <select class="form-select" v-model="storageMode" @change="lock" :disabled="!has_sd">
+                <option :value="0">Internal Memory (LittleFS)</option>
+                <option :value="1" :disabled="!has_sd">SD Card</option>
+              </select>
+              <label>Storage Location</label>
+            </div>
+            <div v-if="!has_sd" class="form-text text-danger">SD Card not detected</div>
+          </div>
+          <div class="col-4 d-flex align-items-center">
+             <button type="button" @click="migrateConfigs" class="btn btn-warning w-100" :disabled="migrating || !has_sd">
+                <span v-if="migrating" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Migrate Configs
+             </button>
           </div>
         </div>
       </div>
