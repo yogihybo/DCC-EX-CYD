@@ -17,7 +17,7 @@ The interface is split into four primary tabs anchored to the bottom of the scre
 - **Power**: Control and monitor the DCC-EX Command Station track power (Main, Prog, Join).
 - **Settings**: Configure WiFi connections, screen brightness, rotation, touch calibration, and more.
 
-A powerful, touch-enabled WiFi throttle for DCC-EX Command Stations, built natively on **LVGL** for the ESP32 Cheap Yellow Display (CYD).
+A web interface running on the ESP32 allows for easy input of loco details and assigning functions. supports both internal memory and SD card with the ability to move configs between the two.
 
 
 ## Hardware Requirements
