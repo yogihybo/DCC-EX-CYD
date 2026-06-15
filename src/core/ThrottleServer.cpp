@@ -8,6 +8,8 @@
 #include <StreamUtils.h>
 #include <Settings.h>
 #include <Version.h>
+#include "ui/LVGL_Layouts.h"
+
 ThrottleServer::ThrottleServer() : AsyncWebServer(80) { }
 
 class ThrottleAPIHandler : public AsyncWebHandler {
@@ -53,22 +55,26 @@ public:
               cb(file);
             }
             file.close();
+            yield();
           }
           dir.close();
         };
 
         if (url == "/icons") {
-          listDir(ConfigFS.open(url), [&list](File file) {
-            list.add("/$" + String(file.path()));
-          });
-          listDir(WebsiteFS.open(url), [&list](File file) {
-            list.add("/$" + String(file.path()));
-          });
-
-          if (SD.cardType() != CARD_NONE) {
-            listDir(SD.open(url), [&list](File file) {
-              list.add(String(file.path()));
+          if (xSemaphoreTake(lvgl_mutex, portMAX_DELAY) == pdTRUE) {
+            listDir(ConfigFS.open(url), [&list](File file) {
+              list.add("/$" + String(file.path()));
             });
+            listDir(WebsiteFS.open(url), [&list](File file) {
+              list.add("/$" + String(file.path()));
+            });
+
+            if (SD.cardType() != CARD_NONE) {
+              listDir(SD.open(url), [&list](File file) {
+                list.add(String(file.path()));
+              });
+            }
+            xSemaphoreGive(lvgl_mutex);
           }
         } else {
           StaticJsonDocument<16> filterDoc;
@@ -79,16 +85,21 @@ public:
             File dir = fs.open(path);
             if (dir) {
               listDir(dir, [&filterDoc, &doc, &list](File file) {
+                doc.clear();
                 ReadBufferingStream bufferedFile(file, doc.capacity());
                 deserializeJson(doc, bufferedFile, DeserializationOption::Filter(filterDoc));
                 JsonObject item = list.createNestedObject();
                 item["file"] = String(file.path());
                 item["name"] = String(doc["name"].as<const char*>());
+                yield();
               });
             }
           };
 
-          addItemsFromFS(Settings.getFS(), url);
+          if (xSemaphoreTake(lvgl_mutex, portMAX_DELAY) == pdTRUE) {
+            addItemsFromFS(Settings.getFS(), url);
+            xSemaphoreGive(lvgl_mutex);
+          }
         }
 
         response->setLength();
