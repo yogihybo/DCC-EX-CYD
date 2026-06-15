@@ -71,8 +71,8 @@ export default {
         this.unlock(true);
       }
     },
-    async migrateConfigs() {
-      const dir = this.storageMode === 1 ? 'SD Card' : 'Internal Memory';
+    async migrateConfigs(toMode) {
+      const dir = toMode === 1 ? 'SD Card' : 'Internal Memory';
       if (!confirm(`Are you sure you want to migrate your JSON configs to ${dir}? The existing files will be backed up.`)) return;
       
       this.migrating = true;
@@ -80,7 +80,7 @@ export default {
         const response = await fetch('/migrate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ to: this.storageMode })
+          body: JSON.stringify({ to: toMode })
         });
         
         if (response.ok) {
@@ -114,7 +114,7 @@ export default {
           </div>
           <div class="col">
             <div class="form-floating">
-              <input v-model="password" @input="lock" type="text" class="form-control" placeholder="WiFi Password" />
+              <input v-model="password" @input="lock" type="password" class="form-control" placeholder="WiFi Password" />
               <label>WiFi Password</label>
             </div>
           </div>
@@ -134,20 +134,28 @@ export default {
           </div>
         </div>
         <div class="mb-2 row">
-          <div class="col-8 pe-0">
+          <div class="col-12 pe-0">
             <div class="form-floating">
               <select class="form-select" v-model="storageMode" @change="lock" :disabled="!has_sd">
                 <option :value="0">Internal Memory (LittleFS)</option>
                 <option :value="1" :disabled="!has_sd">SD Card</option>
               </select>
-              <label>Storage Location</label>
+              <label>Active Storage Location</label>
             </div>
             <div v-if="!has_sd" class="form-text text-danger">SD Card not detected</div>
           </div>
-          <div class="col-4 d-flex align-items-center">
-             <button type="button" @click="migrateConfigs" class="btn btn-warning w-100" :disabled="migrating || !has_sd">
+        </div>
+        <div class="mb-2 row">
+          <div class="col-6 pe-1">
+             <button type="button" @click="migrateConfigs(1)" class="btn btn-warning w-100" :disabled="migrating || !has_sd">
                 <span v-if="migrating" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                Migrate Configs
+                Migrate to SD
+             </button>
+          </div>
+          <div class="col-6 ps-1">
+             <button type="button" @click="migrateConfigs(0)" class="btn btn-warning w-100" :disabled="migrating || !has_sd">
+                <span v-if="migrating" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                Migrate to Internal
              </button>
           </div>
         </div>

@@ -206,7 +206,7 @@ void ThrottleServer::begin() {
   addHandler(new AsyncCallbackJsonWebHandler("/migrate", [](AsyncWebServerRequest* request, JsonVariant &json) {
     uint8_t toMode = json["to"] | 0;
     
-    fs::FS& sourceFS = Settings.getFS();
+    fs::FS* sourceFSPtr = nullptr;
     fs::FS* targetFSPtr = nullptr;
     
     if (toMode == 1) { // 1 = SD_CARD
@@ -215,16 +215,18 @@ void ThrottleServer::begin() {
         return;
       }
       targetFSPtr = &SD;
+      sourceFSPtr = &ConfigFS;
     } else {
+      if (SD.cardType() == CARD_NONE) {
+        request->send(400, "text/plain", "SD Card not mounted");
+        return;
+      }
       targetFSPtr = &ConfigFS;
+      sourceFSPtr = &SD;
     }
     
     fs::FS& targetFS = *targetFSPtr;
-    
-    if (&sourceFS == &targetFS) {
-      request->send(400, "text/plain", "Already on target storage");
-      return;
-    }
+    fs::FS& sourceFS = *sourceFSPtr;
 
     if (xSemaphoreTake(lvgl_mutex, portMAX_DELAY) == pdTRUE) {
       auto copyAndBackupFile = [](fs::FS& sFS, fs::FS& tFS, String path, String backupPath) {
@@ -259,16 +261,20 @@ void ThrottleServer::begin() {
         File dir = sFS.open(dirName);
         if (!dir || !dir.isDirectory()) return;
         
+        std::vector<String> filesToMigrate;
         while (File file = dir.openNextFile()) {
           if (!file.isDirectory()) {
-            String path = String(file.path());
-            String backupPath = "/backup" + path;
-            copyAndBackupFile(sFS, tFS, path, backupPath);
+            filesToMigrate.push_back(String(file.path()));
           }
           file.close();
           yield();
         }
         dir.close();
+
+        for (const String& path : filesToMigrate) {
+          String backupPath = "/backup" + path;
+          copyAndBackupFile(sFS, tFS, path, backupPath);
+        }
       };
       
       sourceFS.mkdir("/backup");
