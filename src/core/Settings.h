@@ -37,6 +37,7 @@ class SettingsClass : public Events {
     uint8_t storageMode = StorageMode::LITTLEFS;
     uint8_t theme = Theme::DARK;
     uint8_t brightness = 255;
+    uint8_t emergencyStopDelay = 5; // seconds of encoder button hold to trigger e-stop
 
     struct TouchCal {
       int xMin = 200;

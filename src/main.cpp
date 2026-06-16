@@ -29,6 +29,8 @@
 #define CS_PIN   33
 #define IRQ_PIN  36
 
+#define ENCODER_BTN_PIN 0  // GPIO0 – encoder push button (active LOW, internal pull-up)
+
 XPT2046_Bitbang touchscreen(MOSI_PIN, MISO_PIN, CLK_PIN, CS_PIN, IRQ_PIN);
 
 static void touch_read(lv_indev_t * indev, lv_indev_data_t * data) {
@@ -412,6 +414,25 @@ void setup() {
   // reconnect using new values
   Settings.addEventListener(SettingsClass::Event::CS_CHANGE,
                             [](void *) { WiFi.disconnect(); });
+
+  // Encoder button long-press → emergency stop
+  pinMode(ENCODER_BTN_PIN, INPUT_PULLUP);
+  static uint32_t btnPressStart = 0;
+  static bool btnArmed = false;
+  lv_timer_create([](lv_timer_t*) {
+      bool pressed = (digitalRead(ENCODER_BTN_PIN) == LOW);
+      if (pressed) {
+          if (!btnArmed) {
+              btnPressStart = millis();
+              btnArmed = true;
+          } else if ((millis() - btnPressStart) >= (uint32_t)Settings.emergencyStopDelay * 1000U) {
+              dccExCS.emergencyStopAll();
+              btnArmed = false; // Don't fire again until released and re-pressed
+          }
+      } else {
+          btnArmed = false;
+      }
+  }, 50, nullptr);
 
   xTaskCreatePinnedToCore(powerCheck, "powerCheck", 2048, NULL, 1, NULL, 1);
   xTaskCreatePinnedToCore(keepWiFiAlive, "keepWiFiAlive", 4096, NULL, 1, NULL, 1);

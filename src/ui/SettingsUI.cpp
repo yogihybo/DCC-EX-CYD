@@ -40,6 +40,13 @@ SettingsUI::SettingsUI(DCCExCS& dccExCS, lv_obj_t* parent) : _dccExCS(dccExCS), 
   lv_obj_center(program_lbl);
   lv_obj_add_event_cb(program_btn, programming_setup_event_cb, LV_EVENT_CLICKED, this);
 
+  lv_obj_t* estop_btn = lv_btn_create(_container);
+  lv_obj_set_width(estop_btn, LV_PCT(100));
+  _eStopDelayLbl = lv_label_create(estop_btn);
+  lv_label_set_text_fmt(_eStopDelayLbl, "E-Stop Hold Time: %ds", Settings.emergencyStopDelay);
+  lv_obj_center(_eStopDelayLbl);
+  lv_obj_add_event_cb(estop_btn, estop_delay_event_cb, LV_EVENT_CLICKED, this);
+
   lv_obj_t* tprog_btn = lv_btn_create(_container);
   lv_obj_set_width(tprog_btn, LV_PCT(100));
   lv_obj_t* tprog_lbl = lv_label_create(tprog_btn);
@@ -158,6 +165,13 @@ void SettingsUI::speed_step_event_cb(lv_event_t * e) {
   SettingsUI* ui = (SettingsUI*)lv_event_get_user_data(e);
   if (++Settings.LocoUI.speedStep > 2) Settings.LocoUI.speedStep = 0;
   lv_label_set_text_fmt(ui->_speedStepLbl, "Throttle Speed Step: %d", Settings.LocoUI.speedStep);
+  Settings.save();
+}
+
+void SettingsUI::estop_delay_event_cb(lv_event_t * e) {
+  SettingsUI* ui = (SettingsUI*)lv_event_get_user_data(e);
+  if (++Settings.emergencyStopDelay > 10) Settings.emergencyStopDelay = 1;
+  lv_label_set_text_fmt(ui->_eStopDelayLbl, "E-Stop Hold Time: %ds", Settings.emergencyStopDelay);
   Settings.save();
 }
 
