@@ -159,11 +159,12 @@ void LocoUI::buildControlScreen() {
     // Prev / Next — semi-transparent pill so they read as tappable
     lv_obj_t* prev_btn = lv_btn_create(_container);
     lv_obj_set_size(prev_btn, 40, 40);
-    lv_obj_align(prev_btn, LV_ALIGN_TOP_LEFT, 0, 14);
+    lv_obj_align(prev_btn, LV_ALIGN_TOP_LEFT, -4, 14);
     lv_obj_set_style_bg_opa(prev_btn, LV_OPA_20, 0);
     lv_obj_set_style_bg_color(prev_btn, lv_color_hex(0xffffff), 0);
     lv_obj_set_style_shadow_width(prev_btn, 0, 0);
     lv_obj_set_style_radius(prev_btn, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_pad_all(prev_btn, 0, 0);
     lv_obj_t* pl = lv_label_create(prev_btn);
     lv_label_set_text(pl, LV_SYMBOL_LEFT);
     lv_obj_set_style_text_font(pl, &lv_font_montserrat_28, 0);
@@ -191,11 +192,12 @@ void LocoUI::buildControlScreen() {
 
     lv_obj_t* next_btn = lv_btn_create(_container);
     lv_obj_set_size(next_btn, 40, 40);
-    lv_obj_align(next_btn, LV_ALIGN_TOP_RIGHT, 0, 14);
+    lv_obj_align(next_btn, LV_ALIGN_TOP_RIGHT, 4, 14);
     lv_obj_set_style_bg_opa(next_btn, LV_OPA_20, 0);
     lv_obj_set_style_bg_color(next_btn, lv_color_hex(0xffffff), 0);
     lv_obj_set_style_shadow_width(next_btn, 0, 0);
     lv_obj_set_style_radius(next_btn, LV_RADIUS_CIRCLE, 0);
+    lv_obj_set_style_pad_all(next_btn, 0, 0);
     lv_obj_t* nl = lv_label_create(next_btn);
     lv_label_set_text(nl, LV_SYMBOL_RIGHT);
     lv_obj_set_style_text_font(nl, &lv_font_montserrat_28, 0);
@@ -320,7 +322,7 @@ void LocoUI::buildFunctionButtons(JsonDocument& locoDoc) {
             const char* pressed_icon = fn["btn"]["pressed"]["icon"].as<const char*>();
             
             lv_obj_t* btn = lv_btn_create(_container);
-            lv_obj_set_size(btn, 42, 32);
+            lv_obj_set_size(btn, 42, 36);
 
             // Neutral dark surface — overrides LVGL theme's blue-tinted default
             lv_obj_set_style_bg_color(btn, lv_color_hex(0x252525), 0);
@@ -400,17 +402,18 @@ void LocoUI::renderFunctionPage() {
         lv_obj_add_flag(btn, LV_OBJ_FLAG_HIDDEN);
     }
 
-    int start_idx = _fnPage * 10;
-    for (int i = 0; i < 10; i++) {
+    int start_idx = _fnPage * 8;
+    for (int i = 0; i < 8; i++) {
         int idx = start_idx + i;
         if (idx >= (int)_fnButtons.size()) break;
 
         lv_obj_t* btn = _fnButtons[idx];
         lv_obj_clear_flag(btn, LV_OBJ_FLAG_HIDDEN);
 
-        // 32px button height, 32px stride — 5 buttons fit exactly before the action bar at y=210
-        int y_pos = 50 + (i % 5) * 32;
-        if (i < 5) {
+        // 4 rows per column: start y=56 (clears nav circles at y=54).
+        // height=36, stride=38: 3×38+36=150, bottom at 206 — 4px above action bar.
+        int y_pos = 56 + (i % 4) * 38;
+        if (i < 4) {
             lv_obj_align(btn, LV_ALIGN_TOP_LEFT, 2, y_pos);
         } else {
             lv_obj_align(btn, LV_ALIGN_TOP_RIGHT, -2, y_pos);
@@ -419,7 +422,7 @@ void LocoUI::renderFunctionPage() {
 
     // Update Fn button to show page count when there are multiple pages
     if (_pageBtnLabel) {
-        int totalPages = ((int)_fnButtons.size() + 9) / 10;
+        int totalPages = ((int)_fnButtons.size() + 7) / 8;
         if (totalPages > 1) {
             lv_label_set_text_fmt(_pageBtnLabel, "Fn %d/%d", _fnPage + 1, totalPages);
         } else {
@@ -894,7 +897,7 @@ void LocoUI::fn_btn_event_cb(lv_event_t * e) {
 void LocoUI::page_btn_event_cb(lv_event_t * e) {
     LocoUI* ui = (LocoUI*)lv_event_get_user_data(e);
     ui->_fnPage++;
-    if (ui->_fnPage * 10 >= ui->_fnButtons.size()) ui->_fnPage = 0;
+    if (ui->_fnPage * 8 >= (int)ui->_fnButtons.size()) ui->_fnPage = 0;
     ui->renderFunctionPage();
 }
 
