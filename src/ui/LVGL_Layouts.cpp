@@ -36,6 +36,7 @@ void apply_theme() {
     }
 }
 
+// Called once at boot – sets up the mutex and the fixed header bar.
 void setup_lvgl_layouts() {
     lvgl_mutex = xSemaphoreCreateMutex();
 
@@ -97,6 +98,12 @@ void setup_lvgl_layouts() {
     power_label = lv_label_create(header_bar);
     lv_label_set_text(power_label, LV_SYMBOL_BATTERY_FULL " --");
     lv_obj_set_style_pad_right(power_label, 10, 0);
+}
+
+// Creates (or recreates) the main tabview and its four tabs.
+// Safe to call multiple times – each call builds a fresh tabview on lv_scr_act().
+void create_main_ui() {
+    lv_obj_t* scr = lv_scr_act();
 
     // Main Tabview (middle to bottom)
     main_tabview = lv_tabview_create(scr);
@@ -110,14 +117,14 @@ void setup_lvgl_layouts() {
     lv_obj_set_style_pad_all(tab_btns, 0, 0);
 
     loco_tab = lv_tabview_add_tab(main_tabview, "Loco");
-    acc_tab = lv_tabview_add_tab(main_tabview, "Acc");
-    pwr_tab = lv_tabview_add_tab(main_tabview, "Pwr");
-    set_tab = lv_tabview_add_tab(main_tabview, "Set");
+    acc_tab  = lv_tabview_add_tab(main_tabview, "Acc");
+    pwr_tab  = lv_tabview_add_tab(main_tabview, "Pwr");
+    set_tab  = lv_tabview_add_tab(main_tabview, "Set");
 
     lv_obj_set_style_pad_all(loco_tab, 0, 0);
-    lv_obj_set_style_pad_all(acc_tab, 0, 0);
-    lv_obj_set_style_pad_all(pwr_tab, 0, 0);
-    lv_obj_set_style_pad_all(set_tab, 0, 0);
+    lv_obj_set_style_pad_all(acc_tab,  0, 0);
+    lv_obj_set_style_pad_all(pwr_tab,  0, 0);
+    lv_obj_set_style_pad_all(set_tab,  0, 0);
 }
 
 void set_header_loco_count(int count) {

@@ -19,7 +19,12 @@ extern lv_obj_t* acc_tab;
 extern lv_obj_t* pwr_tab;
 extern lv_obj_t* set_tab;
 
+// Called once at boot to create the header + mutex; does NOT create tabs
 void setup_lvgl_layouts();
+
+// Creates (or recreates) the main tabview and its four tabs.
+// Called at boot and again after exiting Throttle Programming mode.
+void create_main_ui();
 
 void set_header_loco_count(int count);
 void set_header_wifi_status(bool connected, int rssi);

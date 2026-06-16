@@ -19,6 +19,8 @@ class SettingsClass : public Events {
       static constexpr uint8_t ROTATION_CHANGE = 1;
       static constexpr uint8_t BRIGHTNESS_CHANGE = 2;
       static constexpr uint8_t THEME_CHANGE = 3;
+      static constexpr uint8_t THROTTLE_PROGRAM_ENTER = 4;
+      static constexpr uint8_t THROTTLE_PROGRAM_EXIT = 5;
     };
     struct Rotation {
       static constexpr uint8_t STANDARD = 0;

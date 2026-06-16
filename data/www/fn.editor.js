@@ -116,7 +116,7 @@ const FnIcon = {
   <div class="fn-icons">
     <div class="d-flex flex-wrap gap-1 justify-content-center">
       <div v-for="({ file, load }, idx) of icons" :key="file"
-        :class="{ 'border-primary': modelValue == file, 'border-white': modelValue != file }"
+        :class="{ 'border-primary': modelValue == file, 'border-secondary': modelValue != file }"
         @click="toggle(file)"
         class="border border-5 d-inline-block rounded p-1"
         role="button"
@@ -145,7 +145,7 @@ const IconPicker = {
   },
   template: `
   <div>
-    <div @click="modal = true" class="border rounded d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; cursor: pointer; background: #fff;">
+    <div @click="modal = true" class="border rounded d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; cursor: pointer; background: var(--surface-2);">
       <img v-if="modelValue" :src="modelValue" style="max-width: 100%; max-height: 100%;" />
       <span v-else class="text-danger">&times;</span>
     </div>
@@ -405,7 +405,7 @@ export default {
       </div>
     </div>
     <div class="mt-4 text-center">
-      <button @click="addRow" type="button" class="btn px-4 py-2" style="border: 2px dashed #0d6efd; color: #0d6efd; background-color: transparent;">
+      <button @click="addRow" type="button" class="btn px-4 py-2" style="border: 2px dashed var(--primary); color: var(--accent); background-color: transparent;">
         <svg width="20" height="20" fill="currentColor" class="me-2" style="vertical-align: text-bottom;"><use xlink:href="bs.icons.svg#plus-lg"/></svg> Add Function Row
       </button>
     </div>

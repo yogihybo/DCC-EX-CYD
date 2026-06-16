@@ -5,6 +5,9 @@
 #include "../utils/Screenshot.h"
 #include <SD.h>
 
+// Static flag – readable by ThrottleServer to gate web access
+bool SettingsUI::throttleProgrammingActive = false;
+
 SettingsUI::SettingsUI(DCCExCS& dccExCS, lv_obj_t* parent) : _dccExCS(dccExCS), _wifiUI(nullptr), _aboutUI(nullptr), _calibrationUI(nullptr), _programUI(nullptr) {
   _container = lv_obj_create(parent);
   lv_obj_set_size(_container, LV_PCT(100), LV_PCT(100));
@@ -25,25 +28,36 @@ SettingsUI::SettingsUI(DCCExCS& dccExCS, lv_obj_t* parent) : _dccExCS(dccExCS), 
     lv_obj_set_style_pad_bottom(lbl, 5, 0);
   };
 
-  // --- LOCO OPTIONS ---
-  add_category("Locomotive");
-
-  lv_obj_t* speed_btn = lv_btn_create(_container);
-  lv_obj_set_width(speed_btn, LV_PCT(100));
-  _speedStepLbl = lv_label_create(speed_btn);
-  lv_label_set_text_fmt(_speedStepLbl, "Throttle Speed Step: %d", Settings.LocoUI.speedStep);
-  lv_obj_center(_speedStepLbl);
-  lv_obj_add_event_cb(speed_btn, speed_step_event_cb, LV_EVENT_CLICKED, this);
+  // -------------------------------------------------------
+  // PROGRAMMING
+  // -------------------------------------------------------
+  add_category("Programming");
 
   lv_obj_t* program_btn = lv_btn_create(_container);
   lv_obj_set_width(program_btn, LV_PCT(100));
   lv_obj_t* program_lbl = lv_label_create(program_btn);
-  lv_label_set_text(program_lbl, "Programming Setup");
+  lv_label_set_text(program_lbl, "Loco Programming");
   lv_obj_center(program_lbl);
   lv_obj_add_event_cb(program_btn, programming_setup_event_cb, LV_EVENT_CLICKED, this);
 
-  // --- SYSTEM OPTIONS ---
-  add_category("System");
+  lv_obj_t* tprog_btn = lv_btn_create(_container);
+  lv_obj_set_width(tprog_btn, LV_PCT(100));
+  lv_obj_t* tprog_lbl = lv_label_create(tprog_btn);
+  lv_label_set_text(tprog_lbl, "Throttle Programming");
+  lv_obj_center(tprog_lbl);
+  lv_obj_add_event_cb(tprog_btn, throttle_programming_event_cb, LV_EVENT_CLICKED, this);
+
+  // -------------------------------------------------------
+  // THROTTLE
+  // -------------------------------------------------------
+  add_category("Throttle");
+
+  lv_obj_t* br_btn = lv_btn_create(_container);
+  lv_obj_set_width(br_btn, LV_PCT(100));
+  _brightnessLbl = lv_label_create(br_btn);
+  lv_label_set_text_fmt(_brightnessLbl, "Brightness: %d%%", (Settings.brightness * 100) / 255);
+  lv_obj_center(_brightnessLbl);
+  lv_obj_add_event_cb(br_btn, brightness_btn_event_cb, LV_EVENT_CLICKED, this);
 
   lv_obj_t* theme_btn = lv_btn_create(_container);
   lv_obj_set_width(theme_btn, LV_PCT(100));
@@ -66,16 +80,22 @@ SettingsUI::SettingsUI(DCCExCS& dccExCS, lv_obj_t* parent) : _dccExCS(dccExCS), 
   lv_obj_center(cal_lbl);
   lv_obj_add_event_cb(cal_btn, calibrate_event_cb, LV_EVENT_CLICKED, this);
 
-  lv_obj_t* shot_btn = lv_btn_create(_container);
-  lv_obj_set_width(shot_btn, LV_PCT(100));
-  lv_obj_t* shot_lbl = lv_label_create(shot_btn);
-  lv_label_set_text(shot_lbl, "Take Screenshot (3s Delay)");
-  lv_obj_center(shot_lbl);
-  lv_obj_add_event_cb(shot_btn, screenshot_event_cb, LV_EVENT_CLICKED, this);
+  lv_obj_t* speed_btn = lv_btn_create(_container);
+  lv_obj_set_width(speed_btn, LV_PCT(100));
+  _speedStepLbl = lv_label_create(speed_btn);
+  lv_label_set_text_fmt(_speedStepLbl, "Throttle Speed Step: %d", Settings.LocoUI.speedStep);
+  lv_obj_center(_speedStepLbl);
+  lv_obj_add_event_cb(speed_btn, speed_step_event_cb, LV_EVENT_CLICKED, this);
+
+  // -------------------------------------------------------
+  // STORAGE
+  // -------------------------------------------------------
+  add_category("Storage");
+
   lv_obj_t* storage_btn = lv_btn_create(_container);
   lv_obj_set_width(storage_btn, LV_PCT(100));
   _storageModeLbl = lv_label_create(storage_btn);
-  lv_label_set_text_fmt(_storageModeLbl, "Storage: %s", Settings.storageMode == SettingsClass::StorageMode::SD_CARD ? "SD Card" : "Internal");
+  lv_label_set_text_fmt(_storageModeLbl, "Storage Location: %s", Settings.storageMode == SettingsClass::StorageMode::SD_CARD ? "SD Card" : "Internal");
   lv_obj_center(_storageModeLbl);
   lv_obj_add_event_cb(storage_btn, storage_mode_event_cb, LV_EVENT_CLICKED, this);
 
@@ -86,23 +106,10 @@ SettingsUI::SettingsUI(DCCExCS& dccExCS, lv_obj_t* parent) : _dccExCS(dccExCS), 
   lv_obj_center(sd_format_lbl);
   lv_obj_add_event_cb(sd_format_btn, sd_format_event_cb, LV_EVENT_CLICKED, this);
 
-  lv_obj_t* br_btn = lv_btn_create(_container);
-  lv_obj_set_width(br_btn, LV_PCT(100));
-  _brightnessLbl = lv_label_create(br_btn);
-  lv_label_set_text_fmt(_brightnessLbl, "Brightness: %d%%", (Settings.brightness * 100) / 255);
-  lv_obj_center(_brightnessLbl);
-  lv_obj_add_event_cb(br_btn, brightness_btn_event_cb, LV_EVENT_CLICKED, this);
-
-
-  // --- CONNECTIONS ---
+  // -------------------------------------------------------
+  // CONNECTIONS
+  // -------------------------------------------------------
   add_category("Connections");
-
-  lv_obj_t* ap_btn = lv_btn_create(_container);
-  lv_obj_set_width(ap_btn, LV_PCT(100));
-  _apModeLbl = lv_label_create(ap_btn);
-  lv_label_set_text_fmt(_apModeLbl, "Access Point (SoftAP): %s", Settings.AP.enabled ? "ON" : "OFF");
-  lv_obj_center(_apModeLbl);
-  lv_obj_add_event_cb(ap_btn, ap_mode_event_cb, LV_EVENT_CLICKED, this);
 
   lv_obj_t* wifi_btn = lv_btn_create(_container);
   lv_obj_set_width(wifi_btn, LV_PCT(100));
@@ -111,12 +118,31 @@ SettingsUI::SettingsUI(DCCExCS& dccExCS, lv_obj_t* parent) : _dccExCS(dccExCS), 
   lv_obj_center(wifi_lbl);
   lv_obj_add_event_cb(wifi_btn, wifi_setup_event_cb, LV_EVENT_CLICKED, this);
 
+  lv_obj_t* ap_btn = lv_btn_create(_container);
+  lv_obj_set_width(ap_btn, LV_PCT(100));
+  _apModeLbl = lv_label_create(ap_btn);
+  lv_label_set_text_fmt(_apModeLbl, "Access Point (SoftAP): %s", Settings.AP.enabled ? "ON" : "OFF");
+  lv_obj_center(_apModeLbl);
+  lv_obj_add_event_cb(ap_btn, ap_mode_event_cb, LV_EVENT_CLICKED, this);
+
+  // -------------------------------------------------------
+  // ABOUT
+  // -------------------------------------------------------
+  add_category("About");
+
   lv_obj_t* about_btn = lv_btn_create(_container);
   lv_obj_set_width(about_btn, LV_PCT(100));
   lv_obj_t* about_lbl = lv_label_create(about_btn);
   lv_label_set_text(about_lbl, "About DCC-EX-CYD");
   lv_obj_center(about_lbl);
   lv_obj_add_event_cb(about_btn, about_event_cb, LV_EVENT_CLICKED, this);
+
+  lv_obj_t* shot_btn = lv_btn_create(_container);
+  lv_obj_set_width(shot_btn, LV_PCT(100));
+  lv_obj_t* shot_lbl = lv_label_create(shot_btn);
+  lv_label_set_text(shot_lbl, "Take Screenshot (3s Delay)");
+  lv_obj_center(shot_lbl);
+  lv_obj_add_event_cb(shot_btn, screenshot_event_cb, LV_EVENT_CLICKED, this);
 }
 
 SettingsUI::~SettingsUI() {
@@ -154,7 +180,7 @@ void SettingsUI::rotation_event_cb(lv_event_t * e) {
 void SettingsUI::storage_mode_event_cb(lv_event_t * e) {
   SettingsUI* ui = (SettingsUI*)lv_event_get_user_data(e);
   Settings.storageMode = Settings.storageMode == SettingsClass::StorageMode::SD_CARD ? SettingsClass::StorageMode::LITTLEFS : SettingsClass::StorageMode::SD_CARD;
-  lv_label_set_text_fmt(ui->_storageModeLbl, "Storage: %s", Settings.storageMode == SettingsClass::StorageMode::SD_CARD ? "SD Card" : "Internal");
+  lv_label_set_text_fmt(ui->_storageModeLbl, "Storage Location: %s", Settings.storageMode == SettingsClass::StorageMode::SD_CARD ? "SD Card" : "Internal");
   Settings.save();
 }
 
@@ -166,6 +192,7 @@ void SettingsUI::ap_mode_event_cb(lv_event_t * e) {
   // Dispatch CS_CHANGE to trigger network stack updates in main.cpp
   Settings.dispatchEvent(SettingsClass::Event::CS_CHANGE);
 }
+
 void SettingsUI::sd_format_event_cb(lv_event_t * e) {
     SettingsUI* ui = (SettingsUI*)lv_event_get_user_data(e);
     if (ui->_formatMsgbox) return; // Prevent multiple dialogs
@@ -340,4 +367,68 @@ static void screenshot_timer_cb(lv_timer_t* timer) {
 
 void SettingsUI::screenshot_event_cb(lv_event_t * e) {
   lv_timer_create(screenshot_timer_cb, 3000, nullptr);
+}
+
+// ---------------------------------------------------------------------------
+// Throttle Programming Mode
+// ---------------------------------------------------------------------------
+// Struct to carry both the overlay container and the SettingsUI pointer
+// through the close button's event callback without needing a heap allocation.
+struct ThrottleProgCtx {
+  lv_obj_t* overlay;
+};
+
+void SettingsUI::throttle_programming_event_cb(lv_event_t * e) {
+  // Mark programming mode active – ThrottleServer reads this flag to serve the full web UI
+  throttleProgrammingActive = true;
+
+  // Signal main.cpp to destroy all major UI objects to free heap for the web server
+  Settings.dispatchEvent(SettingsClass::Event::THROTTLE_PROGRAM_ENTER);
+
+  // NOTE: at this point our own SettingsUI (and its parent tabview) has been deleted
+  // by main.cpp's event handler. We must not access 'this' after this point.
+  // The overlay is created on lv_scr_act() so it survives the tabview deletion.
+
+  lv_obj_t* scr = lv_scr_act();
+
+  // Full-screen overlay container
+  lv_obj_t* overlay = lv_obj_create(scr);
+  lv_obj_set_size(overlay, LV_PCT(100), LV_PCT(100));
+  lv_obj_align(overlay, LV_ALIGN_CENTER, 0, 0);
+  lv_obj_set_style_border_width(overlay, 0, 0);
+  lv_obj_set_style_radius(overlay, 0, 0);
+  lv_obj_set_flex_flow(overlay, LV_FLEX_FLOW_COLUMN);
+  lv_obj_set_flex_align(overlay, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+  lv_obj_clear_flag(overlay, LV_OBJ_FLAG_SCROLLABLE);
+
+  // Status label
+  lv_obj_t* lbl = lv_label_create(overlay);
+  lv_label_set_text(lbl, LV_SYMBOL_SETTINGS "  Throttle Programming Mode");
+  lv_obj_set_style_text_font(lbl, &lv_font_montserrat_14, 0);
+  lv_obj_set_style_pad_bottom(lbl, 20, 0);
+
+  // Red close button
+  lv_obj_t* close_btn = lv_btn_create(overlay);
+  lv_obj_set_style_bg_color(close_btn, lv_color_make(200, 30, 30), 0);
+  lv_obj_set_style_bg_color(close_btn, lv_color_make(160, 20, 20), LV_STATE_PRESSED);
+  lv_obj_set_width(close_btn, LV_PCT(60));
+
+  lv_obj_t* close_lbl = lv_label_create(close_btn);
+  lv_label_set_text(close_lbl, LV_SYMBOL_CLOSE "  Close");
+  lv_obj_center(close_lbl);
+
+  // Pass overlay pointer via user data so the callback can delete it
+  lv_obj_add_event_cb(close_btn, [](lv_event_t* e) {
+    lv_obj_t* overlay = (lv_obj_t*)lv_event_get_user_data(e);
+
+    // Clear the programming mode flag before rebuilding the UI
+    SettingsUI::throttleProgrammingActive = false;
+
+    // Delete the overlay first so the rebuilt tabview renders cleanly
+    lv_obj_del(overlay);
+
+    // Signal main.cpp to recreate the full tabview and all UI objects
+    Settings.dispatchEvent(SettingsClass::Event::THROTTLE_PROGRAM_EXIT);
+
+  }, LV_EVENT_CLICKED, overlay);
 }

@@ -41,8 +41,12 @@ class SettingsUI : public UIView {
     static void calibrate_event_cb(lv_event_t * e);
     static void programming_setup_event_cb(lv_event_t * e);
     static void screenshot_event_cb(lv_event_t * e);
+    static void throttle_programming_event_cb(lv_event_t * e);
 
   public:
+    // Public so ThrottleServer can gate web access
+    static bool throttleProgrammingActive;
+
     SettingsUI(DCCExCS& dccExCS, lv_obj_t* parent);
     ~SettingsUI() override;
 };

@@ -63,7 +63,7 @@ export default {
           password: this.password,
           server: this.server,
           port: this.port,
-          storageMode: this.storageMode
+          storageMode: this.storageMode,
         })
       });
 
@@ -179,9 +179,9 @@ export default {
           </div>
           <div class="card-body">
             <ul class="list-group list-group-flush">
-              <li class="list-group-item">If your Command Station connects to your home WiFi the defaults for Server Host/IP &amp; Port are 
+              <li class="list-group-item">If your Command Station connects to your home WiFi the defaults for Server Host/IP &amp; Port are
                 <span class="badge text-bg-secondary">dccex</span> and <span class="badge text-bg-secondary">2560</span></li>
-              <li class="list-group-item">If your Command Station is in AP mode the defaults for Server Host/IP &amp; Port are 
+              <li class="list-group-item">If your Command Station is in AP mode the defaults for Server Host/IP &amp; Port are
                 <span class="badge text-bg-secondary">192.168.4.1</span> and <span class="badge text-bg-secondary">2560</span></li>
             </ul>
           </div>
@@ -193,7 +193,7 @@ export default {
         <div class="card">
           <div class="card-header">
             <svg width="16" height="16" fill="currentColor">
-              <use xlink:href="bs.icons.svg#info-circle"/>
+              <use xlink:href="bs.icons.svg#info"/>
             </svg>
             About DCC-EX-CYD
           </div>

@@ -3,7 +3,7 @@
   width: 28px;
   height: 28px;
   padding: 2px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border, #444);
   border-radius: 5px;
 }
 .color-picker::before {
@@ -20,9 +20,9 @@
   display: block;
   max-height: 140px;
   overflow-y: auto;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border, #444);
   border-radius: 0.5rem;
-  background-color: var(--bg-color);
+  background-color: var(--surface, #1e1e1e);
   padding: 0.5rem;
 }
 .fn-icons img {
@@ -30,24 +30,24 @@
 }
 
 .add-btn {
-  border: 2px dashed #6c757d;
+  border: 2px dashed var(--border-2, #444);
   background-color: transparent;
-  color: #6c757d;
+  color: var(--text-muted, #aaa);
   transition: all 0.2s ease;
   height: 42px;
 }
 .add-btn:hover {
-  background-color: rgba(108, 117, 125, 0.1);
-  color: #495057;
-  border-color: #495057;
+  background-color: var(--surface-2, #2a2a2a);
+  color: var(--text, #f0f0f0);
+  border-color: var(--border-2, #555);
 }
 .add-row-btn {
-  border: 2px dashed #0d6efd;
-  color: #0d6efd;
+  border: 2px dashed var(--primary, #1d4ed8);
+  color: var(--accent, #7dd3fc);
   background-color: transparent;
 }
 .add-row-btn:hover {
-  background-color: rgba(13, 110, 253, 0.1);
+  background-color: rgba(29, 78, 216, 0.1);
 }
 
 .fn-button button {
@@ -68,7 +68,7 @@
   left: calc(50% - 5px);
   width: 10px;
   height: 10px;
-  background: #fff;
+  background: var(--surface-2, #2a2a2a);
   transform: rotate(45deg);
 }
 .fn-button svg {
@@ -83,14 +83,14 @@
   padding: 2px;
   border-top-right-radius: 10px;
   border-bottom-right-radius: 10px;
-  background: #ddd;
+  background: var(--surface-2, #2a2a2a);
   cursor: pointer;
 }
 
 .fn-grid {
   width: 100%;
   min-height: 58px;
-  background-color: var(--bg-color);
+  background-color: var(--bg, #111);
   border-radius: 0.5rem;
   padding: 0.5rem;
 }
@@ -100,13 +100,13 @@
   display: block;
   text-align: center;
   top: 14px;
-  color: #6c757d;
+  color: var(--text-muted, #aaa);
 }
 .fn-row {
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border, #333);
   border-radius: 0.5rem;
-  background: var(--card-bg);
-  box-shadow: var(--shadow-sm);
+  background: var(--surface, #1e1e1e);
+  box-shadow: var(--shadow, 0 4px 24px rgba(0,0,0,.4));
   margin-bottom: 0.5rem;
   min-height: 42px;
 }
@@ -119,8 +119,8 @@
   top: calc(50% - 16px);
   padding: 8px;
   border-radius: 5px;
-  background: #ddd;
-  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M3.646 10.146a.5.5 0 0 1 .708 0L8 13.793l3.646-3.647a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4-4a.5.5 0 0 1 0-.708zm0-4.292a.5.5 0 0 0 .708 0L8 2.207l3.646 3.647a.5.5 0 0 0 .708-.708l-4-4a.5.5 0 0 0-.708 0l-4 4a.5.5 0 0 0 0 .708zM1 8a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 0 1h-13A.5.5 0 0 1 1 8z"/></svg>');
+  background: var(--surface-2, #2a2a2a);
+  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="%23aaaaaa" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M3.646 10.146a.5.5 0 0 1 .708 0L8 13.793l3.646-3.647a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4-4a.5.5 0 0 1 0-.708zm0-4.292a.5.5 0 0 0 .708 0L8 2.207l3.646 3.647a.5.5 0 0 0 .708-.708l-4-4a.5.5 0 0 0-.708 0l-4 4a.5.5 0 0 0 0 .708zM1 8a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 0 1h-13A.5.5 0 0 1 1 8z"/></svg>');
   background-repeat: no-repeat;
   background-position: 7px 7px;
   cursor: pointer;

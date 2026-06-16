@@ -1,6 +1,7 @@
 #include "WiFiUI.h"
 
 WiFiUI::WiFiUI(lv_obj_t* parent) {
+  _keyboard = nullptr;
   _container = lv_obj_create(parent);
   lv_obj_set_size(_container, LV_PCT(100), LV_PCT(100));
   lv_obj_align(_container, LV_ALIGN_CENTER, 0, 0);
@@ -89,7 +90,10 @@ WiFiUI::~WiFiUI() {
   WiFi.removeEvent(_ipDisconnectedHandler);
   Settings.removeEventListener(SettingsClass::Event::CS_CHANGE, _updatedHandler);
   
-  if (_keyboard) lv_obj_del(_keyboard);
+  if (_keyboard) {
+    lv_keyboard_set_textarea(_keyboard, NULL);
+    lv_obj_del(_keyboard);
+  }
   if (_container) lv_obj_del(_container);
 }
 
@@ -108,14 +112,13 @@ void WiFiUI::ta_event_cb(lv_event_t * e) {
     lv_keyboard_set_textarea(ui->_keyboard, ta);
     lv_keyboard_set_mode(ui->_keyboard, (field == 3) ? LV_KEYBOARD_MODE_NUMBER : LV_KEYBOARD_MODE_TEXT_LOWER);
     lv_obj_clear_flag(ui->_keyboard, LV_OBJ_FLAG_HIDDEN);
-    
+
     // Scroll to the focused textarea so it's not hidden by keyboard
     lv_obj_scroll_to_view(ta, LV_ANIM_ON);
   } else if (code == LV_EVENT_DEFOCUSED) {
     if (ui->_keyboard) {
         lv_keyboard_set_textarea(ui->_keyboard, NULL);
-        lv_obj_delete_async(ui->_keyboard);
-        ui->_keyboard = nullptr;
+        lv_obj_add_flag(ui->_keyboard, LV_OBJ_FLAG_HIDDEN);
     }
     
     const char* txt = lv_textarea_get_text(ta);

@@ -9,6 +9,7 @@
 #include <Settings.h>
 #include <Version.h>
 #include "ui/LVGL_Layouts.h"
+#include "ui/SettingsUI.h"
 
 class WebLoggerHandler : public AsyncWebHandler {
 public:
@@ -216,6 +217,15 @@ void ThrottleServer::begin() {
     request->send(Settings.CS.valid() ? 200 : 404);
   });
 
+  // Polling endpoint: 200 = programming mode active, 404 = not active.
+  // The web UI polls this periodically and redirects to / when it returns 404.
+  on("/throttle-programming", HTTP_HEAD, [](AsyncWebServerRequest* request) {
+    AsyncWebServerResponse* response = request->beginResponse(
+      SettingsUI::throttleProgrammingActive ? 200 : 404);
+    response->addHeader("Cache-Control", "no-store");
+    request->send(response);
+  });
+
   on("/cs", HTTP_GET, [](AsyncWebServerRequest* request) {
     AsyncJsonResponse* response = new AsyncJsonResponse(false, 1024);
     JsonVariant& cs = response->getRoot();
@@ -354,9 +364,20 @@ void ThrottleServer::begin() {
   addHandler(new WebLoggerHandler());
   addHandler(new ThrottleAPIHandler());
 
+  // Root route: serve the minimal "not started" page unless Throttle
+  // Programming mode is active, in which case serve the full Vue app.
+  // This prevents the heavy Vue bundle from being loaded (and crashing
+  // the device) unless the user has explicitly enabled programming mode.
+  on("/", HTTP_GET, [](AsyncWebServerRequest* request) {
+    if (SettingsUI::throttleProgrammingActive) {
+      request->redirect("/index.html");
+    } else {
+      request->redirect("/not_programming.html");
+    }
+  });
+
   serveStatic("/", WebsiteFS, "/www/")
-    .setCacheControl("max-age=604800")
-    .setDefaultFile("index.html");
+    .setCacheControl("max-age=604800");
 
   AsyncWebServer::begin();
 }

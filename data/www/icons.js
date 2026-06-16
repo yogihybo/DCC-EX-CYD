@@ -75,13 +75,13 @@ export default {
   template: `
   <div>
     <div class="row mb-2">
-      <div class="col-12 d-flex justify-content-end align-items-center pe-3">
-        <label class="btn btn-link text-success p-0" title="Upload new icon">
-          <svg width="16" height="16" fill="currentColor">
-            <use xlink:href="bs.icons.svg#plus-lg"/>
-          </svg>
-          <input @change="upload" type="file" accept="image/bmp" class="d-none" />
-        </label>
+      <div class="col-12 d-flex justify-content-end pe-1">
+        <div class="action-toolbar">
+          <label class="btn btn-link text-success p-0" title="Upload new icon">
+            <svg width="20" height="20" fill="currentColor"><use xlink:href="bs.icons.svg#plus-lg"/></svg>
+            <input @change="upload" type="file" accept="image/bmp" class="d-none" />
+          </label>
+        </div>
       </div>
     </div>
     <div class="row mb-3">
@@ -119,8 +119,15 @@ export default {
               </div>
             </div>
           </li>
-          <li v-if="!icons.length" class="list-group-item d-flex align-items-center">
-            No icons, click the <span class="text-success h1">+</span> to add one
+          <li v-if="!icons.length" class="list-group-item">
+            <div class="empty-state">
+              <svg width="40" height="40" fill="currentColor"><use xlink:href="bs.icons.svg#image"/></svg>
+              <p>No icons uploaded yet</p>
+              <label class="btn btn-primary btn-sm" style="cursor:pointer;">
+                + Upload Icon
+                <input @change="upload" type="file" accept="image/bmp" class="d-none" />
+              </label>
+            </div>
           </li>
         </ul>
       </div>

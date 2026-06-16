@@ -82,6 +82,9 @@ std::unique_ptr<AccessoriesUI> accUI;
 std::unique_ptr<PowerUI> pwrUI;
 std::unique_ptr<SettingsUI> setUI_ptr;
 
+// Forward declaration – defined below setup()
+void build_ui_objects();
+
 void keepWiFiAlive(void *) {
   for (;;) {
     bool connected = (WiFi.status() == WL_CONNECTED);
@@ -131,6 +134,16 @@ void apply_rotation() {
   lv_display_rotation_t rot = USB_DOWN;
   if (Settings.rotation == SettingsClass::Rotation::INVERTED) rot = USB_UP;
   lv_display_set_rotation(lv_display_get_default(), rot);
+}
+
+// Build the tabview and all UI objects.
+// Called at boot and again on THROTTLE_PROGRAM_EXIT.
+void build_ui_objects() {
+  create_main_ui();
+  locoUI    = std::make_unique<LocoUI>(dccExCS, locos, loco_tab);
+  accUI     = std::make_unique<AccessoriesUI>(dccExCS, acc_tab);
+  pwrUI     = std::make_unique<PowerUI>(dccExCS, power, pwr_tab);
+  setUI_ptr = std::make_unique<SettingsUI>(dccExCS, set_tab);
 }
 
 void setup() {
@@ -198,13 +211,57 @@ void setup() {
   LVGL_CYD::backlight(Settings.brightness); // Fade in / turn on backlight now that the frame is ready
   delay(2000);
   
+  // Create the header bar (once only)
   setup_lvgl_layouts();
 
-  locoUI = std::make_unique<LocoUI>(dccExCS, locos, loco_tab);
-  accUI = std::make_unique<AccessoriesUI>(dccExCS, acc_tab);
-  pwrUI = std::make_unique<PowerUI>(dccExCS, power, pwr_tab);
-  setUI_ptr = std::make_unique<SettingsUI>(dccExCS, set_tab);
+  // Build tabview + all UI objects for the first time
+  build_ui_objects();
   Serial.printf("[Boot] After UI setup: %u bytes free\n", ESP.getFreeHeap());
+
+  // -------------------------------------------------------
+  // Throttle Programming Mode – tear down / rebuild UI
+  // -------------------------------------------------------
+
+  // THROTTLE_PROGRAM_ENTER: destroy all UI objects so the web server has
+  // maximum free heap. The tabview was already deleted inside
+  // throttle_programming_event_cb via lv_obj_del; here we just reset the
+  // C++ unique_ptrs to call their destructors and free C++ heap.
+  Settings.addEventListener(SettingsClass::Event::THROTTLE_PROGRAM_ENTER, [](void*) {
+      Serial.printf("[ThrottleProg] Entering – heap before: %u\n", ESP.getFreeHeap());
+
+      // Save the raw LVGL pointer before nulling the global – we need it to
+      // actually delete the widget after the C++ destructors have run.
+      lv_obj_t* tv = main_tabview;
+
+      // Null all global tab pointers so nothing holds a stale reference.
+      main_tabview = nullptr;
+      loco_tab     = nullptr;
+      acc_tab      = nullptr;
+      pwr_tab      = nullptr;
+      set_tab      = nullptr;
+
+      // Reset C++ UI objects first – their destructors call lv_obj_del on their
+      // own containers (children of the tabs), leaving the tabview itself empty.
+      setUI_ptr.reset();
+      pwrUI.reset();
+      accUI.reset();
+      locoUI.reset();
+
+      // Now it is safe to delete the tabview LVGL widget: its tab content has
+      // already been removed by the destructors above. Without this call the
+      // old tabview stays rendered on screen and a second one is created on top
+      // of it when the UI is rebuilt after exiting programming mode.
+      if (tv) lv_obj_del(tv);
+
+      Serial.printf("[ThrottleProg] Entered  – heap after : %u\n", ESP.getFreeHeap());
+  });
+
+  // THROTTLE_PROGRAM_EXIT: rebuild the full UI from scratch.
+  Settings.addEventListener(SettingsClass::Event::THROTTLE_PROGRAM_EXIT, [](void*) {
+      Serial.printf("[ThrottleProg] Exiting – heap before: %u\n", ESP.getFreeHeap());
+      build_ui_objects();
+      Serial.printf("[ThrottleProg] Exited  – heap after : %u\n", ESP.getFreeHeap());
+  });
 
   // Setup the WiFi
   WiFi.setHostname(Settings.AP.SSID.c_str());
@@ -244,6 +301,8 @@ void setup() {
   // WiFi connected
   WiFi.onEvent(
       [](WiFiEvent_t event, WiFiEventInfo_t info) {
+        Serial.printf("[WiFi] Connected – IP: %s  RSSI: %d dBm\n",
+                      WiFi.localIP().toString().c_str(), WiFi.RSSI());
         if (xSemaphoreTake(lvgl_mutex, portMAX_DELAY) == pdTRUE) {
             set_header_wifi_status(true, WiFi.RSSI());
             xSemaphoreGive(lvgl_mutex);
@@ -253,14 +312,17 @@ void setup() {
       ARDUINO_EVENT_WIFI_STA_GOT_IP);
   // WiFi disconnected
   WiFi.onEvent([](WiFiEvent_t event,
-                  WiFiEventInfo_t info) { 
+                  WiFiEventInfo_t info) {
+        Serial.printf("[WiFi] Disconnected\n");
         if (xSemaphoreTake(lvgl_mutex, portMAX_DELAY) == pdTRUE) {
-            set_header_wifi_status(false, 0); 
+            set_header_wifi_status(false, 0);
             xSemaphoreGive(lvgl_mutex);
         }
   }, ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
   // CS connected
   csClient.onConnect([](void *arg, AsyncClient *client) {
+    Serial.printf("[CS] Command Station connected – %s:%u\n",
+                  Settings.CS.server().c_str(), Settings.CS.port());
     if (xSemaphoreTake(lvgl_mutex, portMAX_DELAY) == pdTRUE) {
         set_header_cs_status(true);
         xSemaphoreGive(lvgl_mutex);
@@ -269,6 +331,7 @@ void setup() {
   });
   // CS disconnected
   csClient.onDisconnect([](void *arg, AsyncClient *client) {
+    Serial.printf("[CS] Command Station disconnected\n");
     if (xSemaphoreTake(lvgl_mutex, portMAX_DELAY) == pdTRUE) {
         set_header_cs_status(false);
         xSemaphoreGive(lvgl_mutex);
@@ -296,9 +359,16 @@ void setup() {
     }
   });
 
-  // Aquired loco count change
+  // Acquired loco count change
+  static uint8_t lastLocoCount = 0;
   locos.addEventListener(Locos::Event::COUNT_CHANGE, [](void *parameter) {
     auto count = *static_cast<uint8_t *>(parameter);
+    if (count > lastLocoCount) {
+      Serial.printf("[Loco] Added   – total: %u\n", count);
+    } else if (count < lastLocoCount) {
+      Serial.printf("[Loco] Removed – total: %u\n", count);
+    }
+    lastLocoCount = count;
     if (xTaskGetCurrentTaskHandle() == xSemaphoreGetMutexHolder(lvgl_mutex)) {
         set_header_loco_count(count);
     } else if (xSemaphoreTake(lvgl_mutex, portMAX_DELAY) == pdTRUE) {
@@ -319,7 +389,7 @@ void setup() {
                             [](void *) { WiFi.disconnect(); });
 
   xTaskCreatePinnedToCore(powerCheck, "powerCheck", 2048, NULL, 1, NULL, 1);
-  xTaskCreatePinnedToCore(keepWiFiAlive, "keepWiFiAlive", 2048, NULL, 1, NULL, 1);
+  xTaskCreatePinnedToCore(keepWiFiAlive, "keepWiFiAlive", 4096, NULL, 1, NULL, 1);
 
   throttleServer.begin();
   Serial.printf("[Boot] After WebServer: %u bytes free (min ever: %u)\n", ESP.getFreeHeap(), ESP.getMinFreeHeap());

@@ -8,28 +8,107 @@
     <title>DCC-EX-CYD</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230d6efd'/%3E%3Ctext x='8' y='12' text-anchor='middle' font-size='11' font-family='sans-serif' fill='white' font-weight='bold'%3ET%3C/text%3E%3C/svg%3E" />
     <style>
+      /* ── Palette (matches not_programming.html) ─────────────────────────── */
       :root {
-        --primary-color: #0d6efd;
-        --bg-color: #f4f6f8;
-        --card-bg: #ffffff;
-        --text-color: #212529;
-        --border-color: #e9ecef;
-        --shadow-sm: 0 2px 8px rgba(0,0,0,.04);
-        --shadow-md: 0 8px 24px rgba(0,0,0,.08);
-        --transition-speed: 0.2s;
+        --bg:          #111111;
+        --surface:     #1e1e1e;
+        --surface-2:   #2a2a2a;
+        --border:      #333333;
+        --border-2:    #444444;
+        --text:        #f0f0f0;
+        --text-muted:  #aaaaaa;
+        --accent:      #7dd3fc;
+        --primary:     #1d4ed8;
+        --primary-hov: #1e40af;
+        --danger:      #dc2626;
+        --danger-hov:  #b91c1c;
+        --success:     #16a34a;
+        --warning:     #ca8a04;
+        --radius:      12px;
+        --radius-sm:   6px;
+        --shadow:      0 4px 24px rgba(0,0,0,.4);
+        --transition:  0.18s ease;
       }
+
+      /* ── Bootstrap variable overrides ───────────────────────────────────── */
+      :root,
+      [data-bs-theme="dark"] {
+        --bs-body-bg:                     var(--bg);
+        --bs-body-color:                  var(--text);
+        --bs-secondary-color:             var(--text-muted);
+        --bs-border-color:                var(--border);
+        --bs-border-color-translucent:    rgba(255,255,255,.1);
+        --bs-link-color:                  var(--accent);
+        --bs-link-hover-color:            #bae6fd;
+
+        /* cards */
+        --bs-card-bg:                     var(--surface);
+        --bs-card-color:                  var(--text);
+        --bs-card-border-color:           var(--border);
+        --bs-card-cap-bg:                 var(--surface-2);
+        --bs-card-cap-color:              var(--text);
+
+        /* list-group */
+        --bs-list-group-bg:               var(--surface);
+        --bs-list-group-color:            var(--text);
+        --bs-list-group-border-color:     var(--border);
+        --bs-list-group-action-hover-bg:  var(--surface-2);
+        --bs-list-group-action-hover-color: var(--text);
+
+        /* modals */
+        --bs-modal-bg:                    var(--surface);
+        --bs-modal-color:                 var(--text);
+        --bs-modal-header-border-color:   var(--border);
+        --bs-modal-footer-border-color:   var(--border);
+        --bs-modal-header-bg:             var(--surface);
+        --bs-modal-backdrop-bg:           #000;
+        --bs-modal-backdrop-opacity:      0.7;
+
+        /* form inputs */
+        --bs-body-bg:                     var(--bg);
+        --bs-form-control-bg:             var(--surface-2);
+        --bs-form-control-disabled-bg:    #1a1a1a;
+        --bs-input-bg:                    var(--surface-2);
+        --bs-input-color:                 var(--text);
+        --bs-input-border-color:          var(--border-2);
+        --bs-input-focus-border-color:    var(--primary);
+        --bs-input-focus-color:           var(--text);
+        --bs-input-placeholder-color:     var(--text-muted);
+
+        /* dropdowns */
+        --bs-dropdown-bg:                 var(--surface);
+        --bs-dropdown-color:              var(--text);
+        --bs-dropdown-border-color:       var(--border);
+        --bs-dropdown-link-color:         var(--text);
+        --bs-dropdown-link-hover-bg:      var(--surface-2);
+        --bs-dropdown-link-hover-color:   var(--text);
+
+        /* badges */
+        --bs-secondary-bg:                var(--surface-2);
+        --bs-secondary-color:             var(--text-muted);
+
+        /* buttons */
+        --bs-btn-focus-box-shadow:        0 0 0 .2rem rgba(29,78,216,.35);
+      }
+
+      /* ── Base ────────────────────────────────────────────────────────────── */
+      *, *::before, *::after { box-sizing: border-box; }
+
       body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        background-color: var(--bg-color);
-        color: var(--text-color);
+        background: var(--bg);
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                     "Helvetica Neue", Arial, sans-serif;
       }
-      /* Modern Navigation Tabs */
+
+      /* ── Navigation tabs ─────────────────────────────────────────────────── */
       .nav-tabs {
         border-bottom: none;
-        background: var(--card-bg);
-        padding: 0.5rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        padding: 0.4rem;
         border-radius: 2rem;
-        box-shadow: var(--shadow-sm);
+        box-shadow: var(--shadow);
         display: flex;
         width: 100%;
       }
@@ -37,118 +116,316 @@
         flex: 1;
         text-align: center;
         border: none;
-        color: #6c757d;
+        color: var(--text-muted);
         border-radius: 2rem;
-        padding: 0.5rem 1.5rem;
+        padding: 0.45rem 1rem;
         font-weight: 500;
-        transition: all var(--transition-speed) ease;
-        margin: 0 0.25rem;
+        transition: all var(--transition);
+        margin: 0 0.2rem;
+        background: transparent;
       }
       .nav-tabs .nav-link:hover {
-        background-color: var(--bg-color);
-        color: var(--primary-color);
+        background: var(--surface-2);
+        color: var(--text);
       }
       .nav-tabs .nav-link.active {
-        background-color: var(--primary-color);
+        background: var(--primary);
         color: #fff;
-        box-shadow: var(--shadow-sm);
+        box-shadow: 0 2px 8px rgba(29,78,216,.4);
       }
-      
-      /* Card overrides for lists */
+      .nav-tabs .nav-link.disabled {
+        color: #555;
+        pointer-events: none;
+      }
+
+      /* ── List groups ─────────────────────────────────────────────────────── */
       .list-group {
-        border-radius: 1rem;
-        box-shadow: var(--shadow-sm);
+        border-radius: var(--radius);
         overflow: hidden;
-        border: none;
+        border: 1px solid var(--border);
       }
       .list-group-item {
-        border-color: var(--border-color);
-        transition: background-color var(--transition-speed) ease;
+        background: var(--surface);
+        color: var(--text);
+        border-color: var(--border);
         border-left: none;
         border-right: none;
-        padding: 0.5rem 0.75rem;
+        padding: 0.55rem 0.75rem;
+        transition: background var(--transition);
       }
-      .list-group-item:first-child {
-        border-top: none;
+      .list-group-item:first-child { border-top: none; }
+      .list-group-item:last-child  { border-bottom: none; }
+      .list-group-item:hover       { background: var(--surface-2); }
+      .list-group-flush .list-group-item { border-left: none; border-right: none; }
+
+      /* ── Cards ───────────────────────────────────────────────────────────── */
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        color: var(--text);
       }
-      .list-group-item:last-child {
-        border-bottom: none;
+      .card-header {
+        background: var(--surface-2);
+        border-bottom: 1px solid var(--border);
+        color: var(--text);
       }
-      .list-group-item:hover {
-        background-color: #f8f9fa;
-      }
-      
-      /* Buttons */
+      .card-body { color: var(--text); }
+
+      /* ── Buttons ─────────────────────────────────────────────────────────── */
       .btn {
-        border-radius: 0.5rem;
-        transition: all var(--transition-speed) ease;
+        border-radius: var(--radius-sm);
+        transition: all var(--transition);
+        font-weight: 500;
       }
+      .btn-primary {
+        background: var(--primary);
+        border-color: var(--primary);
+        color: #fff;
+      }
+      .btn-primary:hover, .btn-primary:focus {
+        background: var(--primary-hov);
+        border-color: var(--primary-hov);
+        color: #fff;
+      }
+      .btn-secondary {
+        background: var(--surface-2);
+        border-color: var(--border-2);
+        color: var(--text);
+      }
+      .btn-secondary:hover {
+        background: #383838;
+        border-color: #555;
+        color: var(--text);
+      }
+      .btn-warning {
+        background: var(--warning);
+        border-color: var(--warning);
+        color: #fff;
+      }
+      .btn-warning:hover { background: #a16207; border-color: #a16207; color: #fff; }
+      .btn-danger {
+        background: var(--danger);
+        border-color: var(--danger);
+        color: #fff;
+      }
+      .btn-danger:hover { background: var(--danger-hov); border-color: var(--danger-hov); }
       .btn-link {
         text-decoration: none;
+        color: var(--accent);
       }
-      .btn-link:hover {
-        transform: scale(1.05);
+      .btn-link:hover { color: #bae6fd; transform: scale(1.1); }
+      .btn-link.text-primary { color: var(--accent) !important; }
+      .btn-link.text-success  { color: #4ade80 !important; }
+      .btn-close {
+        filter: invert(1) grayscale(1);
       }
 
-      /* Modals */
+      /* ── Form controls ───────────────────────────────────────────────────── */
+      .form-control,
+      .form-select {
+        background: var(--surface-2);
+        color: var(--text);
+        border-color: var(--border-2);
+        border-radius: var(--radius-sm);
+      }
+      .form-control:focus,
+      .form-select:focus {
+        background: var(--surface-2);
+        color: var(--text);
+        border-color: var(--primary);
+        box-shadow: 0 0 0 .2rem rgba(29,78,216,.25);
+      }
+      .form-control::placeholder { color: var(--text-muted); }
+      .form-control:disabled,
+      .form-select:disabled {
+        background: #1a1a1a;
+        color: #555;
+        border-color: var(--border);
+      }
+      .form-floating > label {
+        color: var(--text-muted);
+      }
+      .form-floating > .form-control:focus ~ label,
+      .form-floating > .form-control:not(:placeholder-shown) ~ label,
+      .form-floating > .form-select ~ label {
+        color: var(--accent);
+      }
+      .form-text { color: var(--text-muted); }
+      .form-text.text-danger { color: #f87171 !important; }
+
+      /* ── Badges ──────────────────────────────────────────────────────────── */
+      .badge.text-bg-secondary,
+      .badge.bg-secondary {
+        background: var(--surface-2) !important;
+        color: var(--accent) !important;
+        border: 1px solid var(--border-2);
+        font-family: monospace;
+      }
+      .badge.bg-warning { background: var(--warning) !important; color: #fff !important; }
+
+      /* ── Modals ──────────────────────────────────────────────────────────── */
       .modal-content {
-        border-radius: 1rem;
-        border: none;
-        box-shadow: var(--shadow-md);
+        background: var(--surface);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
       }
       .modal-header {
-        border-bottom-color: var(--border-color);
+        background: var(--surface-2);
+        border-bottom: 1px solid var(--border);
       }
-      .modal-footer {
-        border-top-color: var(--border-color);
-      }
-      
-      /* Inputs */
-      .form-control, .form-select {
-        border-radius: 0.5rem;
-      }
-      .form-control:focus, .form-select:focus {
-        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
-      }
+      .modal-footer { border-top: 1px solid var(--border); }
+      .modal-backdrop { background: #000; }
 
-      /* Loading — pure CSS spinner, no image file needed */
+      /* ── Horizontal rule ─────────────────────────────────────────────────── */
+      hr { border-color: var(--border); opacity: 1; }
+
+      /* ── Spinner (loading state) ─────────────────────────────────────────── */
       .loading {
         position: relative;
         min-height: 64px;
       }
-      .loading:before {
+      .loading::before {
         content: '';
         position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 36px;
-        height: 36px;
+        top: 50%; left: 50%;
+        width: 36px; height: 36px;
         margin: -18px 0 0 -18px;
-        border: 4px solid #dee2e6;
-        border-top-color: #0d6efd;
+        border: 4px solid var(--border-2);
+        border-top-color: var(--primary);
         border-radius: 50%;
         animation: spin .75s linear infinite;
       }
       @keyframes spin { to { transform: rotate(360deg); } }
+
+      /* ── Scrollbar (webkit) ──────────────────────────────────────────────── */
+      ::-webkit-scrollbar { width: 6px; }
+      ::-webkit-scrollbar-track { background: var(--bg); }
+      ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+      ::-webkit-scrollbar-thumb:hover { background: #666; }
+
+      /* ── App header ──────────────────────────────────────────────────────── */
+      .app-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.5rem 0.85rem;
+        margin-bottom: 0.75rem;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+      }
+      .app-title {
+        font-weight: 700;
+        font-size: 0.95rem;
+        color: var(--text);
+        letter-spacing: 0.06em;
+      }
+      .cs-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--danger);
+        box-shadow: 0 0 0 3px rgba(220,38,38,.25);
+        transition: background var(--transition), box-shadow var(--transition);
+      }
+      .cs-dot.connected {
+        background: var(--success);
+        box-shadow: 0 0 0 3px rgba(22,163,74,.25);
+      }
+
+      /* ── Tab button icon+label layout ────────────────────────────────────── */
+      .nav-tabs .tab-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.2rem;
+        font-size: 0.7rem;
+        padding: 0.35rem 0.6rem;
+        line-height: 1;
+      }
+
+      /* ── Tab content transitions (fade + slide-up) ───────────────────────── */
+      .tab-pane {
+        transform: translateY(5px);
+        transition: opacity 0.15s ease, transform 0.15s ease;
+      }
+      .tab-pane.show {
+        transform: translateY(0);
+      }
+
+      /* ── Action toolbar ──────────────────────────────────────────────────── */
+      .action-toolbar {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.15rem;
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: 2rem;
+        padding: 0.3rem 0.6rem;
+      }
+      .action-toolbar .btn-link {
+        color: var(--text-muted);
+        padding: 0.25rem;
+        border-radius: var(--radius-sm);
+        display: flex;
+        align-items: center;
+      }
+      .action-toolbar .btn-link:hover {
+        color: var(--text);
+        background: var(--border-2);
+        transform: none;
+      }
+      .action-toolbar .btn-link.text-success { color: #4ade80 !important; }
+      .action-toolbar .btn-link.text-success:hover { color: #86efac !important; }
+      .action-toolbar-sep {
+        width: 1px;
+        height: 16px;
+        background: var(--border);
+        margin: 0 0.15rem;
+      }
+
+      /* ── Empty state ─────────────────────────────────────────────────────── */
+      .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 2.5rem 1rem;
+        color: var(--text-muted);
+        gap: 0.75rem;
+      }
+      .empty-state p { margin: 0; font-size: 0.9rem; }
     </style>
+
   </head>
   <body>
     <div class="container py-2" id="app">
+      <div class="app-header">
+        <span class="app-title">DCC-EX-CYD</span>
+        <span class="cs-dot" :class="{ connected: cs }" :title="cs ? 'Command Station Connected' : 'Command Station Not Connected'"></span>
+      </div>
       <div class="nav nav-tabs justify-content-center mb-3">
-        <button type="button" class="nav-link" :class="{ active: tab === 1, disabled: locked }" @click="tab = 1">
-          Locos
+        <button type="button" class="nav-link tab-btn" :class="{ active: tab === 1, disabled: locked }" @click="tab = 1">
+          <svg width="18" height="18" fill="currentColor"><use xlink:href="bs.icons.svg#fa-train"/></svg>
+          <span>Locos</span>
         </button>
-        <button type="button" class="nav-link" :class="{ active: tab === 2, disabled: locked }" @click="tab = 2">
-          Functions
+        <button type="button" class="nav-link tab-btn" :class="{ active: tab === 2, disabled: locked }" @click="tab = 2">
+          <svg width="18" height="18" fill="currentColor"><use xlink:href="bs.icons.svg#fa-sliders"/></svg>
+          <span>Functions</span>
         </button>
-        <button type="button" class="nav-link" :class="{ active: tab === 3, disabled: locked }" @click="tab = 3">
-          Groups
+        <button type="button" class="nav-link tab-btn" :class="{ active: tab === 3, disabled: locked }" @click="tab = 3">
+          <svg width="18" height="18" fill="currentColor"><use xlink:href="bs.icons.svg#fa-layer-group"/></svg>
+          <span>Groups</span>
         </button>
-        <button type="button" class="nav-link" :class="{ active: tab === 4, disabled: locked }" @click="tab = 4">
-          Icons
+        <button type="button" class="nav-link tab-btn" :class="{ active: tab === 4, disabled: locked }" @click="tab = 4">
+          <svg width="18" height="18" fill="currentColor"><use xlink:href="bs.icons.svg#fa-images"/></svg>
+          <span>Icons</span>
         </button>
-        <button type="button" class="nav-link" :class="{ active: tab === 5, disabled: locked }" @click="tab = 5">
-          Settings <span class="badge bg-warning" :class="{ 'd-none': cs }">!</span>
+        <button type="button" class="nav-link tab-btn" :class="{ active: tab === 5, disabled: locked }" @click="tab = 5">
+          <svg width="18" height="18" fill="currentColor"><use xlink:href="bs.icons.svg#fa-gear"/></svg>
+          <span>Settings <span class="badge bg-warning" :class="{ 'd-none': cs }">!</span></span>
         </button>
       </div>
       <div class="tab-content">
@@ -195,13 +472,40 @@
         },
         async mounted() {
           // Check if the WiFi connection to the CS needs setting up
-          const response = await fetch('/cs', { method: 'HEAD' });
-          if (response.status === 404) {
-            this.cs = false;
-          }
+          try {
+            const response = await fetch('/cs', { method: 'HEAD', cache: 'no-store' });
+            if (response.status === 404) {
+              this.cs = false;
+            }
+          } catch (_) { /* ignore – UI still usable without CS check */ }
         },
       });
       app.mount('#app');
+    </script>
+
+    <!--
+      Programming-mode watchdog – runs completely outside Vue so it cannot
+      be blocked by Vue lifecycle errors or async failures in mounted().
+      Polls /throttle-programming every 3 s; redirects to / the moment the
+      device reports programming mode has ended (404) or is unreachable.
+    -->
+    <script>
+      (function () {
+        let redirecting = false;
+
+        function goHome() {
+          if (redirecting) return;
+          redirecting = true;
+          clearInterval(pollId);
+          window.location.href = '/';
+        }
+
+        var pollId = setInterval(function () {
+          fetch('/throttle-programming', { method: 'HEAD', cache: 'no-store' })
+            .then(function (r) { if (r.status === 404) goHome(); })
+            .catch(function ()  { goHome(); });
+        }, 3000);
+      })();
     </script>
   </body>
 </html>

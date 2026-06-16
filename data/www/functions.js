@@ -200,23 +200,20 @@ export default {
   template: `
   <div>
     <div class="row mb-2">
-      <div class="col-12 d-flex justify-content-end align-items-center pe-3">
-        <label @click="download" class="btn btn-link text-primary p-0" title="Download all function configs">
-          <svg width="16" height="16" fill="currentColor">
-            <use xlink:href="bs.icons.svg#download"/>
-          </svg>
-        </label>
-        <label class="btn btn-link text-primary p-0" title="Upload function configs">
-          <svg width="16" height="16" fill="currentColor">
-            <use xlink:href="bs.icons.svg#upload"/>
-          </svg>
-          <input @change="upload" type="file" accept="application/json" multiple class="d-none" />
-        </label>
-        <button @click="add" type="button" class="btn btn-link text-success p-0" title="Add new function">
-          <svg width="16" height="16" fill="currentColor">
-            <use xlink:href="bs.icons.svg#plus-lg"/>
-          </svg>
-        </button>
+      <div class="col-12 d-flex justify-content-end pe-1">
+        <div class="action-toolbar">
+          <label @click="download" class="btn btn-link p-0" title="Download all function configs">
+            <svg width="20" height="20" fill="currentColor"><use xlink:href="bs.icons.svg#download"/></svg>
+          </label>
+          <label class="btn btn-link p-0" title="Upload function configs">
+            <svg width="20" height="20" fill="currentColor"><use xlink:href="bs.icons.svg#upload"/></svg>
+            <input @change="upload" type="file" accept="application/json" multiple class="d-none" />
+          </label>
+          <div class="action-toolbar-sep"></div>
+          <button @click="add" type="button" class="btn btn-link text-success p-0" title="Add new function set">
+            <svg width="20" height="20" fill="currentColor"><use xlink:href="bs.icons.svg#plus-lg"/></svg>
+          </button>
+        </div>
       </div>
     </div>
     <div class="row">
@@ -247,8 +244,12 @@ export default {
               </div>
             </div>
           </li>
-          <li v-if="!fns.length" class="list-group-item d-flex align-items-center">
-            No function sets, click the <span @click="add" class="text-success h1" style="cursor: pointer;">+</span> to add one
+          <li v-if="!fns.length" class="list-group-item">
+            <div class="empty-state">
+              <svg width="40" height="40" fill="currentColor"><use xlink:href="bs.icons.svg#lightning-charge"/></svg>
+              <p>No function sets added yet</p>
+              <button @click="add" type="button" class="btn btn-primary btn-sm">+ Add Function Set</button>
+            </div>
           </li>
         </ul>
       </div>
