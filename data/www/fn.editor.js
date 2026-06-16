@@ -231,8 +231,10 @@ const FnButton = {
       <!-- Idle & Pressed state -->
       <div class="flex-grow-1 border-start ps-3 border-end pe-3">
         <div class="d-flex align-items-center gap-2 mb-2">
-          <span class="badge bg-secondary" style="width: 75px;">Idle</span>
-          <input v-model="config.btn.idle.label" class="form-control form-control-sm flex-grow-1" placeholder="Label">
+          <div class="d-flex align-items-stretch flex-grow-1 gap-2">
+            <div class="badge bg-secondary d-flex align-items-center justify-content-center" style="flex: 0 0 75px;">Idle</div>
+            <input v-model="config.btn.idle.label" class="form-control form-control-sm flex-grow-1" placeholder="Label">
+          </div>
           <div class="d-flex flex-column align-items-center mx-1">
             <span class="small text-muted" style="font-size: 10px; line-height: 1;">Text</span>
             <ColorPicker v-model="config.btn.idle.color" />
@@ -252,8 +254,10 @@ const FnButton = {
         </div>
         
         <div class="d-flex align-items-center gap-2">
-          <span class="badge bg-secondary" style="width: 75px;">Pressed</span>
-          <input v-model="config.btn.pressed.label" class="form-control form-control-sm flex-grow-1" placeholder="Label">
+          <div class="d-flex align-items-stretch flex-grow-1 gap-2">
+            <div class="badge bg-secondary d-flex align-items-center justify-content-center" style="flex: 0 0 75px;">Pressed</div>
+            <input v-model="config.btn.pressed.label" class="form-control form-control-sm flex-grow-1" placeholder="Label">
+          </div>
           <div class="d-flex flex-column align-items-center mx-1">
             <span class="small text-muted" style="font-size: 10px; line-height: 1;">Text</span>
             <ColorPicker v-model="config.btn.pressed.color" />
@@ -404,8 +408,8 @@ export default {
         />
       </div>
     </div>
-    <div class="mt-4 text-center">
-      <button @click="addRow" type="button" class="btn px-4 py-2" style="border: 2px dashed var(--primary); color: var(--accent); background-color: transparent;">
+    <div class="mt-4">
+      <button @click="addRow" type="button" class="btn add-row-btn w-100 py-2">
         <svg width="20" height="20" fill="currentColor" class="me-2" style="vertical-align: text-bottom;"><use xlink:href="bs.icons.svg#plus-lg"/></svg> Add Function Row
       </button>
     </div>

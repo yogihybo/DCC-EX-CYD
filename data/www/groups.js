@@ -57,9 +57,9 @@ const Modal = {
     }
   },
   template: `
-  <div>
+  <Teleport to="body">
     <div class="modal d-block">
-      <div class="modal-dialog m-0 m-md-auto">
+      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
         <form @submit.prevent="select" class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title">Add Loco</h5>
@@ -99,7 +99,7 @@ const Modal = {
       </div>
     </div>
     <div class="modal-backdrop fade show"></div>
-  </div>
+  </Teleport>
   `
 }
 
@@ -277,26 +277,17 @@ export default {
   },
   template: `
   <div>
-    <div class="row mb-2">
-      <div class="col-12 d-flex justify-content-end pe-1">
-        <div class="action-toolbar">
-          <a download href="/groups.json" class="btn btn-link p-0" title="Download group config">
-            <svg width="20" height="20" fill="currentColor"><use xlink:href="bs.icons.svg#download"/></svg>
-          </a>
-          <label class="btn btn-link p-0" title="Upload group config">
-            <svg width="20" height="20" fill="currentColor"><use xlink:href="bs.icons.svg#upload"/></svg>
-            <input @change="upload" type="file" accept="application/json" class="d-none" />
-          </label>
-          <div class="action-toolbar-sep"></div>
-          <button @click="addGroup" type="button" class="btn btn-link text-success p-0" title="Add new group">
-            <svg width="20" height="20" fill="currentColor"><use xlink:href="bs.icons.svg#plus-lg"/></svg>
-          </button>
-        </div>
-      </div>
-    </div>
     <div class="row">
       <div class="col-12">
         <ul @dragstart="dragStart" @dragover="dragOver" @dragend="dragEnd" class="list-group list-group-flush" :class="{ loading: isLoading }">
+          <li class="list-group-item py-1 border-bottom">
+            <div class="row small text-muted fw-semibold">
+              <div class="col-auto" style="width: 28px;"></div>
+              <div class="col-1 px-0 text-center">#</div>
+              <div class="col pe-0">Name</div>
+              <div class="col-auto" style="min-width: 80px;"></div>
+            </div>
+          </li>
           <li v-for="({ locos: groupLocos, expand, key }, groupIndex) of groups" :key="key" class="list-group-item" draggable="true">
             <div class="row">
               <div class="col-auto" role="button">
@@ -363,12 +354,16 @@ export default {
               </div>
             </div>
           </li>
-          <li v-if="!groups.length" class="list-group-item">
+          <li v-if="!groups.length && !isLoading" class="list-group-item">
             <div class="empty-state">
               <svg width="40" height="40" fill="currentColor"><use xlink:href="bs.icons.svg#collection"/></svg>
               <p>No groups added yet</p>
-              <button @click="addGroup" type="button" class="btn btn-primary btn-sm">+ Add Group</button>
             </div>
+          </li>
+          <li class="list-group-item border-0 pt-2 pb-0">
+            <button @click="addGroup" type="button" class="btn add-row-btn w-100 py-2">
+              <svg width="16" height="16" fill="currentColor" class="me-2" style="vertical-align: text-bottom;"><use xlink:href="bs.icons.svg#plus-lg"/></svg> Add Group
+            </button>
           </li>
         </ul>
       </div>
@@ -380,7 +375,7 @@ export default {
         <button @click="save" class="btn btn-primary">Save</button>
       </div>
     </div>
-    <Modal v-show="add !== false" @close="add = false" @select="addLoco" :locos="locos" />
+    <Modal v-if="add !== false" @close="add = false" @select="addLoco" :locos="locos" />
   </div>
   `
 }

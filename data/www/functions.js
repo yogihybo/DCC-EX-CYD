@@ -16,11 +16,14 @@ const Modal = {
   },
   emits: ['close', 'update'],
   watch: {
-    fn: async function() { // Modal open
-      if (this.fn.file) {
-        const response = await fetch(this.fn.file);
-        if (response.ok) {
-          ({ name: this.name, functions: this.editor } = await response.json());
+    fn: {
+      immediate: true,
+      async handler() {
+        if (this.fn.file) {
+          const response = await fetch(this.fn.file);
+          if (response.ok) {
+            ({ name: this.name, functions: this.editor } = await response.json());
+          }
         }
       }
     }
@@ -60,9 +63,9 @@ const Modal = {
     },
   },
   template: `
-  <div>
+  <Teleport to="body">
     <div class="modal d-block">
-      <div class="modal-dialog modal-lg m-0 m-md-auto">
+      <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <form @submit.prevent="save" class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title">Function Editor</h5>
@@ -91,7 +94,7 @@ const Modal = {
       </div>
     </div>
     <div class="modal-backdrop fade show"></div>
-  </div>
+  </Teleport>
   `
 };
 
@@ -199,62 +202,46 @@ export default {
   },
   template: `
   <div>
-    <div class="row mb-2">
-      <div class="col-12 d-flex justify-content-end pe-1">
-        <div class="action-toolbar">
-          <label @click="download" class="btn btn-link p-0" title="Download all function configs">
-            <svg width="20" height="20" fill="currentColor"><use xlink:href="bs.icons.svg#download"/></svg>
-          </label>
-          <label class="btn btn-link p-0" title="Upload function configs">
-            <svg width="20" height="20" fill="currentColor"><use xlink:href="bs.icons.svg#upload"/></svg>
-            <input @change="upload" type="file" accept="application/json" multiple class="d-none" />
-          </label>
-          <div class="action-toolbar-sep"></div>
-          <button @click="add" type="button" class="btn btn-link text-success p-0" title="Add new function set">
-            <svg width="20" height="20" fill="currentColor"><use xlink:href="bs.icons.svg#plus-lg"/></svg>
-          </button>
-        </div>
-      </div>
-    </div>
     <div class="row">
       <div class="col-12">
         <ul :class="{ loading: isLoading }" class="list-group list-group-flush">
+          <li class="list-group-item py-1 border-bottom">
+            <div class="row small text-muted fw-semibold">
+              <div class="col">Name</div>
+              <div class="col-auto" style="min-width: 80px;"></div>
+            </div>
+          </li>
           <li v-for="fn of fns" :key="fn.file" class="list-group-item">
-            <div class="row">
-              <div class="col-auto d-flex">
-                <a class="btn btn-link p-0 d-flex align-items-center" :href="fn.file" download title="Download function config">
-                  <svg width="16" height="16" fill="currentColor">
-                    <use xlink:href="bs.icons.svg#download"/>
-                  </svg>
-                </a>
-              </div>
+            <div class="row align-items-center">
               <div class="col">{{ fn.name }}</div>
-              <div class="col-auto d-flex flex-nowrap">
-                <button @click="edit(fn)" class="btn btn-link p-0 d-flex align-items-center">
-                  <svg width="16" height="16" fill="currentColor">
-                    <use xlink:href="bs.icons.svg#pencil"/>
-                  </svg>
+              <div class="col-auto d-flex flex-nowrap gap-2">
+                <button @click="edit(fn)" class="btn btn-link p-0 d-flex align-items-center" title="Edit function set">
+                  <svg width="16" height="16" fill="currentColor"><use xlink:href="bs.icons.svg#pencil"/></svg>
                 </button>
-                &nbsp;&nbsp;
-                <button @click="del(fn)" class="btn btn-link p-0 d-flex align-items-center">
-                  <svg width="16" height="16" fill="currentColor">
-                    <use xlink:href="bs.icons.svg#trash"/>
-                  </svg>
+                <a class="btn btn-link p-0 d-flex align-items-center" :href="fn.file" download title="Download function config">
+                  <svg width="16" height="16" fill="currentColor"><use xlink:href="bs.icons.svg#download"/></svg>
+                </a>
+                <button @click="del(fn)" class="btn btn-link p-0 d-flex align-items-center" title="Delete function set">
+                  <svg width="16" height="16" fill="currentColor"><use xlink:href="bs.icons.svg#trash"/></svg>
                 </button>
               </div>
             </div>
           </li>
-          <li v-if="!fns.length" class="list-group-item">
+          <li v-if="!fns.length && !isLoading" class="list-group-item">
             <div class="empty-state">
               <svg width="40" height="40" fill="currentColor"><use xlink:href="bs.icons.svg#lightning-charge"/></svg>
               <p>No function sets added yet</p>
-              <button @click="add" type="button" class="btn btn-primary btn-sm">+ Add Function Set</button>
             </div>
+          </li>
+          <li class="list-group-item border-0 pt-2 pb-0">
+            <button @click="add" type="button" class="btn add-row-btn w-100 py-2">
+              <svg width="16" height="16" fill="currentColor" class="me-2" style="vertical-align: text-bottom;"><use xlink:href="bs.icons.svg#plus-lg"/></svg> Add Function Set
+            </button>
           </li>
         </ul>
       </div>
     </div>
-    <Modal :fn="save" v-show="save" @close="save = false" @update="update" />
+    <Modal :fn="save" v-if="save" @close="save = false" @update="update" />
   </div>
   `
 }
