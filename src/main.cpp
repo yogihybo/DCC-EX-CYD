@@ -187,6 +187,28 @@ void setup() {
   apply_theme();
   Settings.addEventListener(SettingsClass::Event::THEME_CHANGE, [](void*) {
       apply_theme();
+
+      // Tear down existing UI — LVGL themes only apply at object creation time,
+      // so all widgets must be destroyed and rebuilt to pick up the new theme.
+      lv_obj_t* tv = main_tabview;
+      main_tabview = nullptr;
+      loco_tab     = nullptr;
+      acc_tab      = nullptr;
+      pwr_tab      = nullptr;
+      set_tab      = nullptr;
+
+      setUI_ptr.reset();
+      pwrUI.reset();
+      accUI.reset();
+      locoUI.reset();
+      if (tv) lv_obj_del(tv);
+
+      rebuild_header_bar();
+      build_ui_objects();
+
+      // Re-apply current status to the freshly created widgets
+      set_header_wifi_status(WiFi.status() == WL_CONNECTED, WiFi.RSSI());
+      set_header_cs_status(csIsConnected);
   });
 
   apply_rotation();

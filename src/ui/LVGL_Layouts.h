@@ -19,8 +19,11 @@ extern lv_obj_t* acc_tab;
 extern lv_obj_t* pwr_tab;
 extern lv_obj_t* set_tab;
 
-// Called once at boot to create the header + mutex; does NOT create tabs
+// Called once at boot to create the mutex and header bar
 void setup_lvgl_layouts();
+
+// Destroys and recreates the header bar with the current theme
+void rebuild_header_bar();
 
 // Creates (or recreates) the main tabview and its four tabs.
 // Called at boot and again after exiting Throttle Programming mode.

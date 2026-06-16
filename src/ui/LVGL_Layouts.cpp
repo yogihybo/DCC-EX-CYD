@@ -56,21 +56,11 @@ void apply_theme() {
         lv_disp_set_theme(disp, base);
     }
 
-    if (train_img) {
-        lv_obj_set_style_image_recolor_opa(train_img, LV_OPA_COVER, 0);
-        lv_obj_set_style_image_recolor(train_img, is_dark ? lv_color_make(255, 255, 255) : lv_color_make(0, 0, 0), 0);
-    }
 }
 
-// Called once at boot – sets up the mutex and the fixed header bar.
-void setup_lvgl_layouts() {
-    lvgl_mutex = xSemaphoreCreateMutex();
-
+// Creates the header bar and all status widgets. Safe to call multiple times.
+static void create_header_bar() {
     lv_obj_t* scr = lv_scr_act();
-    lv_obj_set_flex_flow(scr, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_style_pad_all(scr, 0, 0);
-    lv_obj_set_style_pad_row(scr, 0, 0);
-    lv_obj_set_style_pad_column(scr, 0, 0);
 
     // Top Header (30px height)
     header_bar = lv_obj_create(scr);
@@ -80,7 +70,6 @@ void setup_lvgl_layouts() {
     lv_obj_set_flex_flow(header_bar, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(header_bar, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     lv_obj_clear_flag(header_bar, LV_OBJ_FLAG_SCROLLABLE);
-
     lv_obj_set_style_pad_column(header_bar, 15, 0);
 
     lv_obj_t* loco_group = lv_obj_create(header_bar);
@@ -90,7 +79,7 @@ void setup_lvgl_layouts() {
     lv_obj_set_style_bg_opa(loco_group, 0, 0);
     lv_obj_set_flex_flow(loco_group, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(loco_group, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_pad_column(loco_group, 0, 0); // Tighter gap
+    lv_obj_set_style_pad_column(loco_group, 0, 0);
     lv_obj_clear_flag(loco_group, LV_OBJ_FLAG_SCROLLABLE);
 
     train_img = lv_image_create(loco_group);
@@ -100,11 +89,10 @@ void setup_lvgl_layouts() {
     lv_obj_set_style_image_recolor_opa(train_img, LV_OPA_COVER, 0);
     lv_obj_set_style_image_recolor(train_img, is_dark ? lv_color_make(255, 255, 255) : lv_color_make(0, 0, 0), 0);
 
-    // Make loco_label a child of the icon itself so we can overlay it
     loco_label = lv_label_create(train_img);
     lv_label_set_text(loco_label, "000");
     lv_obj_set_style_text_font(loco_label, &lv_font_montserrat_10, 0);
-    lv_obj_align(loco_label, LV_ALIGN_BOTTOM_MID, -5, 1); // Move text left 5 pixels, up 3 pixels
+    lv_obj_align(loco_label, LV_ALIGN_BOTTOM_MID, -5, 1);
 
     cs_icon = lv_image_create(header_bar);
     lv_image_set_src(cs_icon, &dcc_icon);
@@ -124,6 +112,33 @@ void setup_lvgl_layouts() {
     power_label = lv_label_create(header_bar);
     lv_label_set_text(power_label, LV_SYMBOL_BATTERY_FULL " --");
     lv_obj_set_style_pad_right(power_label, 10, 0);
+}
+
+// Destroys and recreates the header bar so it picks up the current theme.
+void rebuild_header_bar() {
+    if (header_bar) {
+        lv_obj_del(header_bar);
+        header_bar  = nullptr;
+        wifi_label  = nullptr;
+        cs_icon     = nullptr;
+        power_label = nullptr;
+        loco_label  = nullptr;
+        train_img   = nullptr;
+    }
+    create_header_bar();
+}
+
+// Called once at boot – creates the mutex and builds the header bar.
+void setup_lvgl_layouts() {
+    lvgl_mutex = xSemaphoreCreateMutex();
+
+    lv_obj_t* scr = lv_scr_act();
+    lv_obj_set_flex_flow(scr, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_style_pad_all(scr, 0, 0);
+    lv_obj_set_style_pad_row(scr, 0, 0);
+    lv_obj_set_style_pad_column(scr, 0, 0);
+
+    create_header_bar();
 }
 
 // Creates (or recreates) the main tabview and its four tabs.
