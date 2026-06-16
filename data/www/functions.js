@@ -151,54 +151,6 @@ export default {
         this.fns.push(fn);
       }
     },
-    download() {
-      const a = document.createElement('a');
-
-      (function next(fns) {
-        const fn = fns.shift();
-        fetch(fn)
-          .then(result => result.blob())
-          .then(data => {
-            a.href = window.URL.createObjectURL(data);
-            a.download = fn.match(/[^/]+$/i)[0];
-            a.click();
-            window.URL.revokeObjectURL(a.href);
-            
-            if (fns.length) {
-              next(fns);
-            }
-          });
-      })([...this.fns].map(fn => fn.file));
-    },
-    upload({ target }) {
-      let next;
-      (next = files => {
-        const file = files.shift();
-        const reader = new FileReader();
-        reader.onload = async () => {
-          const { name, functions } = JSON.parse(reader.result);
-          if (name && functions && /[^.]{0,8}/i.test(file.name)) { // Basic validation
-            const fns = `/fns/${file.name}`;
-            const response = await fetch(fns, {
-              method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: reader.result,
-            });
-            
-            if (response.ok) {
-              this.update({ file: fns, name })
-            }
-          }
-          if (files.length) {
-            next(files);
-          }
-        };
-        reader.readAsText(file);
-      })([...target.files]);
-      target.value = '';
-    },
   },
   template: `
   <div>

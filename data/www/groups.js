@@ -116,7 +116,6 @@ export default {
     return {
       add: false,
       groups: [],
-      pending: false,
       locos: [],
       isLoading: false,
     }
@@ -253,27 +252,6 @@ export default {
     dragEnd() {
       this.lock();
     },
-    upload({ target }) {
-      const file = target.files[0];
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const groups = JSON.parse(reader.result);
-        if (file.name === 'groups.json' && Array.isArray(groups)) { // Basic validation
-          const response = await fetch('/groups.json', {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: reader.result,
-          });
-          
-          if (response.ok) {
-            this.load();
-          }
-        }
-      };
-      reader.readAsText(file);
-    }
   },
   template: `
   <div>

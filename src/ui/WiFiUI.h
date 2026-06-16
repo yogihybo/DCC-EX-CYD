@@ -21,7 +21,6 @@ class WiFiUI : public UIView {
 
     wifi_event_id_t _ipGotHandler;
     wifi_event_id_t _ipDisconnectedHandler;
-    uint8_t _updatedHandler;
 
     static void ta_event_cb(lv_event_t * e);
     static void kb_event_cb(lv_event_t * e);

@@ -149,6 +149,7 @@ SettingsUI::~SettingsUI() {
   Settings.save();
   if (_wifiUI) delete _wifiUI;
   if (_aboutUI) delete _aboutUI;
+  if (_calibrationUI) delete _calibrationUI;
   if (_programUI) delete _programUI;
   if (_container) lv_obj_del(_container);
 }
@@ -372,12 +373,6 @@ void SettingsUI::screenshot_event_cb(lv_event_t * e) {
 // ---------------------------------------------------------------------------
 // Throttle Programming Mode
 // ---------------------------------------------------------------------------
-// Struct to carry both the overlay container and the SettingsUI pointer
-// through the close button's event callback without needing a heap allocation.
-struct ThrottleProgCtx {
-  lv_obj_t* overlay;
-};
-
 void SettingsUI::throttle_programming_event_cb(lv_event_t * e) {
   // Mark programming mode active – ThrottleServer reads this flag to serve the full web UI
   throttleProgrammingActive = true;

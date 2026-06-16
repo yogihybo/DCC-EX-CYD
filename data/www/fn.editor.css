@@ -29,18 +29,6 @@
   pointer-events: none;
 }
 
-.add-btn {
-  border: 2px dashed var(--border-2, #444);
-  background-color: transparent;
-  color: var(--text-muted, #aaa);
-  transition: all 0.2s ease;
-  height: 42px;
-}
-.add-btn:hover {
-  background-color: var(--surface-2, #2a2a2a);
-  color: var(--text, #f0f0f0);
-  border-color: var(--border-2, #555);
-}
 .add-row-btn {
   border: 2px dashed var(--primary, #1d4ed8);
   color: var(--accent, #7dd3fc);
@@ -48,43 +36,6 @@
 }
 .add-row-btn:hover {
   background-color: rgba(29, 78, 216, 0.1);
-}
-
-.fn-button button {
-  height: 42px;
-}
-.fn-button button * {
-  pointer-events: none;
-}
-.fn-button button span {
-  font-size: 18px;
-}
-.fn-button button img:not([src]) {
-  display: none;
-}
-.fn-button > div > div:first-child div {
-  position: absolute;
-  top: -5px;
-  left: calc(50% - 5px);
-  width: 10px;
-  height: 10px;
-  background: var(--surface-2, #2a2a2a);
-  transform: rotate(45deg);
-}
-.fn-button svg {
-  cursor: pointer;
-}
-.fn-button .preview {
-  position: absolute;
-  right: -40px;
-  top: calc(50% - 16px);
-  width: 32px;
-  height: 32px;
-  padding: 2px;
-  border-top-right-radius: 10px;
-  border-bottom-right-radius: 10px;
-  background: var(--surface-2, #2a2a2a);
-  cursor: pointer;
 }
 
 .fn-grid {

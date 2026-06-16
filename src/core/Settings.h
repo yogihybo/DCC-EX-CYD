@@ -3,10 +3,6 @@
 
 #include <Version.h>
 #include <Events.h>
-#if __has_include(<ThrottleWiFiSettings.h>)
-// TODO, deprecate
-#include <ThrottleWiFiSettings.h>
-#endif
 #include <IPAddress.h>
 #include <ArduinoJson.h>
 #include <FS.h>
@@ -41,8 +37,6 @@ class SettingsClass : public Events {
     uint8_t storageMode = StorageMode::LITTLEFS;
     uint8_t theme = Theme::DARK;
     uint8_t brightness = 255;
-    uint32_t pin = 0;
-    uint16_t emergencyStop = 2000;
 
     struct TouchCal {
       int xMin = 200;
@@ -112,31 +106,6 @@ class SettingsClass : public Events {
       };
 
       uint8_t speedStep = SpeedStep::STEP_1;
-
-      struct Swipe {
-        friend class SettingsClass::LocoUI;
-
-        struct Action {
-          static constexpr uint8_t NONE = 0;
-          static constexpr uint8_t KEYPAD = 1;
-          static constexpr uint8_t NAME = 2;
-          static constexpr uint8_t GROUP = 3;
-          static constexpr uint8_t NEXT = 4;
-          static constexpr uint8_t PREV = 5;
-          static constexpr uint8_t RELEASE = 6;
-        };
-
-        uint8_t up = Action::RELEASE;
-        uint8_t down = Action::KEYPAD;
-        uint8_t left = Action::NEXT;
-        uint8_t right = Action::PREV;
-
-        uint8_t release = Action::KEYPAD;
-
-        private:
-          void load(const JsonObject& obj);
-          void save(const JsonObject& obj);  
-      } Swipe;
 
       private:
         void load(const JsonObject& obj);

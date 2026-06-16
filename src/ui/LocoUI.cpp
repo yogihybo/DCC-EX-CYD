@@ -1,7 +1,6 @@
 #include "LocoUI.h"
 #include <FileSystems.h>
 #include <SD.h>
-#include <StreamUtils.h>
 #include <Settings.h>
 
 LocoUI::LocoUI(DCCExCS& dccExCS, Locos& locos, lv_obj_t* parent) 

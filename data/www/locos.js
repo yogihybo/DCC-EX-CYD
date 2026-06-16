@@ -210,54 +210,6 @@ export default {
         this.locos.push(loco);
       }
     },
-    download() {
-      const a = document.createElement('a');
-
-      (function next(locos) {
-        const loco = locos.shift();
-        fetch(loco)
-          .then(result => result.blob())
-          .then(data => {
-            a.href = window.URL.createObjectURL(data);
-            a.download = loco.match(/[^/]+$/i)[0];
-            a.click();
-            window.URL.revokeObjectURL(a.href);
-            
-            if (locos.length) {
-              next(locos);
-            }
-          });
-      })([...this.locos].map(loco => loco.file));
-    },
-    upload({ target }) {
-      let next;
-      (next = files => {
-        const file = files.shift();
-        const reader = new FileReader();
-        reader.onload = async () => {
-          const { name, functions } = JSON.parse(reader.result);
-          if (name && functions && /^\d+\./.test(file.name) && parseInt(file.name) <= 10293) { // Basic validation
-            const loco = `/locos/${file.name}`;
-            const response = await fetch(loco, {
-              method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: reader.result,
-            });
-            
-            if (response.ok) {
-              this.update({ file: loco, name });
-            }
-          }
-          if (files.length) {
-            next(files);
-          }
-        };
-        reader.readAsText(file);
-      })([...target.files]);
-      target.value = '';
-    },
   },
   template: `
   <div>

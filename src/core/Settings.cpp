@@ -24,9 +24,6 @@ void SettingsClass::load() {
     storageMode = doc["storageMode"] | storageMode;
     theme = doc["theme"] | theme;
     brightness = doc["brightness"] | brightness;
-    pin = doc["pin"] | pin;
-    emergencyStop = doc["emergencyStop"] | emergencyStop;
-
     AP.load(doc["ap"]);
     CS.load(doc["cs"]);
     LocoUI.load(doc["locoui"]);
@@ -51,9 +48,6 @@ void SettingsClass::save() {
   doc["storageMode"] = storageMode;
   doc["theme"] = theme;
   doc["brightness"] = brightness;
-  doc["pin"] = pin;
-  doc["emergencyStop"] = emergencyStop;
-
   AP.save(doc["ap"] | doc.createNestedObject("ap"));
   CS.save(doc["cs"] | doc.createNestedObject("cs"));
   LocoUI.save(doc["locoui"] | doc.createNestedObject("locoui"));
@@ -91,17 +85,7 @@ void SettingsClass::init() {
 }
 
 void SettingsClass::upgrade(JsonDocument& doc) {
-  // TODO, Bit of backwards compatibility, will be removed in future release
-  #if (defined THROTTLE_AP_NAME && defined THROTTLE_AP_PWD)
-  if (version == 0) {
-    auto ap = doc.createNestedObject("ap");
-    ap["ssid"] = THROTTLE_AP_NAME;
-    ap["password"] = THROTTLE_AP_PWD;
-  }
-  #endif
-  // if (version < VERSION_TO_INT32(0, 1, 0)) {
-
-  // }
+  (void)doc;
 }
 
 void SettingsClass::AP::load(const JsonObject& obj) {
@@ -180,30 +164,10 @@ void SettingsClass::CS::port(uint16_t value) {
 
 void SettingsClass::LocoUI::load(const JsonObject& obj) {
   speedStep = obj["step"] | speedStep;
-  Swipe.load(obj["swipe"]);
 }
 
 void SettingsClass::LocoUI::save(const JsonObject& obj) {
   obj["step"] = speedStep;
-  Swipe.save(obj["swipe"] | obj.createNestedObject("swipe"));
-}
-
-void SettingsClass::LocoUI::Swipe::load(const JsonObject& obj) {
-  up = obj["up"] | up;
-  down = obj["down"] | down;
-  left = obj["left"] | left;
-  right = obj["right"] | right;
-
-  release = obj["release"] | release;
-}
-
-void SettingsClass::LocoUI::Swipe::save(const JsonObject& obj) {
-  obj["up"] = up;
-  obj["down"] = down;
-  obj["left"] = left;
-  obj["right"] = right;
-
-  obj["release"] = release;
 }
 
 SettingsClass Settings;

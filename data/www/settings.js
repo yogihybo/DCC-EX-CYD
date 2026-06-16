@@ -27,7 +27,7 @@ export default {
       immediate: true
     }
   },
-  emits: ['lock', 'unlock', 'valid'],
+  emits: ['lock', 'unlock'],
   methods: {
     lock() {
       this.$emit('lock');

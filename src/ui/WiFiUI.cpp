@@ -18,10 +18,6 @@ WiFiUI::WiFiUI(lv_obj_t* parent) {
     if (_labelIP) lv_label_set_text(_labelIP, "IP: Not Connected");
   }, ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
 
-  _updatedHandler = Settings.addEventListener(SettingsClass::Event::CS_CHANGE, [this](void*) {
-      // Re-read settings into text areas if not focused
-  });
-
   lv_obj_set_flex_flow(_container, LV_FLEX_FLOW_COLUMN);
   
   lv_obj_t* title_row = lv_obj_create(_container);
@@ -88,8 +84,6 @@ WiFiUI::WiFiUI(lv_obj_t* parent) {
 WiFiUI::~WiFiUI() {
   WiFi.removeEvent(_ipGotHandler);
   WiFi.removeEvent(_ipDisconnectedHandler);
-  Settings.removeEventListener(SettingsClass::Event::CS_CHANGE, _updatedHandler);
-  
   if (_keyboard) {
     lv_keyboard_set_textarea(_keyboard, NULL);
     lv_obj_del(_keyboard);

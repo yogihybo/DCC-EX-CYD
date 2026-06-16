@@ -27,5 +27,4 @@ class AboutUI : public UIView {
     AboutUI(DCCExCS& dccExCS, lv_obj_t* parent);
     ~AboutUI() override;
 
-    lv_obj_t* getContainer() { return _container; }
 };
