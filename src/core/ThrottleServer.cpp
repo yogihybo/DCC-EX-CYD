@@ -11,6 +11,8 @@
 #include "ui/LVGL_Layouts.h"
 #include "ui/SettingsUI.h"
 
+extern volatile bool csIsConnected;
+
 class WebLoggerHandler : public AsyncWebHandler {
 public:
   WebLoggerHandler() {}
@@ -214,7 +216,7 @@ void ThrottleServer::begin() {
   DefaultHeaders::Instance().addHeader("Connection", "close");
 
   on("/cs", HTTP_HEAD, [](AsyncWebServerRequest* request) {
-    request->send(Settings.CS.valid() ? 200 : 404);
+    request->send(csIsConnected ? 200 : 404);
   });
 
   // Polling endpoint: 200 = programming mode active, 404 = not active.
@@ -259,14 +261,81 @@ void ThrottleServer::begin() {
     }
 
     if (Settings.CS.valid()) { // Save new settings as we're valid
-      Settings.save();
       request->send(204);
-      Settings.dispatchEvent(SettingsClass::Event::CS_CHANGE);
+      // Defer save — Settings.save() needs more stack than async_tcp provides
+      xTaskCreate([](void*) {
+        if (xSemaphoreTake(lvgl_mutex, portMAX_DELAY) == pdTRUE) {
+          Settings.save();
+          xSemaphoreGive(lvgl_mutex);
+        }
+        Settings.dispatchEvent(SettingsClass::Event::CS_CHANGE);
+        vTaskDelete(NULL);
+      }, "cs_save", 4096, nullptr, 1, nullptr);
     } else { // New settings are invalid so reload
       Settings.load();
       request->send(404);
     }
   }));
+
+  on("/backup", HTTP_GET, [](AsyncWebServerRequest* request) {
+    if (xSemaphoreTake(lvgl_mutex, portMAX_DELAY) != pdTRUE) {
+      request->send(500);
+      return;
+    }
+
+    fs::FS& fs = Settings.getFS();
+    AsyncResponseStream* response = request->beginResponseStream("application/json");
+    response->addHeader("Content-Disposition", "attachment; filename=\"dcc-ex-cyd-backup.json\"");
+
+    auto streamDir = [&](const char* key, const char* dirPath) {
+      response->printf("\"%s\":[", key);
+      bool first = true;
+      File dir = fs.open(dirPath);
+      if (dir && dir.isDirectory()) {
+        while (File file = dir.openNextFile()) {
+          if (!file.isDirectory()) {
+            if (!first) response->print(",");
+            first = false;
+            response->printf("{\"path\":\"%s\",\"data\":", file.path());
+            uint8_t buf[256];
+            while (file.available()) {
+              size_t n = file.read(buf, sizeof(buf));
+              if (n > 0) response->write((const char*)buf, n);
+              yield();
+            }
+            response->print("}");
+          }
+          file.close();
+          yield();
+        }
+        dir.close();
+      }
+      response->print("]");
+    };
+
+    response->print("{");
+    streamDir("locos", "/locos");
+    response->print(",");
+    streamDir("fns", "/fns");
+    response->print(",\"groups\":");
+
+    File groups = fs.open("/groups.json");
+    if (groups && groups.size() > 0) {
+      uint8_t buf[256];
+      while (groups.available()) {
+        size_t n = groups.read(buf, sizeof(buf));
+        if (n > 0) response->write((const char*)buf, n);
+        yield();
+      }
+      groups.close();
+    } else {
+      response->print("[]");
+    }
+
+    response->print("}");
+    xSemaphoreGive(lvgl_mutex);
+    request->send(response);
+  });
 
   addHandler(new AsyncCallbackJsonWebHandler("/migrate", [](AsyncWebServerRequest* request, JsonVariant &json) {
     uint8_t toMode = json["to"] | 0;

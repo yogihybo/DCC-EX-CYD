@@ -68,6 +68,7 @@ const uint8_t BATTERY_PIN = 34;
 const uint16_t CONNECTION_ALIVE_DELAY = 5000;
 
 AsyncClient csClient;
+volatile bool csIsConnected = false;
 uint8_t csBuffer[256]; // DCC-EX commands are short (<20 bytes typically)
 uint16_t csBufferLen = 0;
 DCCExCS dccExCS(csClient);
@@ -323,6 +324,7 @@ void setup() {
   csClient.onConnect([](void *arg, AsyncClient *client) {
     Serial.printf("[CS] Command Station connected – %s:%u\n",
                   Settings.CS.server().c_str(), Settings.CS.port());
+    csIsConnected = true;
     if (xSemaphoreTake(lvgl_mutex, portMAX_DELAY) == pdTRUE) {
         set_header_cs_status(true);
         xSemaphoreGive(lvgl_mutex);
@@ -332,6 +334,7 @@ void setup() {
   // CS disconnected
   csClient.onDisconnect([](void *arg, AsyncClient *client) {
     Serial.printf("[CS] Command Station disconnected\n");
+    csIsConnected = false;
     if (xSemaphoreTake(lvgl_mutex, portMAX_DELAY) == pdTRUE) {
         set_header_cs_status(false);
         xSemaphoreGive(lvgl_mutex);

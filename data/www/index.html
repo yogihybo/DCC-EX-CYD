@@ -387,6 +387,15 @@
         margin: 0 0.15rem;
       }
 
+      /* ── Settings category header ───────────────────────────────────────── */
+      .settings-category {
+        text-align: center;
+        color: var(--text-muted);
+        font-size: 0.75rem;
+        letter-spacing: 0.08em;
+        padding: 0.5rem 0 0.6rem;
+      }
+
       /* ── Empty state ─────────────────────────────────────────────────────── */
       .empty-state {
         display: flex;
@@ -404,7 +413,7 @@
     <div class="container py-2" id="app">
       <div class="app-header">
         <span class="app-title">DCC-EX-CYD</span>
-        <span class="cs-dot" :class="{ connected: cs }" :title="cs ? 'Command Station Connected' : 'Command Station Not Connected'"></span>
+        <span class="cs-dot" :class="{ connected: csConnected }" :title="csConnected ? 'Command Station Connected' : 'Command Station Not Connected'"></span>
       </div>
       <div class="nav nav-tabs justify-content-center mb-3">
         <button type="button" class="nav-link tab-btn" :class="{ active: tab === 1, disabled: locked }" @click="tab = 1">
@@ -468,16 +477,32 @@
             tab: 1,
             locked: false,
             cs: true,
+            csConnected: false,
           }
         },
         async mounted() {
-          // Check if the WiFi connection to the CS needs setting up
+          // Check if CS settings are configured (drives the ! badge)
           try {
-            const response = await fetch('/cs', { method: 'HEAD', cache: 'no-store' });
-            if (response.status === 404) {
+            const response = await fetch('/cs', { method: 'GET', cache: 'no-store' });
+            if (response.ok) {
+              const data = await response.json();
+              if (!data.ssid || !data.server || !data.port) this.cs = false;
+            } else {
               this.cs = false;
             }
-          } catch (_) { /* ignore – UI still usable without CS check */ }
+          } catch (_) { /* ignore */ }
+
+          // Poll actual TCP connection state every 3s (drives the dot)
+          const pollCS = async () => {
+            try {
+              const r = await fetch('/cs', { method: 'HEAD', cache: 'no-store' });
+              this.csConnected = (r.status === 200);
+            } catch (_) {
+              this.csConnected = false;
+            }
+          };
+          await pollCS();
+          setInterval(pollCS, 3000);
         },
       });
       app.mount('#app');
