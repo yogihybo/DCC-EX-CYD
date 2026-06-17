@@ -2,6 +2,8 @@
 #include "train_icon.h"
 #include "dcc_icon.h"
 
+LV_FONT_DECLARE(fa_gauge_high_16);
+
 SemaphoreHandle_t lvgl_mutex = NULL;
 
 lv_obj_t* header_bar;
@@ -30,11 +32,11 @@ static void dark_override_cb(lv_theme_t* th, lv_obj_t* obj) {
 
     if (lv_obj_get_parent(obj) == NULL) {
         // Screen — pure near-black
-        lv_obj_set_style_bg_color(obj, lv_color_hex(0x0a0a0a), LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_bg_color(obj, lv_color_hex(0x0a0a0a), 0);
     } else {
         // Panel / container — neutral dark grey, no blue tint
-        lv_obj_set_style_bg_color(obj, lv_color_hex(0x1a1a1a), LV_PART_MAIN | LV_STATE_DEFAULT);
-        lv_obj_set_style_border_color(obj, lv_color_hex(0x333333), LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_bg_color(obj, lv_color_hex(0x1a1a1a), 0);
+        lv_obj_set_style_border_color(obj, lv_color_hex(0x333333), 0);
     }
 }
 
@@ -157,10 +159,13 @@ void create_main_ui() {
     lv_obj_t* tab_btns = lv_tabview_get_tab_bar(main_tabview);
     lv_obj_set_style_pad_all(tab_btns, 0, 0);
 
-    loco_tab = lv_tabview_add_tab(main_tabview, "Loco");
-    acc_tab  = lv_tabview_add_tab(main_tabview, "Acc");
-    pwr_tab  = lv_tabview_add_tab(main_tabview, "Pwr");
-    set_tab  = lv_tabview_add_tab(main_tabview, "Set");
+    // UTF-8 for U+F625 gauge-high, U+F074 shuffle, U+F0E7 bolt, U+F013 gear
+    loco_tab = lv_tabview_add_tab(main_tabview, "\xEF\x98\xA5 Loco");
+    acc_tab  = lv_tabview_add_tab(main_tabview, "\xEF\x81\xB4 Acc");
+    pwr_tab  = lv_tabview_add_tab(main_tabview, "\xEF\x83\xA7 Pwr");
+    set_tab  = lv_tabview_add_tab(main_tabview, "\xEF\x80\x93 Set");
+
+    lv_obj_set_style_text_font(tab_btns, &fa_gauge_high_16, 0);
 
     lv_obj_set_style_pad_all(loco_tab, 0, 0);
     lv_obj_set_style_pad_all(acc_tab,  0, 0);
