@@ -36,6 +36,11 @@ PowerUI::PowerUI(DCCExCS& dccExCS, DCCExCS::Power& power, lv_obj_t* parent)
     if (xSemaphoreTake(lvgl_mutex, portMAX_DELAY) == pdTRUE) {
         auto power = *static_cast<DCCExCS::Power*>(parameter);
 
+        Serial.printf("[DCC] Track power – Main: %s  Prog: %s  Join: %s\n",
+            power.main ? "ON" : "OFF",
+            power.prog ? "ON" : "OFF",
+            power.join ? "ON" : "OFF");
+
         if (_powerMain) {
           if (power.main) lv_obj_add_state(_powerMain, LV_STATE_CHECKED);
           else lv_obj_clear_state(_powerMain, LV_STATE_CHECKED);

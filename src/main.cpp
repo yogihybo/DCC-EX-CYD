@@ -434,18 +434,21 @@ void setup() {
       // Rotation
       long delta = rotaryEncoder.encoderChanged();
       if (delta != 0 && locoUI)
-          locoUI->nudgeSpeed((int)delta * (1 << Settings.LocoUI.speedStep));
+          locoUI->nudgeSpeed((int)-delta * (1 << Settings.LocoUI.speedStep));
 
       // Button – long press triggers E-Stop
       static uint32_t btnDownSince = 0;
+      static bool btnFired = false;
       if (rotaryEncoder.isEncoderButtonDown()) {
           if (btnDownSince == 0) btnDownSince = millis();
-          else if (millis() - btnDownSince >= (uint32_t)Settings.emergencyStopDelay * 1000U) {
+          else if (!btnFired && millis() - btnDownSince >= (uint32_t)Settings.emergencyStopDelay * 1000U) {
               dccExCS.emergencyStopAll();
-              btnDownSince = 0;
+              Serial.printf("[DCC] Emergency stop triggered\n");
+              btnFired = true;
           }
       } else {
           btnDownSince = 0;
+          btnFired = false;
       }
   }, 20, nullptr);
 

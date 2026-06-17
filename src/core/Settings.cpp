@@ -63,6 +63,7 @@ void SettingsClass::save() {
   File json = ConfigFS.open("/settings.json", FILE_WRITE);
   serializeJson(doc, json);
   json.close();
+  Serial.printf("[Settings] Saved\n");
 }
 
 void SettingsClass::init() {

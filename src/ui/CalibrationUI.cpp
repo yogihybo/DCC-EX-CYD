@@ -152,23 +152,18 @@ void CalibrationUI::processTouch() {
             if (xMin < -2000 || xMin > 6000 || xMax < -2000 || xMax > 6000) isValid = false;
             if (yMin < -2000 || yMin > 6000 || yMax < -2000 || yMax > 6000) isValid = false;
 
-            // Debug Output
-            Serial.println("--- Touch Calibration Complete ---");
-            Serial.printf("Point 1 (Top Left): Raw X=%d, Y=%d\n", _rx1, _ry1);
-            Serial.printf("Point 2 (Bottom Right): Raw X=%d, Y=%d\n", _rx2, _ry2);
-            
-            Serial.printf("Old Bounds - xMin: %d, xMax: %d, yMin: %d, yMax: %d\n", 
+            Serial.println("[LCD] Touch calibration complete");
+            Serial.printf("[LCD] Point 1 (Top Left): Raw X=%d, Y=%d\n", _rx1, _ry1);
+            Serial.printf("[LCD] Point 2 (Bottom Right): Raw X=%d, Y=%d\n", _rx2, _ry2);
+            Serial.printf("[LCD] Old Bounds - xMin: %d, xMax: %d, yMin: %d, yMax: %d\n",
                 Settings.TouchCal.xMin, Settings.TouchCal.xMax, Settings.TouchCal.yMin, Settings.TouchCal.yMax);
-            
-            Serial.printf("New Bounds - xMin: %d, xMax: %d, yMin: %d, yMax: %d\n", 
+            Serial.printf("[LCD] New Bounds - xMin: %d, xMax: %d, yMin: %d, yMax: %d\n",
                 xMin, xMax, yMin, yMax);
-                
-            Serial.printf("Adjustments - dxMin: %d, dxMax: %d, dyMin: %d, dyMax: %d\n", 
-                xMin - Settings.TouchCal.xMin, 
-                xMax - Settings.TouchCal.xMax, 
-                yMin - Settings.TouchCal.yMin, 
+            Serial.printf("[LCD] Adjustments - dxMin: %d, dxMax: %d, dyMin: %d, dyMax: %d\n",
+                xMin - Settings.TouchCal.xMin,
+                xMax - Settings.TouchCal.xMax,
+                yMin - Settings.TouchCal.yMin,
                 yMax - Settings.TouchCal.yMax);
-            Serial.println("----------------------------------");
 
             if (isValid) {
                 Settings.TouchCal.xMin = xMin;
@@ -177,7 +172,7 @@ void CalibrationUI::processTouch() {
                 Settings.TouchCal.yMax = yMax;
                 Settings.save();
             } else {
-                Serial.println("WARNING: Calibration rejected due to extreme values!");
+                Serial.println("[LCD] WARNING: Calibration rejected due to extreme values!");
             }
 
             hide();
