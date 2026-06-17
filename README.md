@@ -47,30 +47,40 @@ A web interface running on the ESP32 allows for easy input of loco details and a
 
 ### Pin Definitions
 
+#### External — HW-040 Encoder (HW-040 module)
+
 | Function | GPIO | HW-040 Pin | Notes |
 |---|---|---|---|
-| LCD MISO | 12 | — | Display SPI MISO |
-| LCD MOSI | 13 | — | Display SPI MOSI |
-| LCD SCLK | 14 | — | Display SPI clock |
-| LCD CS | 15 | — | Display chip select |
-| LCD DC | 2 | — | Display data/command select |
-| LCD RST | -1 | — | Not connected |
-| Backlight | 21 | — | PWM backlight control (resistive CYD variant) |
-| Touch MISO | 39 | — | Bit-bang SPI |
-| Touch MOSI | 32 | — | Bit-bang SPI |
-| Touch CLK | 25 | — | Bit-bang SPI |
-| Touch CS | 33 | — | XPT2046 chip select |
-| Touch IRQ | 36 | — | XPT2046 interrupt |
-| SD MISO | 19 | — | Hardware VSPI [SD card slot] |
-| SD MOSI | 23 | — | Hardware VSPI [SD card slot] |
-| SD CLK | 18 | — | Hardware VSPI [SD card slot] |
-| SD CS | 5 | — | SD chip select [SD card slot] |
 | Encoder CLK (A) | 35 | CLK | Input-only pin; HW-040 supplies pull-up [P3] |
-| Encoder DT (B) | 27 | DT | HW-040 supplies pull-up; free on resistive CYD variant [CN1] |
+| Encoder DT (B) | 27 | DT | HW-040 supplies pull-up [CN1] |
 | Encoder Button (SW) | 22 | SW | Active LOW; ESP32 internal pull-up used (HW-040 SW resistor unpopulated); long-press triggers E-Stop [CN1] |
 | 3.3V | 3.3V | + | Encoder power [CN1] |
 | GND | GND | GND | Encoder ground [P3 or CN1] |
-| Battery Voltage | 34 | — | ADC input; on-board ÷2 resistor divider (×2 in firmware) |
+
+#### Internal — Hardwired on CYD Board
+
+| Function | GPIO | Notes |
+|---|---|---|
+| LCD MISO | 12 | Display SPI MISO |
+| LCD MOSI | 13 | Display SPI MOSI |
+| LCD SCLK | 14 | Display SPI clock |
+| LCD CS | 15 | Display chip select |
+| LCD DC | 2 | Display data/command select |
+| LCD RST | -1 | Not connected |
+| Backlight | 21 | PWM backlight control (resistive CYD variant) |
+| Touch MISO | 39 | Bit-bang SPI |
+| Touch MOSI | 32 | Bit-bang SPI |
+| Touch CLK | 25 | Bit-bang SPI |
+| Touch CS | 33 | XPT2046 chip select |
+| Touch IRQ | 36 | XPT2046 interrupt |
+| Red LED | 4 | RGB LED |
+| Green LED | 16 | RGB LED |
+| Blue LED | 17 | RGB LED |
+| SD MISO | 19 | Hardware VSPI [SD card slot] |
+| SD MOSI | 23 | Hardware VSPI [SD card slot] |
+| SD CLK | 18 | Hardware VSPI [SD card slot] |
+| SD CS | 5 | SD chip select [SD card slot] |
+| Battery Voltage | 34 | ADC input; on-board ÷2 resistor divider (×2 in firmware) |
 
 ## Software Stack
 - **PlatformIO**: Primary build environment and C++ Framework
