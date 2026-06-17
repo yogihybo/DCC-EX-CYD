@@ -68,9 +68,9 @@ A web interface running on the ESP32 allows for easy input of loco details and a
 | LCD DC | 2 | Display data/command select |
 | LCD RST | -1 | Not connected |
 | Backlight | 21 | PWM backlight control (resistive CYD variant) |
-| Touch MISO | 39 | Bit-bang SPI |
-| Touch MOSI | 32 | Bit-bang SPI |
-| Touch CLK | 25 | Bit-bang SPI |
+| Touch MISO | 39 | XPT2046 Bit-bang SPI |
+| Touch MOSI | 32 | XPT2046 Bit-bang SPI |
+| Touch CLK | 25 | XPT2046 Bit-bang SPI |
 | Touch CS | 33 | XPT2046 chip select |
 | Touch IRQ | 36 | XPT2046 interrupt |
 | Red LED | 4 | RGB LED |
