@@ -58,11 +58,11 @@ A web interface running on the ESP32 allows for easy input of loco details and a
 | SD MISO | 19 | — | Hardware VSPI |
 | SD MOSI | 23 | — | Hardware VSPI |
 | SD CS | 5 | — | SD chip select |
-| Encoder CLK (A) | 35 | CLK | Input-only pin; HW-040 supplies pull-up |
-| Encoder DT (B) | 27 | DT | HW-040 supplies pull-up; free on resistive CYD variant |
-| Encoder Button (SW) | 22 | SW | Active LOW; ESP32 internal pull-up used (HW-040 SW resistor unpopulated); long-press triggers E-Stop |
-| 3.3V | 3.3V | + | Encoder power |
-| GND | GND | GND | Encoder ground |
+| Encoder CLK (A) | 35 | CLK | Input-only pin; HW-040 supplies pull-up [P3] |
+| Encoder DT (B) | 27 | DT | HW-040 supplies pull-up; free on resistive CYD variant [CN1] |
+| Encoder Button (SW) | 22 | SW | Active LOW; ESP32 internal pull-up used (HW-040 SW resistor unpopulated); long-press triggers E-Stop [CN1] |
+| 3.3V | 3.3V | + | Encoder power [CN1] |
+| GND | GND | GND | Encoder ground [P3 or CN1] |
 | Battery Voltage | 34 | — | ADC input; on-board ÷2 resistor divider (×2 in firmware) |
 
 ## Software Stack
