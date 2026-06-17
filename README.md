@@ -59,7 +59,7 @@ The entry point of the firmware.
 - **Thread Safety**: Governs a global `lvgl_mutex` Semaphore. All asynchronous network/hardware callbacks are strictly locked before mutating LVGL widget states, ensuring the UI loop never panics during concurrent touch inputs.
 
 ### 2. Global View Manager (`LVGL_Layouts.cpp / .h`)
-Replaces the legacy view-swapper with a unified native LVGL container system.
+A native LVGL container system for the UI.
 - **Top Status Bar**: Displays real-time battery voltage, WiFi state, Command Station connection, and active locomotive count utilizing dynamic LVGL symbolic icons (`LV_SYMBOL_WIFI`, `LV_SYMBOL_BATTERY_FULL`, custom Loco and DCC connection icons).
 - **Navigation**: Deploys an `lv_tabview` anchored to the bottom of the screen. It seamlessly hosts the 4 permanent sub-applications, enabling native physical swiping between them.
 
@@ -77,8 +77,9 @@ A fast-access manager for layout turnouts and switch machines. Tapping ON/OFF dy
 Binds natively to incoming `BROADCAST_POWER` events from the Command Station. Features tactile toggle switches to safely manipulate power across the Main Track, Programming Track, or electronically join them together.
 
 ### 6. Settings & Network Hub (`SettingsUI.cpp`)
-- Controls hardware variables like screen brightness (hooked directly into the CYD backlight driver).
-- **Nested Popups**: Contains heavy-duty sub-modules (`WiFiUI.cpp` and `AboutUI.cpp`) that dynamically popul over the settings UI. `WiFiUI` renders local AP configuration portals or QR codes, while `AboutUI` cleanly tracks live hardware specs and parses Command Station firmware hashes.
+- Controls hardware variables like screen brightness. Includes sub-modules (`WiFiUI.cpp` and `AboutUI.cpp`) that dynamically popup over the settings UI.
+--**WiFiUI**; has local AP configuration and local access point mode with QR code, 
+--**AboutUI**; tracks live hardware specs and parses Command Station firmware hashes.
 
 ---
 
