@@ -63,6 +63,7 @@ A web interface running on the ESP32 allows for easy input of loco details and a
 | Encoder Button (SW) | 22 | SW | Active LOW; ESP32 internal pull-up used (HW-040 SW resistor unpopulated); long-press triggers E-Stop [CN1] |
 | 3.3V | 3.3V | + | Encoder power [CN1] |
 | GND | GND | GND | Encoder ground [P3 or CN1] |
+| Backlight | 21 | — | PWM backlight control (resistive CYD variant) |
 | Battery Voltage | 34 | — | ADC input; on-board ÷2 resistor divider (×2 in firmware) |
 
 ## Software Stack
