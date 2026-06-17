@@ -41,6 +41,9 @@ A web interface running on the ESP32 allows for easy input of loco details and a
 - **Screen**: 2.8" TFT (240x320) with ILI9341 Driver
 - **Touch**: Resistive or Capacitive touch panel support
 - **Power**: Internal battery circuitry (parsed natively for on-screen display)
+- **Encoder**: A rotary encoder to operated as a tactile throttle
+- **Battery and Charging Board**: A LiPo battery and USB LiPo charging board
+- **TODO** Details on assembly and case 
 
 ## Software Stack
 - **PlatformIO**: Primary build environment and C++ Framework
