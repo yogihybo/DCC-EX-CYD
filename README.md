@@ -32,16 +32,16 @@ A web interface running on the ESP32 allows for easy input of loco details and a
 - **Function Sets**: Create reusable function sets with per-button label, colour, latching mode, and icon. Rows can be reordered by drag and drop.
 - **Groups**: Organise locos into named groups for quick selection on the throttle. Groups and their members can be reordered by drag and drop.
 - **Icons**: Shows the standard function icons plus the ability to import custom icons
-- **Settings**: The settings tab includes wifi and command center settings plus te one-click export of all locos, function sets, and groups to a single JSON backup file, and a matching import to restore from it. Storage of the loco roster and functions can be on either the internal ESP32 flash memory or an SD card (selected using setting menu on the device screen) By usng the bulk export/import features the roster JSON file can be moved to/from either location.
+- **Settings**: The settings tab includes wifi and command center settings plus one-click export of all locos, function sets, and groups to a single JSON backup file, and a matching import to restore from it. Storage of the loco roster and functions can be on either the internal ESP32 flash memory or an SD card (selected using setting menu on the device screen) By using the bulk export/import features the roster JSON file can be moved to/from either location.
 
 ---
 
 ## Hardware Requirements
 - **ESP32-2432S028R** (Also known as the CYD / Cheap Yellow Display)
-- **Screen**: 2.8" TFT (240x320) with ILI9341 Driver
-- **Touch**: Resistive or Capacitive touch panel support
-- **Power**: Internal battery circuitry (parsed natively for on-screen display)
-- **Encoder**: A rotary encoder to operated as a tactile throttle
+- **Screen**: CYD 2.8" TFT (240x320) with ILI9341 Driver
+- **Touch**: CYD Resistive (or Capacitive) touch panel support
+- **Power**: USB power or LiPo via additional battery USB charging board (battery voltage/capacity is measured using the touch screen driver IC feature on pin 7)
+- **Encoder**: A rotary encoder to operated as a tactile throttle HW-040
 - **Battery and Charging Board**: A LiPo battery and USB LiPo charging board
 - **TODO** Details on assembly and case 
 
