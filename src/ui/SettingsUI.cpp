@@ -83,7 +83,7 @@ SettingsUI::SettingsUI(DCCExCS& dccExCS, lv_obj_t* parent) : _dccExCS(dccExCS), 
   lv_obj_t* speed_btn = lv_btn_create(_container);
   lv_obj_set_width(speed_btn, LV_PCT(100));
   _speedStepLbl = lv_label_create(speed_btn);
-  lv_label_set_text_fmt(_speedStepLbl, "Throttle Speed Step: %d", Settings.LocoUI.speedStep);
+  lv_label_set_text_fmt(_speedStepLbl, "Encoder Sensitivity: %d", 1 << Settings.LocoUI.speedStep);
   lv_obj_center(_speedStepLbl);
   lv_obj_add_event_cb(speed_btn, speed_step_event_cb, LV_EVENT_CLICKED, this);
 
@@ -164,7 +164,7 @@ SettingsUI::~SettingsUI() {
 void SettingsUI::speed_step_event_cb(lv_event_t * e) {
   SettingsUI* ui = (SettingsUI*)lv_event_get_user_data(e);
   if (++Settings.LocoUI.speedStep > 2) Settings.LocoUI.speedStep = 0;
-  lv_label_set_text_fmt(ui->_speedStepLbl, "Throttle Speed Step: %d", Settings.LocoUI.speedStep);
+  lv_label_set_text_fmt(ui->_speedStepLbl, "Encoder Sensitivity: %d", 1 << Settings.LocoUI.speedStep);
   Settings.save();
 }
 

@@ -29,9 +29,9 @@
 #define CS_PIN   33
 #define IRQ_PIN  36
 
-#define ENCODER_CLK_PIN 35  // GPIO35 – rotary CLK (A); input-only, HW-040 supplies pull-up
-#define ENCODER_DT_PIN  27  // GPIO27 – rotary DT  (B); HW-040 supplies pull-up (free on resistive CYD variant)
-#define ENCODER_BTN_PIN 22  // GPIO22 – encoder push button; uses internal pull-up (HW-040 SW resistor unpopulated)
+#define ENCODER_CLK_PIN 22  // GPIO22 – rotary CLK (A); TEMPORARY for testing
+#define ENCODER_DT_PIN  27  // GPIO27 – rotary DT  (B); HW-040 supplies pull-up
+#define ENCODER_BTN_PIN 35  // GPIO35 – encoder push button; TEMPORARY for testing (input-only, no internal pull-up)
 
 XPT2046_Bitbang touchscreen(MOSI_PIN, MISO_PIN, CLK_PIN, CS_PIN, IRQ_PIN);
 
@@ -414,21 +414,27 @@ void setup() {
   Settings.addEventListener(SettingsClass::Event::CS_CHANGE,
                             [](void *) { WiFi.disconnect(); });
 
-  // Rotary encoder – CLK/DT → throttle nudge
-  pinMode(ENCODER_CLK_PIN, INPUT);        // GPIO35 input-only; HW-040 supplies pull-up
+  // Rotary encoder – CLK/DT → throttle nudge via hardware interrupt + LVGL drain timer
+  pinMode(ENCODER_CLK_PIN, INPUT_PULLUP);
   pinMode(ENCODER_DT_PIN,  INPUT_PULLUP);
-  static int encLastClk = HIGH;
+  static volatile int     encPending  = 0;
+  static volatile int32_t encLastUs   = 0;
+  attachInterrupt(digitalPinToInterrupt(ENCODER_CLK_PIN), []() IRAM_ATTR {
+      int32_t now = (int32_t)micros();
+      if (now - encLastUs < 4000) return; // ignore pulses within 4 ms of last valid one
+      encLastUs = now;
+      encPending += (digitalRead(ENCODER_DT_PIN) == HIGH) ? 1 : -1;
+  }, FALLING);
   lv_timer_create([](lv_timer_t*) {
-      int clk = digitalRead(ENCODER_CLK_PIN);
-      if (clk != encLastClk && clk == LOW) {
-          int delta = (digitalRead(ENCODER_DT_PIN) == LOW) ? -1 : 1;
-          if (locoUI) locoUI->nudgeSpeed(delta);
-      }
-      encLastClk = clk;
-  }, 5, nullptr);
+      int steps = encPending;
+      if (steps == 0) return;
+      encPending -= steps;
+      int delta = steps * (1 << Settings.LocoUI.speedStep);
+      if (locoUI) locoUI->nudgeSpeed(delta);
+  }, 20, nullptr);
 
   // Encoder button long-press → emergency stop
-  pinMode(ENCODER_BTN_PIN, INPUT_PULLUP); // HW-040 SW resistor unpopulated; use internal pull-up
+  pinMode(ENCODER_BTN_PIN, INPUT); // GPIO35 input-only; TEMPORARY for testing
   static uint32_t btnPressStart = 0;
   static bool btnArmed = false;
   lv_timer_create([](lv_timer_t*) {
