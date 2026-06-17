@@ -905,3 +905,17 @@ void LocoUI::estop_btn_event_cb(lv_event_t * e) {
     LocoUI* ui = (LocoUI*)lv_event_get_user_data(e);
     ui->_dccExCS.setLocoThrottle(ui->_loco.address, 0, ui->_loco.direction);
 }
+
+void LocoUI::nudgeSpeed(int delta) {
+    if (!_speedArc) return;
+    int speed = constrain((int)lv_arc_get_value(_speedArc) + delta, 0, 126);
+    lv_arc_set_value(_speedArc, speed);
+    _loco.speed = speed;
+    if (_speedLabel) lv_label_set_text_fmt(_speedLabel, "%d", speed);
+    lv_color_t color;
+    if (speed < 42) color = lv_color_make(50, 255, 50);
+    else if (speed < 84) color = lv_color_make(255, 255, 50);
+    else color = lv_color_make(255, 50, 50);
+    lv_obj_set_style_arc_color(_speedArc, color, LV_PART_INDICATOR);
+    _dccExCS.setLocoThrottle(_loco.address, speed, _loco.direction);
+}

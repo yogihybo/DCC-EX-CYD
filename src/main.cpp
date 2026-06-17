@@ -29,7 +29,9 @@
 #define CS_PIN   33
 #define IRQ_PIN  36
 
-#define ENCODER_BTN_PIN 0  // GPIO0 – encoder push button (active LOW, internal pull-up)
+#define ENCODER_CLK_PIN 22  // GPIO22 – rotary CLK (A) — P3 connector
+#define ENCODER_DT_PIN  27  // GPIO27 – rotary DT  (B) — P3 connector (free on resistive CYD variant)
+#define ENCODER_BTN_PIN 35  // GPIO35 – encoder push button (input-only; HW-040 module supplies pull-up)
 
 XPT2046_Bitbang touchscreen(MOSI_PIN, MISO_PIN, CLK_PIN, CS_PIN, IRQ_PIN);
 
@@ -415,8 +417,21 @@ void setup() {
   Settings.addEventListener(SettingsClass::Event::CS_CHANGE,
                             [](void *) { WiFi.disconnect(); });
 
+  // Rotary encoder – CLK/DT → throttle nudge
+  pinMode(ENCODER_CLK_PIN, INPUT_PULLUP);
+  pinMode(ENCODER_DT_PIN,  INPUT_PULLUP);
+  static int encLastClk = HIGH;
+  lv_timer_create([](lv_timer_t*) {
+      int clk = digitalRead(ENCODER_CLK_PIN);
+      if (clk != encLastClk && clk == LOW) {
+          int delta = (digitalRead(ENCODER_DT_PIN) == LOW) ? -1 : 1;
+          if (locoUI) locoUI->nudgeSpeed(delta);
+      }
+      encLastClk = clk;
+  }, 5, nullptr);
+
   // Encoder button long-press → emergency stop
-  pinMode(ENCODER_BTN_PIN, INPUT_PULLUP);
+  pinMode(ENCODER_BTN_PIN, INPUT); // GPIO35 input-only; HW-040 supplies pull-up
   static uint32_t btnPressStart = 0;
   static bool btnArmed = false;
   lv_timer_create([](lv_timer_t*) {

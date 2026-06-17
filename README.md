@@ -45,6 +45,26 @@ A web interface running on the ESP32 allows for easy input of loco details and a
 - **Battery and Charging Board**: A LiPo battery and USB LiPo charging board
 - **TODO** Details on assembly and case 
 
+### Pin Definitions
+
+| Function | GPIO | HW-040 Pin | Notes |
+|---|---|---|---|
+| Touch MOSI | 32 | — | Bit-bang SPI |
+| Touch MISO | 39 | — | Bit-bang SPI |
+| Touch CLK | 25 | — | Bit-bang SPI |
+| Touch CS | 33 | — | XPT2046 chip select |
+| Touch IRQ | 36 | — | XPT2046 interrupt |
+| SD CLK | 18 | — | Hardware VSPI |
+| SD MISO | 19 | — | Hardware VSPI |
+| SD MOSI | 23 | — | Hardware VSPI |
+| SD CS | 5 | — | SD chip select |
+| Encoder CLK (A) | 22 | CLK | Rotary channel A — P3 connector |
+| Encoder DT (B) | 27 | DT | Rotary channel B — free on resistive CYD variant |
+| Encoder Button (SW) | 35 | SW | Active LOW; input-only pin (HW-040 supplies pull-up); long-press triggers E-Stop |
+| 3.3V | 3.3V | + | Encoder power |
+| GND | GND | GND | Encoder ground |
+| Battery Voltage | 34 | — | ADC input; on-board ÷2 resistor divider (×2 in firmware) |
+
 ## Software Stack
 - **PlatformIO**: Primary build environment and C++ Framework
 - **LVGL (v9.1)**: Modern embedded graphics library handling the UI, layouts, widgets, and multi-tab swiping physics.

@@ -69,4 +69,6 @@ class LocoUI : public UIView {
   public:
     LocoUI(DCCExCS& dccExCS, Locos& locos, lv_obj_t* parent);
     ~LocoUI() override;
+
+    void nudgeSpeed(int delta);
 };
