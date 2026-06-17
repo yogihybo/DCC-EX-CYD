@@ -80,7 +80,8 @@ A web interface running on the ESP32 allows for easy input of loco details and a
 | SD MOSI | 23 | Hardware VSPI [SD card slot] |
 | SD CLK | 18 | Hardware VSPI [SD card slot] |
 | SD CS | 5 | SD chip select [SD card slot] |
-| Battery Voltage | 34 | ADC input; on-board ÷2 resistor divider (×2 in firmware) |
+| LDR | 34 | Light dependent resistor (unused) |
+| XPT2046 VBAT | pin 7 | Battery voltage read via XPT2046 internal ADC channel (÷4 attenuator, 2.5V ref); solder a wire from the JP3 pad (battery voltage source) directly to pin 7 on the XPT2046 IC |
 
 ## Software Stack
 - **PlatformIO**: Primary build environment and C++ Framework

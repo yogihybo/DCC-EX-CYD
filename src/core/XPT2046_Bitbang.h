@@ -27,6 +27,7 @@ public:
     void begin();
     Point getTouch();
     bool isTouched();
+    float readBattery(); // Returns battery voltage in volts via XPT2046 VBAT channel (pin 7)
 
 private:
     uint8_t _mosiPin;

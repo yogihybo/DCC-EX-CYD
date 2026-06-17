@@ -68,7 +68,6 @@ static void touch_read(lv_indev_t * indev, lv_indev_data_t * data) {
 
 
 const uint32_t POWER_CHECK = 60000 * 2; // 2 Minutes
-const uint8_t BATTERY_PIN = 34;
 const uint16_t CONNECTION_ALIVE_DELAY = 5000;
 
 AsyncClient csClient;
@@ -117,15 +116,13 @@ void connectToCS() {
 
 void powerCheck(void *) {
   for (;;) {
-    uint32_t total = 0;
+    float total = 0;
     for (uint8_t i = 0; i < 10; i++) {
-      total += analogReadMilliVolts(BATTERY_PIN);
+      total += touchscreen.readBattery();
       delay(100);
     }
 
     float voltage = total / 10.0f;
-    voltage *= 2;
-    voltage /= 1000;
 
     if (xSemaphoreTake(lvgl_mutex, portMAX_DELAY) == pdTRUE) {
         set_header_power_status(voltage);
