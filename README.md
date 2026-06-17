@@ -1,24 +1,37 @@
 # DCC-EX-CYD Throttle for Cheap Yellow Display (CYD)
-
+<p align="center">
 <img width="200" height="208" alt="logo" src="https://github.com/user-attachments/assets/ec05c465-016c-4fdd-a8e6-c6d3c67aa4a7" />
+</p>
 
 ## Overview
 DCC-EX-CYD is port of EX-T3-WiFi that transforms a Cheap Yellow Display (CYD) ESP32-2432S028R into a handheld model railway controller. It communicates asynchronously via WiFi directly to a DCC-EX Command Station. 
 
 The firmware uses **FreeRTOS** and **LVGL 9** to provide a robust and clean UI
 
+<p align="center">
+  <img width="240" height="320" alt="interface" src="https://github.com/user-attachments/assets/890e1d9d-f5f0-474c-9332-c6f434f1d76e" />
+</p>
 
-![Interface Demo](icons/interface_demo.gif)
 
-### 🚂 Navigation & Tabs
+
+### Navigation & Tabs
 The interface is split into four primary tabs anchored to the bottom of the screen:
 - **Locomotive**: Drive your trains with a touch speedometer, toggle function buttons, and swap active locos quickly.
 - **Accessories**: Fast-access control to toggle layout turnouts and accessories using their DCC address.
 - **Power**: Control and monitor the DCC-EX Command Station track power (Main, Prog, Join).
 - **Settings**: Configure WiFi connections, screen brightness, rotation, touch calibration, and more.
 
+
+### Web Interface
+
 A web interface running on the ESP32 allows for easy input of loco details and assigning functions. supports both internal memory and SD card with the ability to move configs between the two.
 
+- **Locos**: Add, edit, and delete locomotives by DCC address and name. Assign a default function set (F0–F9), a saved custom set, or define functions inline with the function editor.
+- **Function Sets**: Create reusable function sets with per-button label, colour, latching mode, and icon. Rows can be reordered by drag and drop.
+- **Groups**: Organise locos into named groups for quick selection on the throttle. Groups and their members can be reordered by drag and drop.
+- **Bulk Export / Import**: The Storage settings tab provides a one-click export of all locos, function sets, and groups to a single JSON backup file, and a matching import to restore from it.
+
+---
 
 ## Hardware Requirements
 - **ESP32-2432S028R** (Also known as the CYD / Cheap Yellow Display)
@@ -69,18 +82,6 @@ Binds natively to incoming `BROADCAST_POWER` events from the Command Station. Fe
 
 ---
 
-## Web Interface
-
-The ESP32 serves a Vue 3 web interface over WiFi for managing the throttle configuration without reflashing.
-
-- **Locos**: Add, edit, and delete locomotives by DCC address and name. Assign a default function set (F0–F9), a saved custom set, or define functions inline with the function editor.
-- **Function Sets**: Create reusable function sets with per-button label, colour, latching mode, and icon. Rows can be reordered by drag and drop.
-- **Groups**: Organise locos into named groups for quick selection on the throttle. Groups and their members can be reordered by drag and drop.
-- **Bulk Export / Import**: The Storage settings tab provides a one-click export of all locos, function sets, and groups to a single JSON backup file, and a matching import to restore from it.
-
-All three tabs share a consistent layout: column headers, per-row edit / download / delete actions, and a persistent dashed add button at the bottom of each list.
-
----
 
 ## Building and Compiling
 The project is configured out-of-the-box via `platformio.ini`. 
