@@ -1,70 +1,91 @@
-import os
+"""
+Generate an LVGL 9 ARGB8888 C icon from a PIL-drawn image.
 
+Usage:
+    python generate_icon.py [--name NAME] [--size WxH] [--out PATH]
+
+Defaults:
+    --name  train_icon
+    --size  30x30
+    --out   ../src/<name>.c
+"""
+
+import argparse
+import os
 from PIL import Image, ImageDraw
 
-width = 30
-height = 30
 
-img = Image.new('L', (width, height), 0)
-draw = ImageDraw.Draw(img)
+def draw_train(draw: ImageDraw.ImageDraw, width: int, height: int, color=255, lw=2):
+    sx = width  / 30
+    sy = height / 30
 
-# Outline parameters
-line_width = 2
-color = 255
+    def s(x, y):
+        return (x * sx, y * sy)
 
-# Main body
-draw.rounded_rectangle([4, 4, 25, 22], radius=4, outline=color, width=line_width)
+    draw.rounded_rectangle([s(4, 4), s(25, 22)], radius=4 * sx, outline=color, width=lw)
+    draw.rounded_rectangle([s(7, 2), s(22, 4)],  radius=1 * sx, outline=color, width=lw)
+    draw.rounded_rectangle([s(7, 8), s(13, 14)], radius=2 * sx, outline=color, width=lw)
+    draw.rounded_rectangle([s(16, 8), s(22, 14)],radius=2 * sx, outline=color, width=lw)
+    draw.ellipse([s(7, 17),  s(10, 20)], outline=color, width=lw)
+    draw.ellipse([s(19, 17), s(22, 20)], outline=color, width=lw)
+    draw.line([s(8, 22),  s(8, 24)],  fill=color, width=lw)
+    draw.line([s(21, 22), s(21, 24)], fill=color, width=lw)
+    draw.line([s(6, 24),  s(23, 24)], fill=color, width=lw)
+    draw.line([s(10, 24), s(6, 29)],  fill=color, width=lw)
+    draw.line([s(19, 24), s(23, 29)], fill=color, width=lw)
 
-# Roof
-draw.rounded_rectangle([7, 2, 22, 4], radius=1, outline=color, width=line_width)
 
-# Windows
-draw.rounded_rectangle([7, 8, 13, 14], radius=2, outline=color, width=line_width)
-draw.rounded_rectangle([16, 8, 22, 14], radius=2, outline=color, width=line_width)
+def generate(name: str, width: int, height: int, out_path: str):
+    img = Image.new("L", (width, height), 0)
+    draw = ImageDraw.Draw(img)
+    draw_train(draw, width, height)
 
-# Headlights
-draw.ellipse([7, 17, 10, 20], outline=color, width=line_width)
-draw.ellipse([19, 17, 22, 20], outline=color, width=line_width)
+    pixels = list(img.getdata())
 
-# Bumper
-draw.line([8, 22, 8, 24], fill=color, width=line_width)
-draw.line([21, 22, 21, 24], fill=color, width=line_width)
-draw.line([6, 24, 23, 24], fill=color, width=line_width)
+    rows = []
+    for i in range(0, len(pixels), width):
+        row = pixels[i:i + width]
+        # LVGL 9 ARGB8888 in memory: [B, G, R, A] (little-endian)
+        rows.append("    " + ", ".join(f"0xff, 0xff, 0xff, 0x{p:02x}" for p in row) + ",")
 
-# Tracks
-draw.line([10, 24, 6, 29], fill=color, width=line_width)
-draw.line([19, 24, 23, 29], fill=color, width=line_width)
+    c_array = "const uint8_t {}_map[] = {{\n{}\n}};".format(name, "\n".join(rows))
 
-pixels = list(img.getdata())
-
-# Generate ARGB8888 C array
-# In LVGL 9, ARGB8888 format is [B, G, R, A] in memory (little endian)
-c_array = "const uint8_t train_icon_map[] = {\n"
-for i in range(0, len(pixels), 30):
-    row = pixels[i:i+30]
-    # For a white train, B=255, G=255, R=255, A=pixel
-    c_array += "    " + ", ".join([f"0xff, 0xff, 0xff, 0x{p:02x}" for p in row]) + ",\n"
-c_array += "};\n"
-
-c_code = f"""#include "lvgl.h"
+    c_code = f"""\
+#include "lvgl.h"
 
 {c_array}
 
-const lv_image_dsc_t train_icon = {{
+const lv_image_dsc_t {name} = {{
   .header = {{
-    .magic = LV_IMAGE_HEADER_MAGIC,
-    .cf = LV_COLOR_FORMAT_ARGB8888,
-    .flags = 0,
-    .w = {width},
-    .h = {height},
+    .magic  = LV_IMAGE_HEADER_MAGIC,
+    .cf     = LV_COLOR_FORMAT_ARGB8888,
+    .flags  = 0,
+    .w      = {width},
+    .h      = {height},
     .stride = {width * 4},
   }},
-  .data_size = sizeof(train_icon_map),
-  .data = train_icon_map,
+  .data_size = sizeof({name}_map),
+  .data      = {name}_map,
 }};
 """
 
-with open("c:/Users/Caleb Smith/Documents/GitHub/EX-T3-WiFi/src/train_icon.c", "w") as f:
-    f.write(c_code)
+    os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)
+    with open(out_path, "w") as f:
+        f.write(c_code)
 
-print("Icon generated successfully.")
+    print(f"Generated {out_path}  ({width}x{height}, {len(pixels)*4} bytes)")
+
+
+if __name__ == "__main__":
+    repo_src = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src")
+
+    parser = argparse.ArgumentParser(description="Generate an LVGL 9 ARGB8888 C icon.")
+    parser.add_argument("--name", default="train_icon", help="C variable name (default: train_icon)")
+    parser.add_argument("--size", default="30x30",      help="WxH in pixels (default: 30x30)")
+    parser.add_argument("--out",  default=None,         help="Output .c file path (default: ../src/<name>.c)")
+    args = parser.parse_args()
+
+    w, h = (int(v) for v in args.size.lower().split("x"))
+    out  = args.out or os.path.join(repo_src, f"{args.name}.c")
+
+    generate(args.name, w, h, out)

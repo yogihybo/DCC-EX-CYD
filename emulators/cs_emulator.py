@@ -7,103 +7,95 @@ from threading import Thread
 sockets = []
 
 def broadcast(msg):
-  for s in sockets:
-    try:
-      s.send(msg)
-    except:
-      sockets.remove(s)
+    for s in list(sockets):
+        try:
+            s.send(msg)
+        except Exception:
+            sockets.remove(s)
 
-def throttle(c: socket):
-  sockets.append(c)
-  
-  while True:
-    data = c.recv(1024)
-    if not data:
-      c.close()
-    cmd = data.decode()
-    print("<< " + cmd)
+def throttle(c: socket.socket):
+    sockets.append(c)
 
-    match cmd[1]:
-      case "0":
-        if len(cmd) > 3:
-          if cmd[3] == "M":
-            c.send(b"<p0 MAIN>\n")
-          elif cmd[3] == "P":
-            c.send(b"<p0 PROG>\n")
-        else:
-          c.send(b"<p0>\n")
-        continue
-      case "1":
-        if len(cmd) > 3:
-          if cmd[3] == "M":
-            c.send(b"<p1 MAIN>\n")
-          elif cmd[3] == "P":
-            c.send(b"<p1 PROG>\n")
-          elif cmd[3] == "J":
-            c.send(b"<p1 JOIN>\n")
-        else:
-          c.send(b"<p1>\n")
-        continue
-      case "s":
-        c.send(b"<iDCC-EX V-3.0.4 / MEGA / STANDARD_MOTOR_SHIELD G-75ab2ab><H 1 0><H 2 0><H 3 0><H 4 0><Y 52 0><q 53><q 50>\n")
-        continue
-      case "W":
-        c.send(b"<w 4321>\n")
-        continue
-      case "R":
-        c.send(b"<r 1423>\n")
-        continue
-      case "B":
-        c.send(b"<r12345|32767|3 2 1 >\n")
-        continue
-      case "F":
-        c.send(b"<l 1 1 146 7>\n")
-        continue
-      case "l":
-        c.send(b"<l 1 1 0 0>\n")
-        continue
-      case "t":
-        r = re.search("<t (?P<l>\d+) (?P<s>\d+) (?P<d>\d+)>", cmd)
-        if r:
-          s = "<l " + r.group("l") + " 0 " + str((int(r.group("s")) + 1 & 0x7F) + int(r.group("d")) * 128) + " 0>\n"
-          print(">> " + s)
-          broadcast(bytes(s, "raw_unicode_escape"))
-        else:
-          c.send(b"<l 1 1 0 1>\n")
-        continue
-      case "U":
-        c.send(b"<p1 MAIN>")
-        continue
-      case "D":
-        r = random.randint(0, 50)
-        r = 50
-        print(r)
-        print("\n")
-        c.send(b"<##")
-        for i in range(r):
-          c.send(b" ")
-          c.send(bytes("{cab}".format(cab=random.randint(0, 1024)), "raw_unicode_escape"))
-        c.send(b">\n")
-        continue
-          # c.send(bytes("cab={cab}, speed={speed}, dir={dir}\n".format(cab=random.randint(0, 1024), speed=random.randint(0, 128), dir=random.choice(["F", "R"])), "raw_unicode_escape"))
-        # c.send(bytes("Used={used}, max=50\n".format(used = r), "raw_unicode_escape"))
+    while True:
+        data = c.recv(1024)
+        if not data:
+            c.close()
+            sockets.remove(c)
+            break
 
-    c.send(b"<X>")
+        cmd = data.decode().strip()
+        print("<< " + cmd)
 
-s = socket.socket()        
-print("Socket successfully created")
- 
+        if len(cmd) < 2:
+            c.send(b"<X>")
+            continue
+
+        match cmd[1]:
+            case "0":
+                if len(cmd) > 3 and cmd[3] == "M":
+                    c.send(b"<p0 MAIN>\n")
+                elif len(cmd) > 3 and cmd[3] == "P":
+                    c.send(b"<p0 PROG>\n")
+                else:
+                    c.send(b"<p0>\n")
+
+            case "1":
+                if len(cmd) > 3 and cmd[3] == "M":
+                    c.send(b"<p1 MAIN>\n")
+                elif len(cmd) > 3 and cmd[3] == "P":
+                    c.send(b"<p1 PROG>\n")
+                elif len(cmd) > 3 and cmd[3] == "J":
+                    c.send(b"<p1 JOIN>\n")
+                else:
+                    c.send(b"<p1>\n")
+
+            case "s":
+                # Match TeeStream parser: "iDCC-EX V-x.x.x / BOARD / SHIELD / BUILD"
+                c.send(b"<iDCC-EX V-5.2.76 / MEGA / STANDARD_MOTOR_SHIELD / 12345>\n")
+
+            case "W":
+                c.send(b"<w 4321>\n")
+
+            case "R":
+                c.send(b"<r 1423>\n")
+
+            case "B":
+                c.send(b"<r12345|32767|3 2 1 >\n")
+
+            case "F":
+                c.send(b"<l 1 1 146 7>\n")
+
+            case "l":
+                c.send(b"<l 1 1 0 0>\n")
+
+            case "t":
+                # Format: <t ADDR SPEED DIR>
+                r = re.search(r"<t (?P<l>\d+) (?P<s>\d+) (?P<d>\d+)>", cmd)
+                if r:
+                    speed_dir = (int(r.group("s")) + 1 & 0x7F) + int(r.group("d")) * 128
+                    reply = f"<l {r.group('l')} 0 {speed_dir} 0>\n"
+                    print(">> " + reply)
+                    broadcast(reply.encode())
+                else:
+                    c.send(b"<l 1 1 0 1>\n")
+
+            case "U":
+                c.send(b"<p1 MAIN>\n")
+
+            case _:
+                c.send(b"<X>\n")
+
+
+s = socket.socket()
 port = 2560
- 
-s.bind(('', port))
-print("socket binded to %s" %(port))
 
-s.listen(5)    
-print("socket is listening")           
+s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+s.bind(('', port))
+s.listen(5)
+
+print(f"CS emulator listening on port {port}")
 
 while True:
-  c, addr = s.accept()    
-  print("Got connection from", addr)
-
-  Thread(target = throttle, args = (c,)).start()
- 
+    c, addr = s.accept()
+    print("Got connection from", addr)
+    Thread(target=throttle, args=(c,), daemon=True).start()

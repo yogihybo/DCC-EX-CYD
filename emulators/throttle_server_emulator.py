@@ -1,122 +1,154 @@
 import socketserver
+import os
+import json
 from http.server import SimpleHTTPRequestHandler
 from urllib.parse import urlparse
-from urllib.parse import parse_qs
-import os, json
 
-class MyHandler(SimpleHTTPRequestHandler):
-  def translate_path(self, path):
-    if os.path.exists(os.getcwd() + '\\data\\www\\' + path):
-      return os.getcwd() + '\\data\\www\\' + path
-    elif os.path.exists(os.getcwd() + '\\sd\\' + path):
-      return os.getcwd() + '\\sd\\' + path
-    else:
-      return ''
+# Paths relative to the repo root (one level up from this script)
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+WWW_DIR   = os.path.join(REPO_ROOT, "data", "www")
+SD_DIR    = os.path.join(REPO_ROOT, "sd")
 
-  def json(self, json):
-    self.send_response(200)
-    self.send_header('Content-Type', 'application/json')
-    self.end_headers()
-    self.wfile.write(bytes(json, 'utf-8'))
 
-  def do_GET(self):
-    parsed = urlparse(self.path)
-    path = parsed.path
-  
-    if path == '/':
-      path = 'index.html'
+class ThrottleHandler(SimpleHTTPRequestHandler):
 
-    if path == '/locos':
-      locos = []
-      path = os.getcwd() + '\\sd\\locos'
-      if os.path.exists(path):
-        enum = os.scandir(path)
-        for loco in enum:
-          if loco.is_file() and loco.name.endswith(".json"):
-            with open(loco.path, "r") as read_file:
-              data = json.load(read_file)
-              locos.append({ 'file': '/locos/' + loco.name, 'name': data['name'] })
-      self.json(json.dumps(locos))
-      return
-    elif path == '/fns':
-      fns = []
-      path = os.getcwd() + '\\sd\\fns'
-      if os.path.exists(path):
-        enum = os.scandir(path)
-        for fn in enum:
-          if fn.is_file() and fn.name.endswith(".json"):
-            with open(fn.path, "r") as read_file:
-              data = json.load(read_file)
-              fns.append({ 'file': '/fns/' + fn.name, 'name': data['name'] })
-      self.json(json.dumps(fns))
-      return
-    elif path == '/icons':
-      enum = os.scandir(os.getcwd() + "\\sd\\icons")
-      icons = []
-      for icon in enum:
-        if icon.is_file() and icon.name.endswith('.bmp'):
-          icons.append('icons/' + icon.name)
-      enum.close()
-      self.json(json.dumps(icons))
-      return
-    elif path == '/cs':
-      self.json('{"ssid":"my ssid","password":"ssid pass","server":"dccex","port":2560}')
-      return
-    
-    return SimpleHTTPRequestHandler.do_GET(self)
+    def _clean_path(self, raw_path):
+        """Strip /$ prefix (mirrors real server) and return the path component."""
+        path = urlparse(raw_path).path
+        if path.startswith("/$/"):
+            path = path[2:]
+        return path
 
-  def do_PUT(self):
-    parsed = urlparse(self.path)
-    path = parsed.path
+    def _send_json(self, payload):
+        body = json.dumps(payload).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
 
-    if path == '/cs':
-      self.send_response(204)
-      self.end_headers()
-    else:
-      content_length = int(self.headers.get('Content-Length'))
-      body = self.rfile.read(content_length)
+    def _sd_path(self, path):
+        return os.path.join(SD_DIR, path.lstrip("/"))
 
-      path = os.getcwd() + '\\sd' + path
-      os.makedirs(os.path.dirname(path), exist_ok=True)
-    
-      f = open(path, 'wb')
-      f.write(body)
-      f.close()
+    def translate_path(self, path):
+        """Serve static files from data/www, fallback to sd/."""
+        clean = urlparse(path).path
+        www_target = os.path.join(WWW_DIR, clean.lstrip("/"))
+        if os.path.exists(www_target):
+            return www_target
+        sd_target = os.path.join(SD_DIR, clean.lstrip("/"))
+        if os.path.exists(sd_target):
+            return sd_target
+        return ""
 
-      self.send_response(204)
-      self.end_headers()
+    def do_HEAD(self):
+        path = self._clean_path(self.path)
 
-  def do_HEAD(self):
-    parsed = urlparse(self.path)
-    path = parsed.path
+        if path == "/cs":
+            self.send_response(204)
+        elif path == "/throttle-programming":
+            # Always report programming mode as active in the emulator
+            self.send_response(200)
+            self.send_header("Cache-Control", "no-store")
+        elif os.path.exists(self._sd_path(path)):
+            self.send_response(204)
+        else:
+            self.send_response(404)
+        self.end_headers()
 
-    if path == '/cs': # Test to check if CS has settings, 204 for yes, 404 for no
-      self.send_response(204)
-      # self.send_response(404)
-    elif os.path.exists(os.getcwd() + '\\sd' + path):
-      self.send_response(204)
-    else:
-      self.send_response(404)
-    self.end_headers()
+    def do_GET(self):
+        path = self._clean_path(self.path)
 
-  def do_DELETE(self):
-    parsed = urlparse(self.path)
-    path = parsed.path
+        if path == "/":
+            path = "/index.html"
 
-    if not path.startswith('/icons/'): # avoid deleting icons
-      deleted = True
-      try:
-        os.unlink(os.getcwd() + '\\sd' + path)
-      except FileNotFoundError:
-        deleted = False
-      
-      if deleted:
+        if path == "/cs":
+            self._send_json({
+                "ssid": "my_ssid",
+                "password": "my_password",
+                "server": "dccex",
+                "port": 2560,
+                "storageMode": 0,
+                "has_sd": os.path.isdir(SD_DIR),
+                "version": "v0.0.0",
+                "platform": "Emulator",
+                "free_ram": 999,
+                "ip": "127.0.0.1",
+            })
+            return
+
+        if path in ("/locos", "/fns"):
+            items = []
+            dir_path = self._sd_path(path)
+            if os.path.isdir(dir_path):
+                for entry in os.scandir(dir_path):
+                    if entry.is_file() and entry.name.endswith(".json"):
+                        try:
+                            with open(entry.path) as f:
+                                data = json.load(f)
+                            items.append({"file": path + "/" + entry.name, "name": data.get("name", "")})
+                        except Exception:
+                            pass
+            self._send_json(items)
+            return
+
+        if path == "/icons":
+            icons = []
+            icons_dir = self._sd_path("/icons")
+            if os.path.isdir(icons_dir):
+                for entry in os.scandir(icons_dir):
+                    if entry.is_file() and entry.name.endswith(".bmp"):
+                        icons.append("/icons/" + entry.name)
+            self._send_json(icons)
+            return
+
+        return SimpleHTTPRequestHandler.do_GET(self)
+
+    def do_PUT(self):
+        path = self._clean_path(self.path)
+
+        if path == "/cs":
+            self.send_response(204)
+            self.end_headers()
+            return
+
+        content_length = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(content_length)
+
+        target = self._sd_path(path)
+        os.makedirs(os.path.dirname(target), exist_ok=True)
+        with open(target, "wb") as f:
+            f.write(body)
+
         self.send_response(204)
         self.end_headers()
-        return
 
-    self.send_response(404)
-    self.end_headers()
+    def do_DELETE(self):
+        path = self._clean_path(self.path)
 
-httpd = socketserver.TCPServer(('', 8000), MyHandler)
-httpd.serve_forever()
+        # Icons are read-only in the emulator
+        if path.startswith("/icons/"):
+            self.send_response(404)
+            self.end_headers()
+            return
+
+        target = self._sd_path(path)
+        if os.path.exists(target):
+            os.unlink(target)
+            self.send_response(204)
+        else:
+            self.send_response(404)
+        self.end_headers()
+
+    def log_message(self, fmt, *args):
+        print(f"[Web] {self.command} {self.path} -> {args[1] if len(args) > 1 else ''}")
+
+
+if __name__ == "__main__":
+    port = 8000
+    with socketserver.TCPServer(("", port), ThrottleHandler) as httpd:
+        httpd.allow_reuse_address = True
+        print(f"Throttle server emulator running at http://localhost:{port}")
+        print(f"  Serving web assets from: {WWW_DIR}")
+        print(f"  Serving SD data from:    {SD_DIR}")
+        httpd.serve_forever()
