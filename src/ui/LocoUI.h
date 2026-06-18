@@ -7,6 +7,7 @@
 #include <bitset>
 #include <vector>
 #include "LVGL_Layouts.h"
+#include "ConsistUI.h"
 
 class LocoUI : public UIView {
   private:
@@ -21,6 +22,8 @@ class LocoUI : public UIView {
     } _loco;
 
     Loco* _activeLoco = nullptr;
+    CSConsist* _activeConsist = nullptr;
+    String _consistName;
     uint32_t _lastLocalSpeedMs = 0;
     static constexpr uint32_t SPEED_LOCAL_HOLD_MS = 400;
 
@@ -66,6 +69,8 @@ class LocoUI : public UIView {
     static void group_btn_event_cb(lv_event_t * e);
     static void group_selected_event_cb(lv_event_t * e);
 
+    static void consist_btn_event_cb(lv_event_t * e);
+
     static void release_btn_event_cb(lv_event_t * e);
 
     static void nav_btn_event_cb(lv_event_t * e);
@@ -81,4 +86,5 @@ class LocoUI : public UIView {
 
     void nudgeSpeed(int delta);
     void onLocoUpdate(Loco* loco);
+    void onConsistUpdate(int leadLoco, CSConsist* consist);
 };
