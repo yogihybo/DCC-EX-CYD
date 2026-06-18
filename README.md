@@ -122,7 +122,15 @@ A fast-access manager for layout turnouts and switch machines. Tapping ON/OFF dy
 ### 5. Track Power (`PowerUI.cpp`)
 Receives power state via `AppDelegate::receivedTrackPower` and `receivedIndividualTrackPower` callbacks from the `DCCEXProtocol` library. Features tactile toggle switches to control power across the Main Track, Programming Track, or electronically join them together.
 
-### 6. Settings & Network Hub (`SettingsUI.cpp`)
+### 6. Throttle Server (`ThrottleServer.cpp`)
+A built-in `AsyncWebServer` that hosts the companion web interface for roster management. It is only active when **Throttle Programming** mode is enabled from the Settings tab — on entry the LVGL UI is torn down to reclaim RAM, and rebuilt on exit.
+
+- **REST API**: Handles `GET`, `PUT`, `DELETE`, and `HEAD` requests for loco definitions, function sets, icon images, and groups. Files are streamed directly from LittleFS or SD card via chunked `beginResponse` callbacks — no full file is loaded into RAM.
+- **Settings endpoint** (`/cs`): Exposes and accepts WiFi/Command Station configuration as JSON. Save operations are deferred to a short-lived FreeRTOS task to avoid stack overflow in the AsyncTCP context.
+- **Backup & Restore**: `GET /backup` streams a full JSON export of the roster; `POST /migrate` copies the roster between internal flash and SD card.
+- **CS status** (`HEAD /cs`): Polled by the web UI to indicate whether the device is connected to a Command Station.
+
+### 7. Settings & Network Hub (`SettingsUI.cpp`)
 - Controls hardware variables like screen brightness. Includes sub-modules (`WiFiUI.cpp` and `AboutUI.cpp`) that dynamically popup over the settings UI.
 --**WiFiUI**; has local AP configuration and local access point mode with QR code, 
 --**AboutUI**; tracks live hardware specs and parses Command Station firmware hashes.
