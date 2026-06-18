@@ -201,15 +201,19 @@ void LocoUI::buildControlScreen() {
     _addressLabel = lv_label_create(addr_btn);
 
     if (_activeConsist) {
-        // Build "3 · 45 · 678" from all consist members
+        // Build "3 • 45 • 678" from all consist members
         String addrStr;
         for (CSConsistMember* m = _activeConsist->getFirstMember(); m; m = m->next) {
             if (addrStr.length() > 0) addrStr += " \xE2\x80\xA2 ";  // UTF-8 bullet U+2022
             addrStr += String(m->address);
         }
+        lv_obj_set_size(addr_btn, 150, 40);
+        lv_obj_set_style_pad_all(addr_btn, 0, 0);
+        lv_obj_set_style_pad_hor(addr_btn, 4, 0);
+        lv_obj_set_size(_addressLabel, 142, LV_SIZE_CONTENT);
+        lv_label_set_long_mode(_addressLabel, LV_LABEL_LONG_SCROLL_CIRCULAR);
         lv_label_set_text(_addressLabel, addrStr.c_str());
         lv_obj_set_style_text_font(_addressLabel, &lv_font_montserrat_16, 0);
-        lv_obj_set_size(addr_btn, 150, 40);
     } else if (_loco.address > 0) {
         lv_label_set_text_fmt(_addressLabel, "%d", _loco.address);
         lv_obj_set_style_text_font(_addressLabel, &lv_font_montserrat_28, 0);
