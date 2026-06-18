@@ -105,7 +105,7 @@ void ConsistUI::_showList() {
     if (dir && dir.isDirectory()) {
         while (fs::File f = dir.openNextFile()) {
             if (!f.isDirectory() && String(f.name()).endsWith(".json")) {
-                StaticJsonDocument<256> doc;
+                StaticJsonDocument<512> doc;
                 if (deserializeJson(doc, f) == DeserializationError::Ok) {
                     String name = doc["name"] | String(f.name());
                     int memberCount = doc["members"].size();

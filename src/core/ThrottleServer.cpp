@@ -222,7 +222,10 @@ public:
     if (request->method() == HTTP_PUT) {
       if (xSemaphoreTake(lvgl_mutex, portMAX_DELAY) == pdTRUE) {
         if (!request->_tempFile) {
-          request->_tempFile = Settings.getFS().open(request->url(), "w", true);
+          String url = request->url();
+          int slash = url.lastIndexOf('/');
+          if (slash > 0) Settings.getFS().mkdir(url.substring(0, slash));
+          request->_tempFile = Settings.getFS().open(url, "w", true);
         }
         if (request->_tempFile) {
           request->_tempFile.write(data, len);
