@@ -1,3 +1,7 @@
+import { elementIndex } from './utils.js';
+
+let dragIndex = null;
+
 const Modal = {
   props: {
     consist: [Boolean, Object],
@@ -9,7 +13,11 @@ const Modal = {
       members: [],       // [{ address, reversed }]
       newAddress: '',
       newReversed: false,
+      addingMember: false,
       originalFile: null,
+      roster: {},   // address -> name
+      dirtyNames: {},
+      submitted: false,
     }
   },
   emits: ['close', 'update', 'del'],
@@ -17,6 +25,13 @@ const Modal = {
     consist: {
       immediate: true,
       async handler() {
+        const rosterResp = await fetch('/locos');
+        if (rosterResp.ok) {
+          const list = await rosterResp.json();
+          this.roster = Object.fromEntries(
+            list.map(l => [parseInt(l.file.match(/\d+/)?.[0]), l.name])
+          );
+        }
         if (this.consist && this.consist.file) {
           const response = await fetch(this.consist.file);
           if (response.ok) {
@@ -24,6 +39,7 @@ const Modal = {
             this.name = data.name || '';
             this.replicateFunctions = data.replicateFunctions || false;
             this.members = (data.members || []).map(m => ({ ...m }));
+            this.submitted = false;
             this.originalFile = this.consist.file;
           }
         } else {
@@ -32,6 +48,9 @@ const Modal = {
           this.members = [];
           this.newAddress = '';
           this.newReversed = false;
+          this.addingMember = false;
+          this.dirtyNames = {};
+          this.submitted = false;
           this.originalFile = null;
         }
       }
@@ -46,6 +65,10 @@ const Modal = {
     },
     canSave() {
       return this.name.trim() !== '' && this.members.length >= 2;
+    },
+    availableRoster() {
+      const inConsist = new Set(this.members.map(m => m.address));
+      return Object.entries(this.roster).filter(([addr]) => !inConsist.has(parseInt(addr)));
     }
   },
   methods: {
@@ -59,6 +82,7 @@ const Modal = {
       this.members.push({ address: addr, reversed: this.newReversed });
       this.newAddress = '';
       this.newReversed = false;
+      this.addingMember = false;
     },
     removeMember(index) {
       if (index === 0 && this.members.length > 1) {
@@ -69,7 +93,27 @@ const Modal = {
     toggleReversed(index) {
       this.members[index].reversed = !this.members[index].reversed;
     },
+    dragStart(event) {
+      const li = event.target.closest('li[draggable]');
+      if (!li) return;
+      dragIndex = elementIndex(li) - 1;  // offset for header row
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', null);
+    },
+    dragOver(event) {
+      if (dragIndex === null) return;
+      const li = event.target.closest('li[draggable]');
+      if (!li) return;
+      const newIndex = elementIndex(li) - 1;  // offset for header row
+      if (newIndex !== dragIndex) {
+        const moved = this.members.splice(dragIndex, 1);
+        this.members.splice(newIndex, 0, ...moved);
+        dragIndex = newIndex;
+      }
+    },
+    dragEnd() { dragIndex = null; },
     async save() {
+      this.submitted = true;
       if (!this.canSave) return;
 
       const file = this.newFile;
@@ -116,10 +160,12 @@ const Modal = {
           </div>
           <div class="modal-body">
 
+            <div class="mb-3 text-center text-muted small">Add at least two locos by typing a DCC address directly or selecting from the throttle loco roster. Drag <span style="letter-spacing:-1px">⠿</span> to reorder — the first loco <span class="badge bg-secondary" style="font-size:0.75em">L</span> is the lead. Toggle <strong>Dir</strong> to run a loco in reverse within the consist.</div>
+
             <div class="row mb-3">
               <div class="col">
                 <div class="form-floating">
-                  <input v-model="name" type="text" class="form-control" required maxlength="30" placeholder="Consist Name" />
+                  <input v-model="name" type="text" class="form-control" :class="{ 'is-invalid': submitted && !name.trim() }" required maxlength="30" placeholder="Consist Name" />
                   <label>Consist Name</label>
                 </div>
               </div>
@@ -131,49 +177,81 @@ const Modal = {
             </div>
 
             <div class="mb-2 fw-semibold small text-muted">Members <span v-if="members.length" class="text-secondary">(first = lead)</span></div>
-            <ul class="list-group list-group-flush mb-3">
-              <li v-for="(m, i) in members" :key="i" class="list-group-item px-0 py-1">
-                <div class="d-flex align-items-center gap-2">
-                  <span class="badge bg-secondary" style="min-width:28px">{{ i === 0 ? 'L' : i + 1 }}</span>
-                  <span class="flex-grow-1 font-monospace">{{ m.address }}</span>
-                  <button type="button"
-                    class="btn btn-sm py-0 px-2"
-                    :class="m.reversed ? 'btn-warning' : 'btn-outline-secondary'"
-                    @click="toggleReversed(i)"
-                    :title="m.reversed ? 'Reversed' : 'Normal'">
-                    {{ m.reversed ? 'REV' : 'FWD' }}
-                  </button>
-                  <button type="button" class="btn btn-link p-0 d-flex align-items-center text-danger" @click="removeMember(i)" title="Remove">
+            <ul class="list-group list-group-flush mb-2" :style="submitted && members.length < 2 ? 'outline: 2px solid var(--danger)' : ''" @dragstart="dragStart" @dragover.prevent="dragOver" @dragend="dragEnd">
+              <li class="list-group-item px-0 py-1">
+                <div class="d-flex align-items-center gap-2 pe-2 small text-muted fw-semibold">
+                  <span style="width:14px" class="flex-shrink-0"></span>
+                  <span style="min-width:28px" class="flex-shrink-0">Ord</span>
+                  <span style="min-width:52px" class="flex-shrink-0">No.</span>
+                  <span class="flex-grow-1">Name</span>
+                  <span style="width:3.5rem" class="flex-shrink-0 text-center">Dir</span>
+                  <span style="width:15px" class="flex-shrink-0"></span>
+                </div>
+              </li>
+              <li v-for="(m, i) in members" :key="m.address" class="list-group-item px-0 py-1" draggable="true">
+                <div class="d-flex align-items-center gap-2 pe-2">
+                  <span class="text-muted flex-shrink-0" style="width:14px; cursor:grab; font-size:1rem; line-height:1; text-align:center; display:inline-block">⠿</span>
+                  <span class="badge bg-secondary flex-shrink-0" style="min-width:28px">{{ i === 0 ? 'L' : i + 1 }}</span>
+                  <span class="font-monospace flex-shrink-0" style="min-width:52px">{{ m.address }}</span>
+                  <span v-if="roster[m.address]" class="flex-grow-1 text-truncate small">{{ roster[m.address] }}</span>
+                  <div v-else class="d-flex align-items-center flex-grow-1 gap-1">
+                    <input v-model="m.name" type="text" class="form-control form-control-sm flex-grow-1 small" maxlength="30" placeholder="Unknown" @input="dirtyNames[m.address] = true" />
+                    <button v-if="m.name && dirtyNames[m.address]" type="button" class="btn btn-link p-0 d-flex align-items-center text-success flex-shrink-0" title="Confirm name" tabindex="-1" @click="dirtyNames[m.address] = false">
+                      <svg width="16" height="16" fill="currentColor"><use xlink:href="bs.icons.svg#check"/></svg>
+                    </button>
+                    <span v-else style="width:16px" class="flex-shrink-0"></span>
+                  </div>
+                  <div class="d-flex align-items-center gap-1 flex-shrink-0" style="width:3.5rem">
+                    <div class="form-check form-switch mb-0">
+                      <input class="form-check-input" type="checkbox" :checked="m.reversed" @change="toggleReversed(i)" :id="'rev-' + i"
+                        :style="m.reversed ? 'background-color:var(--warning);border-color:var(--warning)' : 'background-color:var(--success);border-color:var(--success)'" />
+                    </div>
+                    <span class="small text-muted" style="min-width:0.75rem">{{ m.reversed ? 'R' : 'F' }}</span>
+                  </div>
+                  <button type="button" class="btn btn-link p-0 d-flex align-items-center text-danger flex-shrink-0" @click="removeMember(i)" title="Remove">
                     <svg width="15" height="15" fill="currentColor"><use xlink:href="bs.icons.svg#trash"/></svg>
                   </button>
                 </div>
               </li>
-              <li v-if="!members.length" class="list-group-item px-0 text-muted small">No members yet — add at least two below.</li>
-            </ul>
-
-            <div class="row g-2 align-items-end">
-              <div class="col">
-                <div class="form-floating">
-                  <input v-model="newAddress" type="text" class="form-control" inputmode="numeric" pattern="\\d+" maxlength="5" placeholder="Address" @keyup.enter.prevent="addMember" />
-                  <label>DCC Address</label>
+              <li v-if="addingMember" class="list-group-item px-0 py-1">
+                <div class="d-flex align-items-center gap-2 pe-2">
+                  <span class="text-muted flex-shrink-0" style="width:14px; font-size:1rem; line-height:1; text-align:center; display:inline-block">⠿</span>
+                  <span class="badge bg-secondary flex-shrink-0" style="min-width:28px">{{ members.length === 0 ? 'L' : members.length + 1 }}</span>
+                  <input v-model="newAddress" type="text" class="form-control form-control-sm font-monospace flex-shrink-0 small"
+                    style="width:52px; align-self:stretch" inputmode="numeric" maxlength="5" placeholder="#"
+                    @keyup.enter.prevent="addMember" />
+                  <select v-model="newAddress" class="form-select form-select-sm flex-grow-1 small">
+                    <option value="">— select from roster —</option>
+                    <option v-for="[addr, name] in availableRoster" :key="addr" :value="addr">{{ name }}</option>
+                  </select>
+                  <div class="d-flex align-items-center gap-1 flex-shrink-0" style="width:3.5rem">
+                    <div class="form-check form-switch mb-0">
+                      <input class="form-check-input" type="checkbox" v-model="newReversed" id="new-rev"
+                        :style="newReversed ? 'background-color:var(--warning);border-color:var(--warning)' : 'background-color:var(--success);border-color:var(--success)'" />
+                    </div>
+                    <span class="small text-muted" style="min-width:0.75rem">{{ newReversed ? 'R' : 'F' }}</span>
+                  </div>
+                  <span style="width:15px" class="flex-shrink-0"></span>
                 </div>
-              </div>
-              <div class="col-auto d-flex align-items-center gap-2 pb-2">
-                <div class="form-check form-switch mb-0">
-                  <input v-model="newReversed" class="form-check-input" type="checkbox" id="newRevSwitch" />
-                  <label class="form-check-label small" for="newRevSwitch">Rev</label>
+              </li>
+              <li v-if="addingMember" class="list-group-item px-0 py-1">
+                <div class="d-flex justify-content-end gap-2 pe-2">
+                  <button type="button" class="btn btn-secondary btn-sm" @click="addingMember = false; newAddress = ''; newReversed = false">Cancel</button>
+                  <button type="button" class="btn btn-primary btn-sm" @click="addMember">Save Loco</button>
                 </div>
-                <button type="button" class="btn btn-outline-primary btn-sm" @click="addMember">
-                  <svg width="14" height="14" fill="currentColor"><use xlink:href="bs.icons.svg#plus-lg"/></svg> Add
+              </li>
+              <li class="list-group-item border-0 px-0 pt-2 pb-0">
+                <button @click="addingMember = true" type="button" class="btn add-row-btn w-100 py-2">
+                  <svg width="16" height="16" fill="currentColor" class="me-2" style="vertical-align: text-bottom;"><use xlink:href="bs.icons.svg#plus-lg"/></svg> Add Member
                 </button>
-              </div>
-            </div>
-            <div v-if="members.length < 2" class="form-text text-warning mt-1">A consist needs at least 2 members to save.</div>
+              </li>
+            </ul>
+            <div v-if="members.length < 2" class="form-text text-warning">A consist needs at least 2 members to save.</div>
 
           </div>
           <div class="modal-footer">
             <button @click="close" type="button" class="btn btn-secondary">Close &amp; Discard</button>
-            <button type="submit" class="btn btn-primary" :disabled="!canSave">Save Changes</button>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
           </div>
         </form>
       </div>
