@@ -133,6 +133,10 @@ public:
     if (locoUI) locoUI->onLocoUpdate(loco);
   }
 
+  void receivedCSConsist(int leadLoco, CSConsist* consist) override {
+    if (locoUI) locoUI->onConsistUpdate(leadLoco, consist);
+  }
+
   void receivedReadLoco(int address) override {
     if (setUI_ptr && setUI_ptr->getProgramUI())
       setUI_ptr->getProgramUI()->receivedReadLoco(address);

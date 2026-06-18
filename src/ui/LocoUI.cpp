@@ -81,7 +81,7 @@ void LocoUI::onLocoUpdate(Loco* loco) {
 
 void LocoUI::buildSelectionMenu() {
     _selectionMenu = lv_obj_create(_container);
-    lv_obj_set_size(_selectionMenu, LV_PCT(90), LV_PCT(90));
+    lv_obj_set_size(_selectionMenu, LV_PCT(90), LV_PCT(98));
     lv_obj_align(_selectionMenu, LV_ALIGN_CENTER, 0, 0);
     lv_obj_set_style_pad_all(_selectionMenu, 0, 0);
     lv_obj_set_style_border_width(_selectionMenu, 0, 0);
@@ -133,9 +133,17 @@ void LocoUI::buildSelectionMenu() {
     lv_obj_center(lbl_group);
     lv_obj_add_event_cb(btn_group, group_btn_event_cb, LV_EVENT_CLICKED, this);
 
+    lv_obj_t* btn_consist = lv_btn_create(_selectionMenu);
+    lv_obj_set_size(btn_consist, 200, 35);
+    lv_obj_align(btn_consist, LV_ALIGN_TOP_MID, 0, 165);
+    lv_obj_t* lbl_consist = lv_label_create(btn_consist);
+    lv_label_set_text(lbl_consist, "Consist");
+    lv_obj_center(lbl_consist);
+    lv_obj_add_event_cb(btn_consist, consist_btn_event_cb, LV_EVENT_CLICKED, this);
+
     lv_obj_t* btn_release = lv_btn_create(_selectionMenu);
     lv_obj_set_size(btn_release, 200, 35);
-    lv_obj_align(btn_release, LV_ALIGN_TOP_MID, 0, 165);
+    lv_obj_align(btn_release, LV_ALIGN_TOP_MID, 0, 205);
     lv_obj_set_style_bg_color(btn_release, lv_color_make(200, 50, 50), 0);
     lv_obj_t* lbl_release = lv_label_create(btn_release);
     lv_label_set_text(lbl_release, "Release");
@@ -157,8 +165,10 @@ void LocoUI::buildControlScreen() {
         locoFile.close();
     }
 
-    _locoName = "Unknown Loco";
-    if (locoDoc.containsKey("name")) _locoName = locoDoc["name"].as<const char*>();
+    if (!_activeConsist) {
+        _locoName = "Unknown Loco";
+        if (locoDoc.containsKey("name")) _locoName = locoDoc["name"].as<const char*>();
+    }
     String nameStr = _locoName;
 
     _nameLabel = lv_label_create(_container);
@@ -498,6 +508,13 @@ void LocoUI::refresh() {
     lv_obj_clean(_container);
     _fnButtons.clear();
 
+    if (_activeConsist) {
+        // Consist is driving — keep _loco.address as set by the drive callback
+        buildControlScreen();
+        buildSelectionMenu();
+        return;
+    }
+
     uint16_t newAddr = (uint16_t)_locos;
     if (_loco.address != newAddr) {
         _loco.address = newAddr;
@@ -772,6 +789,16 @@ void LocoUI::group_selected_event_cb(lv_event_t * e) {
 
 void LocoUI::release_btn_event_cb(lv_event_t * e) {
     LocoUI* ui = (LocoUI*)lv_event_get_user_data(e);
+    if (ui->_activeConsist) {
+        ui->_dccex.setThrottle(ui->_activeConsist, 0, Direction::Forward);
+        ui->_dccex.deleteCSConsist(ui->_activeConsist);
+        ui->_activeConsist = nullptr;
+        Serial.printf("[DCC] Consist '%s' released\n", ui->_consistName.c_str());
+        ui->_locos.remove();
+        if (ui->_selectionMenu) lv_obj_add_flag(ui->_selectionMenu, LV_OBJ_FLAG_HIDDEN);
+        lv_async_call([](void* user_data) { ((LocoUI*)user_data)->refresh(); }, ui);
+        return;
+    }
     if (ui->_loco.address != 0) {
         if (ui->_activeLoco) {
             ui->_dccex.setThrottle(ui->_activeLoco, 0,
@@ -790,6 +817,37 @@ void LocoUI::release_btn_event_cb(lv_event_t * e) {
         lv_async_call([](void* user_data) {
             ((LocoUI*)user_data)->refresh();
         }, ui);
+    }
+}
+
+void LocoUI::consist_btn_event_cb(lv_event_t* e) {
+    LocoUI* ui = (LocoUI*)lv_event_get_user_data(e);
+    if (ui->_selectionMenu) lv_obj_add_flag(ui->_selectionMenu, LV_OBJ_FLAG_HIDDEN);
+
+    // ConsistUI is self-owned; it deletes itself on Close or Drive
+    new ConsistUI(ui->_dccex, lv_layer_top(), [ui](CSConsist* consist, const String& name) {
+        ui->_activeConsist = consist;
+        ui->_activeLoco = nullptr;
+        ui->_loco = {};
+        ui->_consistName = name;
+        ui->_locoName = name;
+        CSConsistMember* lead = consist->getFirstMember();
+        ui->_loco.address = lead ? lead->address : 0;
+        Serial.printf("[DCC] Consist '%s' acquired (lead %d)\n", name.c_str(), ui->_loco.address);
+        lv_async_call([](void* user_data) { ((LocoUI*)user_data)->refresh(); }, ui);
+    });
+}
+
+void LocoUI::onConsistUpdate(int leadLoco, CSConsist* consist) {
+    if (!_activeConsist || _activeConsist != consist) return;
+    bool localHold = (millis() - _lastLocalSpeedMs) < SPEED_LOCAL_HOLD_MS;
+    if (!localHold) {
+        int s = consist->getSpeed();
+        if (_loco.speed != s) {
+            _loco.speed = s;
+            if (_speedArc) lv_arc_set_value(_speedArc, s);
+            if (_speedLabel) lv_label_set_text_fmt(_speedLabel, "%d", s);
+        }
     }
 }
 
@@ -834,7 +892,10 @@ void LocoUI::dir_btn_event_cb(lv_event_t * e) {
         lv_label_set_text(ui->_dirLabel, ui->_loco.direction ? LV_SYMBOL_RIGHT " FWD" : LV_SYMBOL_LEFT " REV");
         lv_obj_set_style_bg_color(ui->_dirBtn, ui->_loco.direction ? lv_color_make(40, 180, 40) : lv_color_make(180, 150, 30), 0);
     }
-    if (ui->_activeLoco) {
+    if (ui->_activeConsist) {
+        ui->_dccex.setThrottle(ui->_activeConsist, ui->_loco.speed,
+            ui->_loco.direction ? Direction::Forward : Direction::Reverse);
+    } else if (ui->_activeLoco) {
         ui->_dccex.setThrottle(ui->_activeLoco, ui->_loco.speed,
             ui->_loco.direction ? Direction::Forward : Direction::Reverse);
     }
@@ -855,7 +916,10 @@ void LocoUI::speed_arc_event_cb(lv_event_t * e) {
 
     ui->_loco.speed = speed;
     ui->_lastLocalSpeedMs = millis();
-    if (ui->_activeLoco) {
+    if (ui->_activeConsist) {
+        ui->_dccex.setThrottle(ui->_activeConsist, speed,
+            ui->_loco.direction ? Direction::Forward : Direction::Reverse);
+    } else if (ui->_activeLoco) {
         ui->_dccex.setThrottle(ui->_activeLoco, speed,
             ui->_loco.direction ? Direction::Forward : Direction::Reverse);
     }
@@ -881,7 +945,10 @@ void LocoUI::fn_btn_event_cb(lv_event_t * e) {
         }
     }
 
-    if (ui->_activeLoco) {
+    if (ui->_activeConsist) {
+        if (is_checked) ui->_dccex.functionOn(ui->_activeConsist, func);
+        else            ui->_dccex.functionOff(ui->_activeConsist, func);
+    } else if (ui->_activeLoco) {
         if (is_checked) ui->_dccex.functionOn(ui->_activeLoco, func);
         else            ui->_dccex.functionOff(ui->_activeLoco, func);
     }
@@ -897,7 +964,10 @@ void LocoUI::page_btn_event_cb(lv_event_t * e) {
 void LocoUI::estop_btn_event_cb(lv_event_t * e) {
     LocoUI* ui = (LocoUI*)lv_event_get_user_data(e);
     ui->_loco.speed = 0;
-    if (ui->_activeLoco) {
+    if (ui->_activeConsist) {
+        ui->_dccex.setThrottle(ui->_activeConsist, 0,
+            ui->_loco.direction ? Direction::Forward : Direction::Reverse);
+    } else if (ui->_activeLoco) {
         ui->_dccex.setThrottle(ui->_activeLoco, 0,
             ui->_loco.direction ? Direction::Forward : Direction::Reverse);
     }
@@ -918,7 +988,10 @@ void LocoUI::nudgeSpeed(int delta) {
     else if (speed < 84) color = lv_color_make(255, 255, 50);
     else                 color = lv_color_make(255, 50, 50);
     lv_obj_set_style_arc_color(_speedArc, color, LV_PART_INDICATOR);
-    if (_activeLoco) {
+    if (_activeConsist) {
+        _dccex.setThrottle(_activeConsist, speed,
+            _loco.direction ? Direction::Forward : Direction::Reverse);
+    } else if (_activeLoco) {
         _dccex.setThrottle(_activeLoco, speed,
             _loco.direction ? Direction::Forward : Direction::Reverse);
     }
