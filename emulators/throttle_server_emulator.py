@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WWW_DIR   = os.path.join(REPO_ROOT, "data", "www")
 SD_DIR    = os.path.join(REPO_ROOT, "sd")
+DATA_DIR  = os.path.join(REPO_ROOT, "data")
 
 
 class ThrottleHandler(SimpleHTTPRequestHandler):
@@ -31,11 +32,16 @@ class ThrottleHandler(SimpleHTTPRequestHandler):
         return os.path.join(SD_DIR, path.lstrip("/"))
 
     def translate_path(self, path):
-        """Serve static files from data/www, fallback to sd/."""
+        """Serve static files from data/www, then data/, fallback to sd/."""
         clean = urlparse(path).path
+        if clean.startswith("/$/"):
+            clean = clean[2:]  # strip /$ to get real path
         www_target = os.path.join(WWW_DIR, clean.lstrip("/"))
         if os.path.exists(www_target):
             return www_target
+        data_target = os.path.join(DATA_DIR, clean.lstrip("/"))
+        if os.path.exists(data_target):
+            return data_target
         sd_target = os.path.join(SD_DIR, clean.lstrip("/"))
         if os.path.exists(sd_target):
             return sd_target
@@ -94,9 +100,16 @@ class ThrottleHandler(SimpleHTTPRequestHandler):
 
         if path == "/icons":
             icons = []
-            icons_dir = self._sd_path("/icons")
-            if os.path.isdir(icons_dir):
-                for entry in os.scandir(icons_dir):
+            # Built-in icons from data/icons/ — served with /$ prefix (read-only)
+            builtin_dir = os.path.join(DATA_DIR, "icons")
+            if os.path.isdir(builtin_dir):
+                for entry in sorted(os.scandir(builtin_dir), key=lambda e: e.name):
+                    if entry.is_file() and entry.name.endswith(".bmp"):
+                        icons.append("/$" + "/icons/" + entry.name)
+            # User icons from sd/icons/ — served without /$ prefix (deleteable)
+            sd_icons_dir = self._sd_path("/icons")
+            if os.path.isdir(sd_icons_dir):
+                for entry in sorted(os.scandir(sd_icons_dir), key=lambda e: e.name):
                     if entry.is_file() and entry.name.endswith(".bmp"):
                         icons.append("/icons/" + entry.name)
             self._send_json(icons)

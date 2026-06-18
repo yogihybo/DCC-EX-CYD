@@ -415,6 +415,7 @@ void SettingsUI::throttle_programming_event_cb(lv_event_t * e) {
   // The overlay is created on lv_scr_act() so it survives the tabview deletion.
 
   lv_obj_t* scr = lv_scr_act();
+  lv_obj_clear_flag(scr, LV_OBJ_FLAG_SCROLLABLE);
 
   // Full-screen overlay container
   lv_obj_t* overlay = lv_obj_create(scr);

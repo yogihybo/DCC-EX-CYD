@@ -3,6 +3,31 @@
 #include <SD.h>
 #include <Settings.h>
 
+LV_FONT_DECLARE(fa_icons_18);
+
+// Encode a Unicode codepoint (U+0800..U+FFFF) as a null-terminated UTF-8 string
+static void cp_to_utf8(uint32_t cp, char buf[5]) {
+    if (cp < 0x800) {
+        buf[0] = 0xC0 | (cp >> 6);
+        buf[1] = 0x80 | (cp & 0x3F);
+        buf[2] = '\0';
+    } else {
+        buf[0] = 0xE0 | (cp >> 12);
+        buf[1] = 0x80 | ((cp >> 6) & 0x3F);
+        buf[2] = 0x80 | (cp & 0x3F);
+        buf[3] = '\0';
+    }
+}
+
+static lv_color_t rgb565_to_lv(uint16_t c) {
+    uint8_t r5 = (c >> 11) & 0x1F;
+    uint8_t g6 = (c >>  5) & 0x3F;
+    uint8_t b5 =  c        & 0x1F;
+    return lv_color_make((r5 << 3) | (r5 >> 2),
+                         (g6 << 2) | (g6 >> 4),
+                         (b5 << 3) | (b5 >> 2));
+}
+
 LocoUI::LocoUI(DCCEXProtocol& dccex, Locos& locos, lv_obj_t* parent)
     : _dccex(dccex), _locos(locos), _fnPage(0) {
 
@@ -355,65 +380,54 @@ void LocoUI::buildFunctionButtons(JsonDocument& locoDoc) {
         for (JsonObjectConst const& fn : row) {
             uint8_t func = fn["fn"];
             bool latching = fn["latching"] | true;
-            const char* idle_label = fn["btn"]["idle"]["label"].as<const char*>();
-            const char* idle_icon = fn["btn"]["idle"]["icon"].as<const char*>();
+            const char* idle_label   = fn["btn"]["idle"]["label"].as<const char*>();
             const char* pressed_label = fn["btn"]["pressed"]["label"].as<const char*>();
-            const char* pressed_icon = fn["btn"]["pressed"]["icon"].as<const char*>();
+            uint32_t idle_cp    = fn["btn"]["idle"]["icon"]    | (uint32_t)0;
+            uint32_t pressed_cp = fn["btn"]["pressed"]["icon"] | (uint32_t)0;
+            Serial.printf("[FN] func=%u idle_cp=0x%X pressed_cp=0x%X\n", (unsigned)func, idle_cp, pressed_cp);
+
+            lv_color_t idle_fill   = rgb565_to_lv(fn["btn"]["idle"]["fill"]     | (uint16_t)0x0000);
+            lv_color_t idle_border = rgb565_to_lv(fn["btn"]["idle"]["border"]   | (uint16_t)0xFFFF);
+            lv_color_t idle_color  = rgb565_to_lv(fn["btn"]["idle"]["color"]    | (uint16_t)0xFFFF);
+            lv_color_t press_fill   = rgb565_to_lv(fn["btn"]["pressed"]["fill"]   | (uint16_t)0xFFFF);
+            lv_color_t press_border = rgb565_to_lv(fn["btn"]["pressed"]["border"] | (uint16_t)0xFFFF);
+            lv_color_t press_color  = rgb565_to_lv(fn["btn"]["pressed"]["color"]  | (uint16_t)0x0000);
 
             lv_obj_t* btn = lv_btn_create(_container);
             lv_obj_set_size(btn, 42, 36);
-            lv_obj_set_style_bg_color(btn, lv_color_hex(0x252525), 0);
-            lv_obj_set_style_bg_color(btn, lv_color_hex(0x3a3a3a), LV_STATE_PRESSED);
-            lv_obj_set_style_border_color(btn, lv_color_hex(0x484848), 0);
-            lv_obj_set_style_border_width(btn, 1, 0);
             lv_obj_set_style_radius(btn, 6, 0);
-            lv_obj_set_style_bg_color(btn, lv_color_hex(0x1a3870), LV_STATE_CHECKED);
-            lv_obj_set_style_border_color(btn, lv_color_hex(0x4466cc), LV_STATE_CHECKED);
+            lv_obj_set_style_border_width(btn, 1, 0);
             lv_obj_set_style_border_width(btn, 1, LV_STATE_CHECKED);
+            lv_obj_set_style_bg_color(btn, idle_fill, 0);
+            lv_obj_set_style_border_color(btn, idle_border, 0);
+            lv_obj_set_style_bg_color(btn, press_fill, LV_STATE_CHECKED);
+            lv_obj_set_style_border_color(btn, press_border, LV_STATE_CHECKED);
 
             if (latching) lv_obj_add_flag(btn, LV_OBJ_FLAG_CHECKABLE);
 
-            auto create_visual = [btn, func](const char* icon, const char* label) -> lv_obj_t* {
-                lv_obj_t* visual_obj = nullptr;
-                if (icon && strlen(icon) > 0) {
-                    String fsPath = icon;
-                    if (fsPath.startsWith("/$/")) fsPath = fsPath.substring(2);
-                    if (!fsPath.startsWith("/")) fsPath = "/icons/" + fsPath;
-                    if (!fsPath.endsWith(".bmp")) fsPath += ".bmp";
-
-                    String fullIconPath = "";
-                    if (WebsiteFS.exists(fsPath)) fullIconPath = "W:" + fsPath;
-                    else if (Settings.getFS().exists(fsPath)) fullIconPath = "S:" + fsPath;
-
-                    if (fullIconPath.length() > 0) {
-                        visual_obj = lv_image_create(btn);
-                        char* pathBuf = (char*)malloc(fullIconPath.length() + 1);
-                        strcpy(pathBuf, fullIconPath.c_str());
-                        lv_image_set_src(visual_obj, pathBuf);
-                        lv_obj_center(visual_obj);
-                        lv_obj_add_event_cb(visual_obj, [](lv_event_t* e) {
-                            char* buf = (char*)lv_event_get_user_data(e);
-                            if (buf) free(buf);
-                        }, LV_EVENT_DELETE, pathBuf);
-                        return visual_obj;
-                    }
+            auto create_visual = [btn, func](uint32_t cp, const char* label, lv_color_t col) -> lv_obj_t* {
+                lv_obj_t* visual_obj = lv_label_create(btn);
+                lv_obj_set_style_text_color(visual_obj, col, 0);
+                if (cp > 0) {
+                    char utf8[5] = {0};
+                    cp_to_utf8(cp, utf8);
+                    Serial.printf("[FN] cp=0x%X utf8=[%02X %02X %02X]\n", cp, (uint8_t)utf8[0], (uint8_t)utf8[1], (uint8_t)utf8[2]);
+                    lv_obj_set_style_text_font(visual_obj, &fa_icons_18, 0);
+                    lv_label_set_text(visual_obj, utf8);
+                } else if (label && strlen(label) > 0) {
+                    lv_label_set_text(visual_obj, label);
+                } else {
+                    lv_label_set_text_fmt(visual_obj, "F%d", func);
                 }
-
-                visual_obj = lv_label_create(btn);
-                if (label && strlen(label) > 0) lv_label_set_text(visual_obj, label);
-                else lv_label_set_text_fmt(visual_obj, "F%d", func);
                 lv_obj_center(visual_obj);
                 return visual_obj;
             };
 
-            lv_obj_t* idle_obj = create_visual(idle_icon, idle_label);
-            lv_obj_t* pressed_obj = nullptr;
+            const uint32_t eff_press_cp    = pressed_cp ? pressed_cp : idle_cp;
+            const char*    eff_press_label = (pressed_label && strlen(pressed_label) > 0) ? pressed_label : idle_label;
 
-            if ((pressed_label && strlen(pressed_label) > 0) || (pressed_icon && strlen(pressed_icon) > 0)) {
-                pressed_obj = create_visual(pressed_icon, pressed_label);
-            } else {
-                pressed_obj = create_visual(idle_icon, idle_label);
-            }
+            lv_obj_t* idle_obj    = create_visual(idle_cp,      idle_label,       idle_color);
+            lv_obj_t* pressed_obj = create_visual(eff_press_cp, eff_press_label,  press_color);
 
             bool is_checked = _loco.functions.test(func);
             if (is_checked) {
