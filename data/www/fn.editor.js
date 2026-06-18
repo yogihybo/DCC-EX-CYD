@@ -288,10 +288,6 @@ const FnButton = {
       }
     },
     del() { this.$emit('delete'); },
-    setIcon(val) {
-      this.config.btn.idle.icon    = val;
-      this.config.btn.pressed.icon = val;
-    },
     toggleIcon(enabled) {
       this.useIcon = enabled;
       if (!enabled) {
@@ -332,6 +328,10 @@ const FnButton = {
               <span style="font-size: 9px;" class="text-muted">Border</span>
               <ColorPicker v-model="config.btn.idle.border" />
             </div>
+            <FaIconPicker v-if="useIcon"
+              :modelValue="config.btn.idle.icon"
+              @update:modelValue="config.btn.idle.icon = $event"
+            />
             <ButtonPreview :state="config.btn.idle" />
           </div>
 
@@ -354,6 +354,10 @@ const FnButton = {
             <div class="d-flex flex-column align-items-center flex-shrink-0" style="width: 34px;">
               <ColorPicker v-model="config.btn.pressed.border" />
             </div>
+            <FaIconPicker v-if="useIcon"
+              :modelValue="config.btn.pressed.icon"
+              @update:modelValue="config.btn.pressed.icon = $event"
+            />
             <ButtonPreview :state="config.btn.pressed" />
           </div>
 
@@ -361,18 +365,14 @@ const FnButton = {
 
         <div class="vr mx-1"></div>
 
-        <!-- Icon toggle + pickers -->
-        <div class="d-flex flex-column align-items-start gap-1 flex-shrink-0">
+        <!-- Icon toggle -->
+        <div class="d-flex flex-column align-items-start flex-shrink-0">
           <div class="d-flex align-items-center gap-1">
             <span style="font-size: 9px;" class="text-muted">Icon</span>
             <div class="form-check form-switch m-0 p-0 d-flex">
               <input :checked="useIcon" @change="toggleIcon($event.target.checked)" class="form-check-input m-0" type="checkbox" role="switch" style="float: none;">
             </div>
           </div>
-          <FaIconPicker v-if="useIcon"
-            :modelValue="config.btn.idle.icon"
-            @update:modelValue="setIcon"
-          />
         </div>
 
 

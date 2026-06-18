@@ -384,7 +384,6 @@ void LocoUI::buildFunctionButtons(JsonDocument& locoDoc) {
             const char* pressed_label = fn["btn"]["pressed"]["label"].as<const char*>();
             uint32_t idle_cp    = fn["btn"]["idle"]["icon"]    | (uint32_t)0;
             uint32_t pressed_cp = fn["btn"]["pressed"]["icon"] | (uint32_t)0;
-            Serial.printf("[FN] func=%u idle_cp=0x%X pressed_cp=0x%X\n", (unsigned)func, idle_cp, pressed_cp);
 
             lv_color_t idle_fill   = rgb565_to_lv(fn["btn"]["idle"]["fill"]     | (uint16_t)0x0000);
             lv_color_t idle_border = rgb565_to_lv(fn["btn"]["idle"]["border"]   | (uint16_t)0xFFFF);
@@ -411,7 +410,6 @@ void LocoUI::buildFunctionButtons(JsonDocument& locoDoc) {
                 if (cp > 0) {
                     char utf8[5] = {0};
                     cp_to_utf8(cp, utf8);
-                    Serial.printf("[FN] cp=0x%X utf8=[%02X %02X %02X]\n", cp, (uint8_t)utf8[0], (uint8_t)utf8[1], (uint8_t)utf8[2]);
                     lv_obj_set_style_text_font(visual_obj, &fa_icons_18, 0);
                     lv_label_set_text(visual_obj, utf8);
                 } else if (label && strlen(label) > 0) {
