@@ -1,6 +1,8 @@
 #include "ConsistUI.h"
 #include <Settings.h>
 
+LV_FONT_DECLARE(fa_gauge_high_16);
+
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 String ConsistUI::_consistPath(int leadAddr) {
@@ -140,7 +142,8 @@ void ConsistUI::_showList() {
                     lv_obj_align(drv_btn, LV_ALIGN_RIGHT_MID, -38, 0);
                     lv_obj_set_style_bg_color(drv_btn, lv_color_make(40, 140, 40), 0);
                     lv_obj_t* drv_lbl = lv_label_create(drv_btn);
-                    lv_label_set_text(drv_lbl, "\xEF\x98\xA5");  // loco/throttle icon
+                    lv_label_set_text(drv_lbl, "\xEF\x98\xA5");  // loco/throttle icon (U+F625, fa_gauge_high_16)
+                    lv_obj_set_style_text_font(drv_lbl, &fa_gauge_high_16, 0);
                     lv_obj_center(drv_lbl);
                     lv_obj_set_user_data(drv_btn, (void*)(intptr_t)leadAddr);
                     lv_obj_add_event_cb(drv_btn, consist_drive_cb, LV_EVENT_CLICKED, this);
