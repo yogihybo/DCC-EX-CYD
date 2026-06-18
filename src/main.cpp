@@ -23,7 +23,7 @@
 #include "SettingsUI.h"
 #include "WiFiUI.h"
 #include "AboutUI.h"
-#include "TeeStream.h"
+#include "utils/TeeStream.h"
 #include "ProgramUI.h"
 #include <memory>
 

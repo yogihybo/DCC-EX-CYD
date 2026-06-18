@@ -201,17 +201,24 @@ void LocoUI::buildControlScreen() {
     _addressLabel = lv_label_create(addr_btn);
 
     if (_activeConsist) {
-        // Build "3 • 45 • 678" from all consist members
+        // Build "#6464FF 3# • #AAAAAA 45# • #AAAAAA 678#" with lead in blue, rest in grey
         String addrStr;
+        bool first = true;
         for (CSConsistMember* m = _activeConsist->getFirstMember(); m; m = m->next) {
-            if (addrStr.length() > 0) addrStr += " \xE2\x80\xA2 ";  // UTF-8 bullet U+2022
-            addrStr += String(m->address);
+            if (!first) addrStr += " \xE2\x80\xA2 ";  // UTF-8 bullet U+2022
+            if (first)
+                addrStr += "#6464FF " + String(m->address) + "#";
+            else
+                addrStr += "#AAAAAA " + String(m->address) + "#";
+            first = false;
         }
         lv_obj_set_size(addr_btn, 150, 40);
         lv_obj_set_style_pad_all(addr_btn, 0, 0);
         lv_obj_set_style_pad_hor(addr_btn, 4, 0);
         lv_obj_set_size(_addressLabel, 142, LV_SIZE_CONTENT);
         lv_label_set_long_mode(_addressLabel, LV_LABEL_LONG_SCROLL_CIRCULAR);
+        lv_obj_set_style_anim_duration(_addressLabel, 8000, 0);
+        lv_label_set_recolor(_addressLabel, true);
         lv_label_set_text(_addressLabel, addrStr.c_str());
         lv_obj_set_style_text_font(_addressLabel, &lv_font_montserrat_16, 0);
     } else if (_loco.address > 0) {
@@ -225,7 +232,8 @@ void LocoUI::buildControlScreen() {
     }
 
     lv_obj_align(addr_btn, LV_ALIGN_TOP_MID, 0, 14);
-    lv_obj_set_style_text_color(_addressLabel, lv_color_make(100, 100, 255), 0);
+    if (!_activeConsist)
+        lv_obj_set_style_text_color(_addressLabel, lv_color_make(100, 100, 255), 0);
     lv_obj_center(_addressLabel);
 
     lv_obj_t* next_btn = lv_btn_create(_container);
