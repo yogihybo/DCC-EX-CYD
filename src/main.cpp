@@ -69,36 +69,18 @@ static void touch_read(lv_indev_t * indev, lv_indev_data_t * data) {
 const uint32_t POWER_CHECK = 60000 * 2;
 const uint16_t CONNECTION_ALIVE_DELAY = 5000;
 
-WiFiClient csClient;
-TeeStream  csMonitor(csClient, [](const char* cmd) {
-  // Parse <i...> server description: "iDCC-EX V-x.x.x / BOARD / SHIELD / BUILD"
-  if (cmd[0] != 'i') return;
-
-  auto trimRight = [](const char* s, int len) -> String {
-    while (len > 0 && (s[len-1] == ' ' || s[len-1] == '\r' || s[len-1] == '\n')) len--;
-    return String(s).substring(0, len);
-  };
-
-  const char* p = strchr(cmd, '/');
-  if (!p) return;
-  p++; while (*p == ' ') p++;
-
-  const char* next = strstr(p, " / ");
-  if (!next) { csInfo.board = trimRight(p, strlen(p)); return; }
-  csInfo.board = trimRight(p, next - p);
-  p = next + 3;
-
-  next = strstr(p, " / ");
-  if (!next) { csInfo.shield = trimRight(p, strlen(p)); return; }
-  csInfo.shield = trimRight(p, next - p);
-  p = next + 3;
-
-  next = strstr(p, " / ");
-  csInfo.build = trimRight(p, next ? (next - p) : (int)strlen(p));
-
+static void onCSCommand(const char* cmd) {
+  ServerDescription desc;
+  if (!parseServerDescription(cmd, desc)) return;
+  csInfo.board  = desc.board;
+  csInfo.shield = desc.shield;
+  csInfo.build  = desc.build;
   Serial.printf("[DCC] CS Board: %s  Shield: %s  Build: %s\n",
                 csInfo.board.c_str(), csInfo.shield.c_str(), csInfo.build.c_str());
-});
+}
+
+WiFiClient csClient;
+TeeStream  csMonitor(csClient, onCSCommand);
 volatile bool csIsConnected = false;
 volatile bool csConnectPending = false;
 Locos locos;

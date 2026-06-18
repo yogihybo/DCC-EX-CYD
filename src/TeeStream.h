@@ -1,7 +1,45 @@
 #pragma once
 
 #include <Stream.h>
+#include <WString.h>
 #include <functional>
+
+// Parsed fields from a DCC-EX <i...> server-description response.
+struct ServerDescription {
+    String board;
+    String shield;
+    String build;
+};
+
+// Parses "iDCC-EX V-x.x.x / BOARD / SHIELD / BUILD" into a ServerDescription.
+// Returns true if the command was a valid <i...> response.
+inline bool parseServerDescription(const char* cmd, ServerDescription& out) {
+    if (!cmd || cmd[0] != 'i') return false;
+
+    auto trimRight = [](const char* s, int len) -> String {
+        while (len > 0 && (s[len-1] == ' ' || s[len-1] == '\r' || s[len-1] == '\n')) len--;
+        return String(s).substring(0, len);
+    };
+
+    const char* p = strchr(cmd, '/');
+    if (!p) return false;
+    p++; while (*p == ' ') p++;
+
+    const char* next = strstr(p, " / ");
+    if (!next) { out.board = trimRight(p, strlen(p)); return true; }
+    out.board = trimRight(p, next - p);
+    p = next + 3;
+
+    next = strstr(p, " / ");
+    if (!next) { out.shield = trimRight(p, strlen(p)); return true; }
+    out.shield = trimRight(p, next - p);
+    p = next + 3;
+
+    next = strstr(p, " / ");
+    out.build = trimRight(p, next ? (next - p) : (int)strlen(p));
+
+    return true;
+}
 
 // Transparent Stream wrapper that intercepts complete <...> commands as they
 // flow through read(), invoking a callback with the inner text (no angle brackets).
