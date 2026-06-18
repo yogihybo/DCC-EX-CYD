@@ -38,19 +38,20 @@ public:
     if (url.startsWith("/$/")) url = url.substring(2);
 
     if (request->method() == HTTP_GET) {
-      if (url == "/locos" || url == "/fns" || url == "/icons") return true;
+      if (url == "/locos" || url == "/fns" || url == "/icons" || url == "/consists") return true;
       if (url.endsWith(".json") || url.endsWith(".bmp")) {
-        if (url.startsWith("/locos/") || url.startsWith("/fns/") || url.startsWith("/icons/") || url == "/groups.json" || url == "/groups.bmp") return true;
+        if (url.startsWith("/locos/") || url.startsWith("/fns/") || url.startsWith("/icons/") || url.startsWith("/consists/") || url == "/groups.json" || url == "/groups.bmp") return true;
       }
     } else if (request->method() == HTTP_HEAD) {
       if (url.startsWith("/locos/") && url.endsWith(".json")) return true;
+      if (url.startsWith("/consists/") && url.endsWith(".json")) return true;
     } else if (request->method() == HTTP_DELETE) {
       if (url.endsWith(".json") || url.endsWith(".bmp")) {
-        if (url.startsWith("/locos/") || url.startsWith("/fns/") || url.startsWith("/icons/")) return true;
+        if (url.startsWith("/locos/") || url.startsWith("/fns/") || url.startsWith("/icons/") || url.startsWith("/consists/")) return true;
       }
     } else if (request->method() == HTTP_PUT) {
       if (url.endsWith(".json") || url.endsWith(".bmp")) {
-        if (url.startsWith("/locos/") || url.startsWith("/fns/") || url.startsWith("/icons/") || url == "/groups.json" || url == "/groups.bmp") return true;
+        if (url.startsWith("/locos/") || url.startsWith("/fns/") || url.startsWith("/icons/") || url.startsWith("/consists/") || url == "/groups.json" || url == "/groups.bmp") return true;
       }
     }
     return false;
@@ -62,7 +63,7 @@ public:
     if (url.startsWith("/$/")) url = url.substring(2);
 
     if (request->method() == HTTP_GET) {
-      if (url == "/locos" || url == "/fns" || url == "/icons") {
+      if (url == "/locos" || url == "/fns" || url == "/icons" || url == "/consists") {
         AsyncJsonResponse* response = new AsyncJsonResponse(true, 2048);
         JsonVariant& list = response->getRoot();
 
@@ -91,6 +92,32 @@ public:
                 list.add(String(file.path()));
               });
             }
+            xSemaphoreGive(lvgl_mutex);
+          }
+        } else if (url == "/consists") {
+          StaticJsonDocument<32> filterDoc;
+          filterDoc["name"] = true;
+          filterDoc["members"] = true;
+          StaticJsonDocument<512> doc;
+
+          auto addConsistsFromFS = [&listDir, &filterDoc, &doc, &list](fs::FS& fs) {
+            File dir = fs.open("/consists");
+            if (dir) {
+              listDir(dir, [&filterDoc, &doc, &list](File file) {
+                doc.clear();
+                ReadBufferingStream bufferedFile(file, doc.capacity());
+                deserializeJson(doc, bufferedFile, DeserializationOption::Filter(filterDoc));
+                JsonObject item = list.createNestedObject();
+                item["file"] = String(file.path());
+                item["name"] = String(doc["name"].as<const char*>());
+                item["memberCount"] = doc["members"].size();
+                yield();
+              });
+            }
+          };
+
+          if (xSemaphoreTake(lvgl_mutex, portMAX_DELAY) == pdTRUE) {
+            addConsistsFromFS(Settings.getFS());
             xSemaphoreGive(lvgl_mutex);
           }
         } else {

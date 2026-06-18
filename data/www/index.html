@@ -422,10 +422,14 @@
           <span>Groups</span>
         </button>
         <button type="button" class="nav-link tab-btn" :class="{ active: tab === 4, disabled: locked }" @click="tab = 4">
+          <svg width="18" height="18" fill="currentColor"><use xlink:href="bs.icons.svg#fa-train"/></svg>
+          <span>Consists</span>
+        </button>
+        <button type="button" class="nav-link tab-btn" :class="{ active: tab === 5, disabled: locked }" @click="tab = 5">
           <svg width="18" height="18" fill="currentColor"><use xlink:href="bs.icons.svg#fa-images"/></svg>
           <span>Icons</span>
         </button>
-        <button type="button" class="nav-link tab-btn" :class="{ active: tab === 5, disabled: locked }" @click="tab = 5">
+        <button type="button" class="nav-link tab-btn" :class="{ active: tab === 6, disabled: locked }" @click="tab = 6">
           <svg width="18" height="18" fill="currentColor"><use xlink:href="bs.icons.svg#fa-gear"/></svg>
           <span>Settings <span class="badge bg-warning" :class="{ 'd-none': cs }">!</span></span>
         </button>
@@ -441,10 +445,13 @@
           <Groups :active="tab == 3" @lock="locked = true" @unlock="locked = false" />
         </div>
         <div class="tab-pane fade" :class="{ 'show active': tab === 4 }">
-          <Icons :active="tab == 4" />
+          <Consists :active="tab == 4" />
         </div>
         <div class="tab-pane fade" :class="{ 'show active': tab === 5 }">
-          <Settings :active="tab == 5" @lock="locked = true" @unlock="valid => { locked = false; if (valid === true) { cs = true; } }" />
+          <Icons :active="tab == 5" />
+        </div>
+        <div class="tab-pane fade" :class="{ 'show active': tab === 6 }">
+          <Settings :active="tab == 6" @lock="locked = true" @unlock="valid => { locked = false; if (valid === true) { cs = true; } }" />
         </div>
       </div>
     </div>
@@ -454,6 +461,7 @@
       import Locos from './locos.js';
       import Functions from './functions.js';
       import Groups from './groups.js';
+      import Consists from './consists.js';
       import Icons from './icons.js';
       import Settings from './settings.js';
 
@@ -462,6 +470,7 @@
           Locos,
           Functions,
           Groups,
+          Consists,
           Icons,
           Settings,
         },
