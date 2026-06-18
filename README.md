@@ -16,7 +16,7 @@ The firmware uses **FreeRTOS** and **LVGL 9** to provide a robust and clean UI
 
 ### Navigation & Tabs
 The interface is split into four primary tabs anchored to the bottom of the screen:
-- **Locomotive**: Drive your trains with a touch speedometer, toggle function buttons, and swap active locos quickly.
+- **Locomotive**: Drive your trains with a touch speedometer, toggle function buttons, swap active locos quickly, and build multi-loco consists.
 - **Accessories**: Fast-access control to toggle layout turnouts and accessories using their DCC address.
 - **Power**: Control and monitor the DCC-EX Command Station track power (Main, Prog, Join).
 - **Settings**: Configure WiFi connections, screen brightness, rotation, touch calibration, and more.
@@ -110,11 +110,19 @@ A native LVGL container system for the UI.
 - **Navigation**: Deploys an `lv_tabview` anchored to the bottom of the screen. It seamlessly hosts the 4 permanent sub-applications, enabling native physical swiping between them.
 
 ### 3. Loco Control (`LocoUI.cpp`)
-The primary dashboard for driving locomotives.
+The primary dashboard for driving locomotives and consists.
 - **Throttle**: Features an `lv_arc` serving as a dynamic rotary speedometer.
 - **Function Mapping**: Parses `[address].json` files from LittleFS/SD to dynamically generate a scrolling list of function buttons specific to the active locomotive. A default set (F0–F9) is shown for unrecognised locos.
-- **Selection Submenu**: Clicking the active address instantly spawns a hidden overlay popup menu, allowing you to seamlessly swap locomotives via keypad entry.
+- **Selection Submenu**: Clicking the active address instantly spawns a hidden overlay popup menu, allowing you to seamlessly swap locomotives via keypad entry, roster name/group, or consist.
 - **Direction / E-Stop**: Instant DCC directional toggles and emergency track halts.
+- **Consist Mode**: When a consist is active all throttle controls (speed arc, encoder, direction, functions, e-stop) are routed through the DCC-EX consist API. The consist name is shown in place of the loco name.
+
+### 3a. Consist Builder (`ConsistUI.cpp`)
+An on-device consist manager accessible from the loco selection menu.
+- **Consist List**: Displays all saved consists with member count. Each row has a throttle button (drives the consist immediately) and a settings button (opens the editor).
+- **Editor**: Set a name, toggle replicate-functions mode, and manage members with per-loco FWD/REV direction. The lead loco is marked `[L]`. Drive and Save buttons commit the consist; Delete removes the saved file.
+- **Add Member**: Numeric keypad entry with a reversed toggle. The first address entered becomes the lead loco.
+- **Persistence**: Consists are saved to `/consists/<leadAddr>.json` on LittleFS or SD (whichever is active). Format: `{ name, replicateFunctions, members: [{address, reversed}] }`. Files survive power cycles and reload automatically on next open.
 
 ### 4. Accessory / Turnout Manager (`AccessoriesUI.cpp`)
 A fast-access manager for layout turnouts and switch machines. Tapping ON/OFF dynamically summons a numeric `lv_keyboard` mapped to an input area, letting you rapidly punch in DCC Accessory Addresses (1-2044) and broadcast their states to the track.
