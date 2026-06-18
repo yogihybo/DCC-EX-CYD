@@ -42,13 +42,13 @@ A web interface running on the ESP32 allows for easy input of loco details and a
 - **Screen**: CYD 2.8" TFT (240x320) with ILI9341 Driver
 - **Touch**: CYD Resistive (or Capacitive) touch panel support
 - **Power**: USB power or LiPo via additional battery USB charging board (battery voltage/capacity is measured using the touch screen driver IC feature on pin 7)
-- **Encoder**: A rotary encoder to operated as a tactile throttle HW-040
+- **Encoder**: A rotary encoder (optional) to operated as a tactile throttle HW-040
 - **Battery and Charging Board**: A LiPo battery and USB LiPo charging board
 - **TODO** Details on assembly and case 
 
 ### Pin Definitions
 
-#### External — HW-040 Encoder (HW-040 module)
+#### External — HW-040 Encoder (entirely optional as throttle can be controlled on screen by touch input)
 
 | Function | GPIO | HW-040 Pin | Notes |
 |---|---|---|---|
