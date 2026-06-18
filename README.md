@@ -48,7 +48,7 @@ A web interface running on the ESP32 allows for easy input of loco details and a
 
 ### Pin Definitions
 
-#### External — HW-040 Encoder (HW-040 module)
+#### External — HW-040 Encoder (entirely optional as throttle can be controlled on screen by touch input)
 
 | Function | GPIO | HW-040 Pin | Notes |
 |---|---|---|---|
