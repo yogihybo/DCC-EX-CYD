@@ -7,3 +7,6 @@ include/ThrottleWiFiSettings.h
 3d/*.x3g
 3d/*.f3d
 sd
+sdkconfig
+__pycache__/
+*.pyc
