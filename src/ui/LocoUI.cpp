@@ -204,15 +204,18 @@ void LocoUI::buildControlScreen() {
     _prevBtn = lv_btn_create(_container);
     lv_obj_t* prev_btn = _prevBtn;
     lv_obj_set_size(prev_btn, 36, 36);
-    lv_obj_align(prev_btn, LV_ALIGN_TOP_LEFT, 2, 14);
-    lv_obj_set_style_bg_opa(prev_btn, LV_OPA_20, 0);
-    lv_obj_set_style_bg_color(prev_btn, lv_color_hex(0xffffff), 0);
-    lv_obj_set_style_shadow_width(prev_btn, 0, 0);
+    lv_obj_align(prev_btn, LV_ALIGN_TOP_LEFT, 2, 11);
+    lv_obj_set_style_bg_color(prev_btn, lv_color_hex(0x2e2e2e), 0);
+    lv_obj_set_style_border_color(prev_btn, lv_color_hex(0x555555), 0);
+    lv_obj_set_style_border_width(prev_btn, 1, 0);
+    lv_obj_set_style_shadow_width(prev_btn, 8, 0);
+    lv_obj_set_style_shadow_color(prev_btn, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_shadow_opa(prev_btn, LV_OPA_40, 0);
     lv_obj_set_style_radius(prev_btn, LV_RADIUS_CIRCLE, 0);
     lv_obj_set_style_pad_all(prev_btn, 0, 0);
     lv_obj_t* pl = lv_label_create(prev_btn);
-    lv_label_set_text(pl, LV_SYMBOL_LEFT);
-    lv_obj_set_style_text_font(pl, &lv_font_montserrat_28, 0);
+    lv_label_set_text(pl, "\xEF\x81\xA0");  // FA arrow-left U+F060
+    lv_obj_set_style_text_font(pl, &fa_icons_18, 0);
     lv_obj_set_style_text_color(pl, lv_color_hex(0xcccccc), 0);
     lv_obj_center(pl);
     lv_obj_add_event_cb(prev_btn, nav_btn_event_cb, LV_EVENT_CLICKED, this);
@@ -264,15 +267,18 @@ void LocoUI::buildControlScreen() {
     _nextBtn = lv_btn_create(_container);
     lv_obj_t* next_btn = _nextBtn;
     lv_obj_set_size(next_btn, 36, 36);
-    lv_obj_align(next_btn, LV_ALIGN_TOP_RIGHT, -2, 14);
-    lv_obj_set_style_bg_opa(next_btn, LV_OPA_20, 0);
-    lv_obj_set_style_bg_color(next_btn, lv_color_hex(0xffffff), 0);
-    lv_obj_set_style_shadow_width(next_btn, 0, 0);
+    lv_obj_align(next_btn, LV_ALIGN_TOP_RIGHT, -2, 11);
+    lv_obj_set_style_bg_color(next_btn, lv_color_hex(0x2e2e2e), 0);
+    lv_obj_set_style_border_color(next_btn, lv_color_hex(0x555555), 0);
+    lv_obj_set_style_border_width(next_btn, 1, 0);
+    lv_obj_set_style_shadow_width(next_btn, 8, 0);
+    lv_obj_set_style_shadow_color(next_btn, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_shadow_opa(next_btn, LV_OPA_40, 0);
     lv_obj_set_style_radius(next_btn, LV_RADIUS_CIRCLE, 0);
     lv_obj_set_style_pad_all(next_btn, 0, 0);
     lv_obj_t* nl = lv_label_create(next_btn);
-    lv_label_set_text(nl, LV_SYMBOL_RIGHT);
-    lv_obj_set_style_text_font(nl, &lv_font_montserrat_28, 0);
+    lv_label_set_text(nl, "\xEF\x81\xA1");  // FA arrow-right U+F061
+    lv_obj_set_style_text_font(nl, &fa_icons_18, 0);
     lv_obj_set_style_text_color(nl, lv_color_hex(0xcccccc), 0);
     lv_obj_center(nl);
     lv_obj_add_event_cb(next_btn, nav_btn_event_cb, LV_EVENT_CLICKED, this);
@@ -349,7 +355,7 @@ void LocoUI::buildControlScreen() {
     lv_obj_set_size(_dirBtn, 52, 26);
     // unchecked = REV (yellow track), checked = FWD (green indicator)
     lv_obj_set_style_bg_color(_dirBtn, lv_color_make(180, 150, 30), LV_PART_MAIN);
-    lv_obj_set_style_bg_color(_dirBtn, lv_color_make(40, 180, 40),  LV_PART_INDICATOR | LV_STATE_CHECKED);
+    lv_obj_set_style_bg_color(_dirBtn, lv_color_make(40, 180, 40),  (lv_style_selector_t)LV_PART_INDICATOR | LV_STATE_CHECKED);
     if (_loco.direction) lv_obj_add_state(_dirBtn, LV_STATE_CHECKED);
     lv_obj_add_event_cb(_dirBtn, dir_btn_event_cb, LV_EVENT_VALUE_CHANGED, this);
 
@@ -449,8 +455,10 @@ void LocoUI::buildFunctionButtons(JsonDocument& locoDoc) {
                     lv_obj_set_style_text_font(visual_obj, &fa_icons_18, 0);
                     lv_label_set_text(visual_obj, utf8);
                 } else if (label && strlen(label) > 0) {
+                    lv_obj_set_style_text_font(visual_obj, &lv_font_montserrat_10, 0);
                     lv_label_set_text(visual_obj, label);
                 } else {
+                    lv_obj_set_style_text_font(visual_obj, &lv_font_montserrat_10, 0);
                     lv_label_set_text_fmt(visual_obj, "F%d", func);
                 }
                 lv_obj_center(visual_obj);

@@ -108,15 +108,17 @@ static void create_header_bar() {
     lv_obj_set_style_text_font(train_img, &fa_icons_18, 0);
     lv_obj_set_style_text_color(train_img, lv_color_hex(0xcccccc), 0);
     lv_obj_set_style_pad_left(train_img, 10, 0);
-    lv_obj_set_style_transform_scale(train_img, 161, 0);  // 63% of original
+    lv_obj_set_style_pad_top(train_img, -4, 0);           // compress flex layout height
+    lv_obj_set_style_pad_bottom(train_img, -4, 0);
+    lv_obj_set_style_transform_scale(train_img, 177, 0);  // 69% of original
     lv_obj_set_style_transform_pivot_x(train_img, 0, 0);
-    lv_obj_set_style_transform_pivot_y(train_img, 9, 0);  // pivot at centre of 18px line-height
-    lv_obj_set_style_translate_y(train_img, -2, 0);       // nudge up slightly
+    lv_obj_set_style_transform_pivot_y(train_img, 9, 0);
 
     loco_label = lv_label_create(loco_group);
     lv_label_set_text(loco_label, "000");
     lv_obj_set_style_text_font(loco_label, &lv_font_montserrat_10, 0);
     lv_obj_set_style_text_color(loco_label, lv_color_hex(0x999999), 0);
+    lv_obj_set_style_translate_y(loco_label, 3, 0);
 
     // CS signal bars + "DCC" label stacked in a column
     lv_obj_t* cs_group = lv_obj_create(header_bar);
