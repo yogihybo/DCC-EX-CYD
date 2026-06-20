@@ -1,5 +1,4 @@
 #include "ProgramUI.h"
-#include <WiFi.h>
 
 ProgramUI::ProgramUI(DCCEXProtocol& dccex, lv_obj_t* parent)
     : _dccex(dccex), _msgbox(nullptr), _keyboard(nullptr), _ta(nullptr) {
@@ -30,21 +29,6 @@ ProgramUI::ProgramUI(DCCEXProtocol& dccex, lv_obj_t* parent)
   lv_obj_center(close_lbl);
   lv_obj_add_event_cb(close_btn, close_btn_event_cb, LV_EVENT_CLICKED, this);
 
-  // Connection info banner
-  lv_obj_t* info = lv_obj_create(_container);
-  lv_obj_set_width(info, LV_PCT(100));
-  lv_obj_set_height(info, LV_SIZE_CONTENT);
-  lv_obj_set_style_pad_all(info, 4, 0);
-  lv_obj_set_style_border_width(info, 0, 0);
-  lv_obj_set_style_bg_color(info, lv_color_hex(0x1a1a1a), 0);
-  lv_obj_clear_flag(info, LV_OBJ_FLAG_SCROLLABLE);
-
-  String ip = WiFi.status() == WL_CONNECTED ? WiFi.localIP().toString() : WiFi.softAPIP().toString();
-  lv_obj_t* info_lbl = lv_label_create(info);
-  lv_label_set_text_fmt(info_lbl, "Connect: http://%s", ip.c_str());
-  lv_obj_set_style_text_font(info_lbl, &lv_font_montserrat_12, 0);
-  lv_obj_set_style_text_color(info_lbl, lv_color_hex(0x4488ff), 0);
-  lv_obj_align(info_lbl, LV_ALIGN_LEFT_MID, 0, 0);
 
   lv_obj_t* content = lv_obj_create(_container);
   lv_obj_set_width(content, LV_PCT(100));
@@ -93,6 +77,7 @@ ProgramUI::ProgramUI(DCCEXProtocol& dccex, lv_obj_t* parent)
     }
   }
 }
+
 
 ProgramUI::~ProgramUI() {
   cancelTimeout();

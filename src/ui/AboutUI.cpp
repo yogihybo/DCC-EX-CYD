@@ -50,7 +50,17 @@ AboutUI::AboutUI(DCCEXProtocol& dccex, lv_obj_t* parent) {
   lv_obj_set_style_text_font(content, &lv_font_montserrat_12, 0);
 #endif
 
-  String version("DCC-EX-CYD Version: ");
+  auto add_heading = [&](const char* text) {
+      lv_obj_t* h = lv_label_create(content);
+      lv_label_set_text(h, text);
+      lv_obj_set_style_text_color(h, lv_color_make(52, 204, 211), 0);
+      lv_obj_set_style_pad_top(h, 8, 0);
+  };
+
+  // --- Throttle ---
+  add_heading("Throttle");
+
+  String version("Version: ");
   version += T3_VERSION_MAJOR; version += "."; version += T3_VERSION_MINOR; version += "."; version += T3_VERSION_PATCH;
   lv_obj_t* t3_ver = lv_label_create(content);
   lv_label_set_text(t3_ver, version.c_str());
@@ -60,6 +70,9 @@ AboutUI::AboutUI(DCCEXProtocol& dccex, lv_obj_t* parent) {
 
   _memLbl = lv_label_create(content);
   lv_label_set_text_fmt(_memLbl, "Free RAM: %d KB", ESP.getFreeHeap() / 1024);
+
+  // --- Connection ---
+  add_heading("Connection");
 
   _wifiStat = lv_label_create(content);
   if (WiFi.status() == WL_CONNECTED) {
@@ -74,10 +87,8 @@ AboutUI::AboutUI(DCCEXProtocol& dccex, lv_obj_t* parent) {
                         Settings.AP.SSID.c_str(),
                         Settings.AP.password.c_str());
 
-  lv_obj_t* sd_title = lv_label_create(content);
-  lv_label_set_text(sd_title, "SD Card Info");
-  lv_obj_set_style_text_color(sd_title, lv_color_make(52, 204, 211), 0);
-  lv_obj_set_style_pad_top(sd_title, 10, 0);
+  // --- SD Card ---
+  add_heading("SD Card");
 
   _sdStat = lv_label_create(content);
   uint8_t cardType = SD.cardType();
@@ -92,11 +103,8 @@ AboutUI::AboutUI(DCCEXProtocol& dccex, lv_obj_t* parent) {
       lv_label_set_text_fmt(_sdStat, "Status: Mounted\nFormat: %s\nCapacity: %llu MB", typeStr, cardSize);
   }
 
-  // DCC-EX Command Station section
-  lv_obj_t* cs_title = lv_label_create(content);
-  lv_label_set_text(cs_title, "About DCC-EX Command Station");
-  lv_obj_set_style_text_color(cs_title, lv_color_make(52, 204, 211), 0);
-  lv_obj_set_style_pad_top(cs_title, 10, 0);
+  // --- DCC-EX Command Station ---
+  add_heading("DCC-EX Command Station");
 
   _csConnected = lv_label_create(content);
   lv_label_set_text(_csConnected, csInfo.connected ? "Status: Connected" : "Status: Not Connected");

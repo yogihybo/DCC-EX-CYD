@@ -431,7 +431,17 @@ void SettingsUI::throttle_programming_event_cb(lv_event_t * e) {
   lv_obj_t* lbl = lv_label_create(overlay);
   lv_label_set_text(lbl, LV_SYMBOL_SETTINGS "  Throttle Programming Mode");
   lv_obj_set_style_text_font(lbl, &lv_font_montserrat_14, 0);
-  lv_obj_set_style_pad_bottom(lbl, 20, 0);
+  lv_obj_set_style_text_align(lbl, LV_TEXT_ALIGN_CENTER, 0);
+  lv_obj_set_style_pad_bottom(lbl, 8, 0);
+
+  // Connection info
+  String ip = WiFi.status() == WL_CONNECTED ? WiFi.localIP().toString() : WiFi.softAPIP().toString();
+  lv_obj_t* ip_lbl = lv_label_create(overlay);
+  lv_label_set_text_fmt(ip_lbl, "Connect to throttle via web browser:\nhttp://%s", ip.c_str());
+  lv_obj_set_style_text_font(ip_lbl, &lv_font_montserrat_12, 0);
+  lv_obj_set_style_text_color(ip_lbl, lv_color_hex(0x4488ff), 0);
+  lv_obj_set_style_text_align(ip_lbl, LV_TEXT_ALIGN_CENTER, 0);
+  lv_obj_set_style_pad_bottom(ip_lbl, 20, 0);
 
   // Red close button
   lv_obj_t* close_btn = lv_btn_create(overlay);

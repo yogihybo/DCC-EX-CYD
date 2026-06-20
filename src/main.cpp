@@ -9,6 +9,7 @@
 #include <Settings.h>
 #include <WiFi.h>
 #include <DNSServer.h>
+#include <ESPmDNS.h>
 #include <ThrottleServer.h>
 #include "XPT2046_Bitbang.h"
 #include <AiEsp32RotaryEncoder.h>
@@ -183,7 +184,9 @@ void keepWiFiAlive(void *) {
         WiFi.begin(Settings.CS.SSID().c_str(), Settings.CS.password().c_str());
       } else if (!csIsConnected && !csClient.connected()) {
         csClient.setTimeout(3000);
-        if (csClient.connect(Settings.CS.server().c_str(), Settings.CS.port())) {
+        String csHost = Settings.CS.server();
+        if (csHost.indexOf('.') == -1) csHost += ".local";
+        if (csClient.connect(csHost.c_str(), Settings.CS.port())) {
           Serial.printf("[DCC] Command Station connected – %s:%u\n",
                         Settings.CS.server().c_str(), Settings.CS.port());
           csIsConnected = true;
@@ -363,6 +366,7 @@ void setup() {
       [](WiFiEvent_t event, WiFiEventInfo_t info) {
         Serial.printf("[WiFi] Connected – IP: %s  RSSI: %d dBm\n",
                       WiFi.localIP().toString().c_str(), WiFi.RSSI());
+        MDNS.begin("dcc-ex-cyd");
         if (xSemaphoreTake(lvgl_mutex, portMAX_DELAY) == pdTRUE) {
             set_header_wifi_status(true, WiFi.RSSI());
             xSemaphoreGive(lvgl_mutex);

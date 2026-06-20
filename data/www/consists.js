@@ -152,7 +152,7 @@ const Modal = {
   template: `
   <Teleport to="body">
     <div class="modal d-block">
-      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <form @submit.prevent="save" class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title">Consist Editor</h5>

@@ -14,7 +14,7 @@ lv_obj_t* pwr_tab;
 lv_obj_t* set_tab;
 
 static lv_obj_t* wifi_bars[4];
-static lv_obj_t* cs_bars[4];
+static lv_obj_t* cs_wave;
 static lv_obj_t* power_label;
 static lv_obj_t* voltage_label;
 static lv_obj_t* loco_label;
@@ -36,6 +36,31 @@ static lv_obj_t* make_signal_bars(lv_obj_t* parent) {
         lv_obj_set_style_border_width(bar, 0, 0);
         lv_obj_set_style_bg_color(bar, lv_color_hex(0x555555), 0);
     }
+    return cont;
+}
+
+// DCC square-wave icon drawn as a single lv_line polyline.
+// 4 pulses across 22px with a 2px horizontal lead-in and trail so the line
+// starts and ends with a visible horizontal segment rather than a vertical edge.
+static lv_obj_t* make_dcc_waveform(lv_obj_t* parent) {
+    lv_obj_t* cont = lv_obj_create(parent);
+    lv_obj_set_size(cont, 22, 18);
+    lv_obj_set_style_pad_all(cont, 0, 0);
+    lv_obj_set_style_border_width(cont, 0, 0);
+    lv_obj_set_style_bg_opa(cont, 0, 0);
+    lv_obj_clear_flag(cont, LV_OBJ_FLAG_SCROLLABLE);
+
+    // 2px low lead → 4 pulses (4px high + 4px low each) → 2px high trail = 22px total
+    static const lv_point_precise_t pts[] = {
+        { 0, 14}, { 2, 14}, { 2,  4}, { 6,  4}, { 6, 14},
+        {10, 14}, {10,  4}, {14,  4}, {14, 14},
+        {18, 14}, {18,  4}, {22,  4},
+    };
+    lv_obj_t* line = lv_line_create(cont);
+    lv_line_set_points(line, pts, sizeof(pts) / sizeof(pts[0]));
+    lv_obj_set_style_line_width(line, 2, 0);
+    lv_obj_set_style_line_color(line, lv_color_hex(0x555555), 0);
+    lv_obj_set_pos(line, 0, 0);
     return cont;
 }
 
@@ -131,8 +156,8 @@ static void create_header_bar() {
     lv_obj_set_style_pad_row(cs_group, 0, 0);
     lv_obj_clear_flag(cs_group, LV_OBJ_FLAG_SCROLLABLE);
 
-    lv_obj_t* cs_cont = make_signal_bars(cs_group);
-    for (int i = 0; i < 4; i++) cs_bars[i] = lv_obj_get_child(cs_cont, i);
+    lv_obj_t* cs_cont = make_dcc_waveform(cs_group);
+    cs_wave = lv_obj_get_child(cs_cont, 0); // the lv_line
     lv_obj_t* cs_lbl = lv_label_create(cs_group);
     lv_label_set_text(cs_lbl, "DCC");
     lv_obj_set_style_text_font(cs_lbl, &lv_font_montserrat_10, 0);
@@ -194,13 +219,26 @@ void rebuild_header_bar() {
         voltage_label = nullptr;
         loco_label    = nullptr;
         train_img   = nullptr;
-        for (int i = 0; i < 4; i++) wifi_bars[i] = cs_bars[i] = nullptr;
+        for (int i = 0; i < 4; i++) wifi_bars[i] = nullptr;
+        cs_wave = nullptr;
     }
     create_header_bar();
 }
 
 // Called once at boot – creates the mutex and builds the header bar.
+// CYD rear RGB LED — active LOW, all off by default
+#define LED_R 4
+#define LED_G 16
+#define LED_B 17
+
+static void init_rear_led() {
+    pinMode(LED_R, OUTPUT); digitalWrite(LED_R, HIGH);
+    pinMode(LED_G, OUTPUT); digitalWrite(LED_G, HIGH);
+    pinMode(LED_B, OUTPUT); digitalWrite(LED_B, HIGH);
+}
+
 void setup_lvgl_layouts() {
+    init_rear_led();
     lvgl_mutex = xSemaphoreCreateMutex();
 
     lv_obj_t* scr = lv_scr_act();
@@ -296,7 +334,11 @@ void set_header_wifi_status(bool connected, int rssi) {
 }
 
 void set_header_cs_status(bool connected) {
-    fill_bars(cs_bars, connected ? 4 : 0, lv_color_hex(0xcccccc));
+    if (cs_wave)
+        lv_obj_set_style_line_color(cs_wave, connected ? lv_color_hex(0xcccccc) : lv_color_hex(0x555555), 0);
+    // Rear LED: green when connected, red otherwise (active LOW)
+    digitalWrite(LED_G, connected ? LOW : HIGH);
+    digitalWrite(LED_R, connected ? HIGH : LOW);
 }
 
 void set_header_power_status(float voltage) {

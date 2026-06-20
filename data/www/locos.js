@@ -125,7 +125,7 @@ const Modal = {
               </div>
             </div>
             <div class="row">
-              <div class="col text-center">
+              <div class="col">
                 <FnEditor v-model="editor" v-show="custom" class="mt-3" />
               </div>
             </div>

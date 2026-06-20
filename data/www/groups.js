@@ -1,99 +1,132 @@
-import { rand, elementIndex } from './utils.js';
+import { elementIndex } from './utils.js';
+
+let dragIndex = null;
 
 const Modal = {
   props: {
-    locos: Object,
+    group: [Boolean, Object],
+    roster: Object,  // address (int) -> name
   },
   data() {
     return {
-      address: '',
-      locosMutated: [],
+      name: '',
+      members: [],   // [address (int)]
+      submitted: false,
     }
   },
-  emits: ['close'],
+  emits: ['close', 'save'],
   watch: {
-    locos: function(value) {
-      this.locosMutated = Array.from(Object.entries(value), ([address, name]) => {
-        return {
-          address: address,
-          name: name,
-          selected: false,
+    group: {
+      immediate: true,
+      handler() {
+        if (this.group && this.group !== true) {
+          this.name = this.group.name || '';
+          this.members = [...(this.group.locos || [])];
+        } else {
+          this.name = '';
+          this.members = [];
         }
-      });
+        this.submitted = false;
+      }
+    }
+  },
+  computed: {
+    canSave() {
+      return this.name.trim() !== '';
+    },
+    availableRoster() {
+      const inGroup = new Set(this.members);
+      return Object.entries(this.roster).filter(([addr]) => !inGroup.has(parseInt(addr)));
     }
   },
   methods: {
-    validAddress({ target }) {
-      if (this.address !== '') {
-        this.address.split(',').filter(Number).every(loco => {
-          if (loco < 1 || loco > 10293) {
-            target.setCustomValidity('A loco address must be a value between 1 & 10293.');
-            target.reportValidity();
-            return false;
-          }
-
-          target.setCustomValidity('');
-          return true;
-        });
+    close() { this.$emit('close'); },
+    addLoco(addr) {
+      const a = parseInt(addr);
+      if (!a || this.members.includes(a)) return;
+      this.members.push(a);
+    },
+    removeLoco(index) {
+      this.members.splice(index, 1);
+    },
+    dragStart(event) {
+      const li = event.target.closest('li[draggable]');
+      if (!li) return;
+      dragIndex = elementIndex(li) - 1;  // offset for header row
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', null);
+    },
+    dragOver(event) {
+      if (dragIndex === null) return;
+      const li = event.target.closest('li[draggable]');
+      if (!li) return;
+      const newIndex = elementIndex(li) - 1;
+      if (newIndex !== dragIndex) {
+        const moved = this.members.splice(dragIndex, 1);
+        this.members.splice(newIndex, 0, ...moved);
+        dragIndex = newIndex;
       }
     },
-    close() {
-      this.address = '';
-      this.locosMutated.forEach(loco => {
-        loco.selected = false;
-      });
-
-      this.$emit('close');
-    },
-    select() {
-      const addresses = this.locosMutated
-        .filter(({ selected }) => selected)
-        .map(({ address }) => address)
-        .concat(this.address.split(',').filter(Boolean))
-        .map(Number);
-
-      this.$emit('select', addresses);
-      this.close();
+    dragEnd() { dragIndex = null; },
+    submit() {
+      this.submitted = true;
+      if (!this.canSave) return;
+      this.$emit('save', { name: this.name.trim(), locos: [...this.members] });
     }
   },
   template: `
   <Teleport to="body">
     <div class="modal d-block">
-      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-        <form @submit.prevent="select" class="modal-content">
+      <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <form @submit.prevent="submit" class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">Add Loco</h5>
+            <h5 class="modal-title">Group Editor</h5>
             <button @click="close" type="button" class="btn-close"></button>
           </div>
           <div class="modal-body">
-            <div class="row">
+
+            <div class="row mb-3">
               <div class="col">
                 <div class="form-floating">
-                  <input v-model="address" @input="validAddress" type="text" class="form-control form-control-sm" inputmode="numeric" pattern="[\\d,]+" placeholder="Enter loco addresses, use a comma to provide multiple..." />
-                  <label>Enter loco addresses, use a comma to provide multiple...</label>
+                  <input v-model="name" type="text" class="form-control" :class="{ 'is-invalid': submitted && !name.trim() }" required maxlength="20" placeholder="Group Name" />
+                  <label>Group Name</label>
                 </div>
               </div>
             </div>
-            <div class="row mt-3">
-              <div class="col">
-                <ul class="list-group" style="overflow-y: scroll; max-height: 288px;">
-                  <li v-for="loco of locosMutated" :class="{ active: loco.selected }" @click="loco.selected = !loco.selected" class="list-group-item" style="cursor: pointer;">
-                    <div class="row" style="pointer-events: none;">
-                      <div class="col-2">
-                        #{{ loco.address }}
-                      </div>
-                      <div class="col">
-                        {{ loco.name }}
-                      </div>
-                    </div>
-                  </li>
-                </ul>
-              </div>
-            </div>
+
+            <div class="mb-2 fw-semibold small text-muted">Locos</div>
+            <ul class="list-group list-group-flush mb-2" @dragstart="dragStart" @dragover.prevent="dragOver" @dragend="dragEnd">
+              <li class="list-group-item px-0 py-1">
+                <div class="d-flex align-items-center gap-2 pe-2 small text-muted fw-semibold">
+                  <span style="width:14px" class="flex-shrink-0"></span>
+                  <span style="min-width:52px" class="flex-shrink-0">No.</span>
+                  <span class="flex-grow-1">Name</span>
+                  <span style="width:15px" class="flex-shrink-0"></span>
+                </div>
+              </li>
+              <li v-for="(addr, i) in members" :key="addr" class="list-group-item px-0 py-1" draggable="true">
+                <div class="d-flex align-items-center gap-2 pe-2">
+                  <span class="text-muted flex-shrink-0" style="width:14px; cursor:grab; font-size:1rem; line-height:1; text-align:center; display:inline-block">⠿</span>
+                  <span class="font-monospace flex-shrink-0" style="min-width:52px">{{ addr }}</span>
+                  <span class="flex-grow-1 text-truncate small">{{ roster[addr] || 'Unknown' }}</span>
+                  <button type="button" class="btn btn-link p-0 d-flex align-items-center text-danger flex-shrink-0" @click="removeLoco(i)" title="Remove">
+                    <svg width="15" height="15" fill="currentColor"><use xlink:href="bs.icons.svg#trash"/></svg>
+                  </button>
+                </div>
+              </li>
+              <li class="list-group-item border-0 px-0 pt-2 pb-0">
+                <select v-if="availableRoster.length" class="form-select form-select-sm" @change="addLoco($event.target.value); $event.target.value = ''">
+                  <option value="">— add loco from roster —</option>
+                  <option v-for="[addr, locoName] in availableRoster" :key="addr" :value="addr">{{ locoName }} (#{{ addr }})</option>
+                </select>
+                <p v-else-if="!members.length" class="text-muted small mb-0">No roster locos available to add.</p>
+              </li>
+            </ul>
+
           </div>
           <div class="modal-footer">
-            <button @click="close" type="button" class="btn btn-secondary">Close</button>
-            <button type="submit" class="btn btn-primary">Select</button>
+            <button @click="close" type="button" class="btn btn-secondary">Close &amp; Discard</button>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
           </div>
         </form>
       </div>
@@ -103,257 +136,104 @@ const Modal = {
   `
 }
 
-let dragSibling, oldRowIndex = null, oldBtnIndex = null;
-
 export default {
-  components: {
-    Modal,
-  },
+  components: { Modal },
   props: {
-    active: Boolean
+    active: Boolean,
   },
   data() {
     return {
-      add: false,
+      editing: false,   // false | 'new' | index
       groups: [],
-      locos: [],
+      roster: {},       // address (int) -> name
       isLoading: false,
     }
   },
   watch: {
     active: {
-      handler(value) {
-        if (value) {
-          this.load();
-        }
-      },
-      immediate: true
+      handler(value) { if (value) this.load(); },
+      immediate: true,
     }
   },
-  emits: ['lock', 'unlock'],
+  computed: {
+    editingGroup() {
+      if (this.editing === false) return false;
+      if (this.editing === 'new') return true;
+      return this.groups[this.editing];
+    }
+  },
   methods: {
-    lock() {
-      this.$emit('lock');
-    },
-    unlock() {
-      this.$emit('unlock');
-    },
     async load() {
       this.isLoading = true;
-      {
-        const response = await fetch('/locos');
-        const json = await response.json();
-        this.locos = Object.fromEntries(json.map(({ name, file }) => {
-          return [file.match(/\d+/)[0], name];
-        }));
-      }
-      {
-        const response = await fetch('/groups.json');
-        if (response.ok) {
-          this.groups = (await response.json()).map(group => {
-            return Object.assign(group, {
-                expand: false,
-                key: rand(),
-              });
-          });
-        } else {
-          this.groups = [];
-        }
-      }
+      const [locosResp, groupsResp] = await Promise.all([fetch('/locos'), fetch('/groups.json')]);
+      const locoList = await locosResp.json();
+      this.roster = Object.fromEntries(
+        locoList.map(l => [parseInt(l.file.match(/\d+/)?.[0]), l.name])
+      );
+      this.groups = groupsResp.ok ? await groupsResp.json() : [];
       this.isLoading = false;
     },
-    addGroup() {
-      this.groups.push({
-        name: '',
-        locos: [],
-        expand: true,
-        key: rand(),
-      });
-      this.lock();
+    add() { this.editing = 'new'; },
+    edit(index) { this.editing = index; },
+    async del(index) {
+      if (!confirm('Delete this group?')) return;
+      this.groups.splice(index, 1);
+      await this.persist();
     },
-    delGroup(index) {
-      if (confirm('Are you sure you want to delete this group?')) {
-        this.groups.splice(index, 1);
-        this.lock();
-      }
-    },
-    addLoco(locos) {
-      const dedup = locos.filter(loco => !this.groups[this.add].locos.includes(+loco));
-      if (dedup.length) {
-        this.groups[this.add].locos.push(...dedup);
-        this.add = false;
-        this.lock();
-      }
-    },
-    delLoco(group, index) {
-      if (confirm('Are you sure you want to delete this loco from the group?')) {
-        this.groups[group].locos.splice(index, 1);
-        this.lock();
-      }
-    },
-    async save() {
-      const response = await fetch('/groups.json', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(this.groups.map(({ name, locos }) => ({ name, locos }))) // map to remove `expand` and `key`
-      });
-
-      if (response.ok) {
-        this.unlock();
-      }
-    },
-    discard() {
-      this.load();
-      this.unlock();
-    },
-
-    dragStart(event) {
-      const existing = event.target.closest(`[draggable]`);
-      dragSibling = existing.tagName.toLowerCase();
-
-      if (document.elementFromPoint(event.x, event.y)?.matches('[role=button]')) {
-        oldRowIndex = elementIndex(existing);
-      } else if (existing.matches('.row')) {
-        oldBtnIndex = elementIndex(existing);
-        oldRowIndex = elementIndex(existing.closest('li'));
+    async saveGroup({ name, locos }) {
+      if (this.editing === 'new') {
+        this.groups.push({ name, locos });
       } else {
-        event.preventDefault();
+        this.groups[this.editing] = { name, locos };
       }
-
-      event.dataTransfer.effectAllowed = 'move';
-      event.dataTransfer.setData('text/plain', null);
+      this.editing = false;
+      await this.persist();
     },
-    dragOver(event) {
-      const over = event.target.closest(`${dragSibling}[draggable]`);
-      if (over) {
-        if (dragSibling === 'li') {
-          const newRowIndex = elementIndex(over);
-          if (oldRowIndex !== newRowIndex) { // Has the row moved?
-            const move = this.groups.splice(oldRowIndex, 1);
-            this.groups.splice(newRowIndex, 0, ...move);
-
-            oldRowIndex = newRowIndex;
-          }
-        } else if (dragSibling === 'div') {
-          const newRowIndex = elementIndex(over.closest('li'));
-          const newBtnIndex = elementIndex(over);
-          if (oldRowIndex !== newRowIndex || (oldRowIndex === newRowIndex && oldBtnIndex !== newBtnIndex)) { // Has the btn moved?
-            const move = this.groups[oldRowIndex].locos.splice(oldBtnIndex, 1);
-            this.groups[newRowIndex].locos.splice(newBtnIndex, 0, ...move);
-
-            oldRowIndex = newRowIndex;
-            oldBtnIndex = newBtnIndex;
-          }
-        }
-      }
-    },
-    dragEnd() {
-      this.lock();
+    async persist() {
+      await fetch('/groups.json', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(this.groups),
+      });
     },
   },
   template: `
   <div>
-    <div class="row">
-      <div class="col-12">
-        <ul @dragstart="dragStart" @dragover="dragOver" @dragend="dragEnd" class="list-group list-group-flush" :class="{ loading: isLoading }">
-          <li class="list-group-item py-1 border-bottom">
-            <div class="row small text-muted fw-semibold">
-              <div class="col-auto" style="width: 28px;"></div>
-              <div class="col-1 px-0 text-center">#</div>
-              <div class="col pe-0">Name</div>
-              <div class="col-auto" style="min-width: 80px;"></div>
-            </div>
-          </li>
-          <li v-for="({ locos: groupLocos, expand, key }, groupIndex) of groups" :key="key" class="list-group-item" draggable="true">
-            <div class="row">
-              <div class="col-auto" role="button">
-                <svg width="16" height="16" fill="currentColor" style="pointer-events: none;">
-                  <use xlink:href="bs.icons.svg#arrows-expand"/>
-                </svg>
-              </div>
-              <div class="col-1 px-0 text-center">
-                <span class="badge rounded-pill bg-primary">
-                  {{ groupLocos.length }}
-                </span>
-              </div>
-              <div class="col pe-0">
-                <input v-model="groups[groupIndex].name" @input="lock" type="text" class="form-control form-control-sm" maxlength="20" required placeholder="Group Name" />
-              </div>
-              <div class="col-auto d-flex align-items-center ps-auto">
-                <button @click="groups[groupIndex].expand = true" v-if="!expand" class="btn btn-link p-0 d-flex align-items-center">
-                  <svg width="22" height="22" fill="currentColor">
-                    <use xlink:href="bs.icons.svg#arrow-bar-down"/>
-                  </svg>
-                </button>
-                <button @click="groups[groupIndex].expand = false" v-if="expand" class="btn btn-link p-0 d-flex align-items-center">
-                  <svg width="22" height="22" fill="currentColor">
-                    <use xlink:href="bs.icons.svg#arrow-bar-up"/>
-                  </svg>
-                </button>
-                <button @click="add = groupIndex" class="btn btn-link text-success p-0">
-                  <svg width="28" height="28" fill="currentColor">
-                    <use xlink:href="bs.icons.svg#plus-lg"/>
-                  </svg>
-                </button>
-                <button @click="delGroup(groupIndex)" class="btn btn-link p-0 d-flex align-items-center">
-                  <svg width="16" height="16" fill="currentColor">
-                    <use xlink:href="bs.icons.svg#trash"/>
-                  </svg>
-                </button>
-              </div>
-            </div>
-            <div v-show="expand" class="mt-2">
-              <div v-for="(loco, locoIndex) of groupLocos" :class="[!locos[loco]? 'alert-warning' : '']" :key="loco" class="row py-2" draggable="true" style="cursor: pointer;">
-                <div class="col-auto">
-                  <svg class="bi ms-2" width="16" height="16" fill="currentColor">
-                    <use xlink:href="bs.icons.svg#arrow-return-right"/>
-                  </svg>
-                </div>
-                <div class="col-3 col-md-2 ps-1">
-                  #{{ loco }}
-                </div>
-                <div class="col px-0">
-                  <span v-if="locos[loco]">
-                    {{ locos[loco] }}
-                  </span>
-                  <span v-else>
-                    Name Unknown
-                  </span>
-                </div>
-                <div class="col-auto d-flex align-items-center ps-auto">
-                  <button @click="delLoco(groupIndex, locoIndex)" class="btn btn-link p-0 d-flex align-items-center">
-                    <svg width="16" height="16" fill="currentColor">
-                      <use xlink:href="bs.icons.svg#trash"/>
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </li>
-          <li v-if="!groups.length && !isLoading" class="list-group-item">
-            <div class="empty-state">
-              <svg width="40" height="40" fill="currentColor"><use xlink:href="bs.icons.svg#collection"/></svg>
-              <p>No groups added yet</p>
-            </div>
-          </li>
-          <li class="list-group-item border-0 pt-2 pb-0">
-            <button @click="addGroup" type="button" class="btn add-row-btn w-100 py-2">
-              <svg width="16" height="16" fill="currentColor" class="me-2" style="vertical-align: text-bottom;"><use xlink:href="bs.icons.svg#plus-lg"/></svg> Add Group
+    <ul :class="{ loading: isLoading }" class="list-group list-group-flush">
+      <li class="list-group-item py-1 border-bottom">
+        <div class="row small text-muted fw-semibold">
+          <div class="col">Name</div>
+          <div class="col-auto">Locos</div>
+          <div class="col-auto" style="min-width: 80px;"></div>
+        </div>
+      </li>
+      <li v-for="(group, i) in groups" :key="i" class="list-group-item">
+        <div class="row align-items-center">
+          <div class="col">{{ group.name }}</div>
+          <div class="col-auto text-muted small">{{ group.locos.length }}</div>
+          <div class="col-auto d-flex flex-nowrap gap-2">
+            <button @click="edit(i)" class="btn btn-link p-0 d-flex align-items-center" title="Edit group">
+              <svg width="16" height="16" fill="currentColor"><use xlink:href="bs.icons.svg#pencil"/></svg>
             </button>
-          </li>
-        </ul>
-      </div>
-    </div>
-    <div class="row">
-      <div class="col-12 text-end">
-        <hr class="mt-2 bg-secondary" />
-        <button @click="discard" class="btn btn-secondary me-2">Discard Changes</button>
-        <button @click="save" class="btn btn-primary">Save</button>
-      </div>
-    </div>
-    <Modal v-if="add !== false" @close="add = false" @select="addLoco" :locos="locos" />
+            <button @click="del(i)" type="button" class="btn btn-link p-0 d-flex align-items-center text-danger" title="Delete group">
+              <svg width="16" height="16" fill="currentColor"><use xlink:href="bs.icons.svg#trash"/></svg>
+            </button>
+          </div>
+        </div>
+      </li>
+      <li v-if="!groups.length && !isLoading" class="list-group-item">
+        <div class="empty-state">
+          <svg width="40" height="40" fill="currentColor"><use xlink:href="bs.icons.svg#collection"/></svg>
+          <p>No groups added yet</p>
+        </div>
+      </li>
+      <li class="list-group-item border-0 pt-2 pb-0">
+        <button @click="add" type="button" class="btn add-row-btn w-100 py-2">
+          <svg width="16" height="16" fill="currentColor" class="me-2" style="vertical-align: text-bottom;"><use xlink:href="bs.icons.svg#plus-lg"/></svg> Add Group
+        </button>
+      </li>
+    </ul>
+    <Modal v-if="editing !== false" :group="editingGroup" :roster="roster" @close="editing = false" @save="saveGroup" />
   </div>
   `
 }

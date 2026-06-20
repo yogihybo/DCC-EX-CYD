@@ -59,10 +59,202 @@
   background: var(--surface, #1e1e1e);
   box-shadow: var(--shadow, 0 4px 24px rgba(0,0,0,.4));
   margin-bottom: 0.5rem;
-  min-height: 42px;
+  overflow: hidden;
 }
-.fn-row .card-body {
-  padding-right: 0.5rem !important;
+
+/* ── Left sidebar: drag + fn number + latch ─────────────────────────────────── */
+.fn-left {
+  flex-shrink: 0;
+  border-right: 1px solid var(--border, #333);
+}
+.fn-drag-grip {
+  color: #444;
+  font-size: 1rem;
+  cursor: grab;
+  padding: 0 4px 0 8px;
+  align-self: center;
+}
+.fn-num-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 12px 8px 4px;
+  width: 50px;
+}
+.fn-num-text {
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1;
+}
+.fn-latch-cap {
+  font-size: 13px;
+  color: var(--text-muted, #666);
+  line-height: 1;
+}
+
+/* ── Centre block ───────────────────────────────────────────────────────────── */
+.fn-centre {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* Name header */
+.fn-hdr {
+  background: rgba(0,0,0,0.25);
+  border-bottom: 1px solid var(--border, #333);
+  padding: 6px 8px;
+}
+.fn-name-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.fn-field-label {
+  font-size: 14px;
+  color: #4488ff;
+  text-align: left;
+  line-height: 1;
+}
+.fn-name-input {
+  background: #0a1428;
+  border: 1px solid var(--border, #333);
+  border-radius: 4px;
+  color: var(--text, #ccc);
+  font-size: 16px;
+  padding: 4px 8px;
+  width: 100%;
+}
+.fn-name-input:focus { outline: none; border-color: var(--accent, #7dd3fc); }
+
+/* State columns */
+.fn-body-cols {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+}
+.fn-scol {
+  flex: 1;
+  padding: 7px 8px;
+  min-width: 220px;
+}
+.fn-scol-pressed {
+  border-left: 1px solid var(--border, #333);
+}
+@media (max-width: 600px) {
+  .fn-scol-pressed {
+    border-left: none;
+    border-top: 1px solid var(--border, #333);
+  }
+}
+.fn-col-head-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.fn-col-head {
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  flex-shrink: 0;
+}
+.fn-col-idle    { color: #4488ff; }
+.fn-col-pressed { color: #4488ff; }
+
+/* Row inside a column */
+.fn-pr {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 5px;
+}
+.fn-pr:last-child { margin-bottom: 0; }
+.fn-pl {
+  font-size: 14px;
+  color: var(--text-muted, #666);
+  width: 54px;
+  flex-shrink: 0;
+  text-align: left;
+}
+.fn-clbl {
+  font-size: 11px;
+  color: var(--text-muted, #666);
+  flex-shrink: 0;
+  white-space: nowrap;
+  text-align: left;
+}
+
+/* Label/Icon pill toggle */
+.fn-pill {
+  display: flex;
+  border: 1px solid var(--border, #333);
+  border-radius: 4px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.fn-pill-opt {
+  font-size: 13px;
+  padding: 3px 8px;
+  background: none;
+  border: none;
+  color: var(--text-muted, #666);
+  cursor: pointer;
+  line-height: 1.4;
+}
+.fn-pill-opt.fn-pill-active {
+  background: #2244aa;
+  color: #aaccff;
+}
+
+/* Label text input inside column */
+.fn-label-inp {
+  flex: 0 1 50%;
+  min-width: 0;
+  background: var(--surface-2, #2a2a2a);
+  border: 1px solid var(--border, #333);
+  border-radius: 4px;
+  color: var(--text, #ccc);
+  font-size: 15px;
+  padding: 4px 8px;
+}
+.fn-label-inp:focus { outline: none; border-color: var(--accent, #7dd3fc); }
+
+/* Dim inactive controls */
+.fn-dim { opacity: 0.3; pointer-events: none; }
+
+/* Icon picker wrapper — keeps row height stable */
+.fn-pr > div { display: flex; align-items: center; }
+
+/* ── Preview strip ───────────────────────────────────────────────────────────── */
+.fn-preview-strip {
+  width: 80px;
+  flex-shrink: 0;
+  border-left: 1px solid var(--border, #333);
+  padding: 6px 0;
+  cursor: pointer;
+  user-select: none;
+}
+.fn-preview-lbl {
+  font-size: 13px;
+  color: var(--text-muted, #666);
+  text-align: center;
+}
+.fn-preview-state {
+  font-size: 11px;
+  color: var(--text-muted, #555);
+  font-style: italic;
+  text-align: center;
+}
+.fn-btn-prev .btn-preview {
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
 }
 
 /* ── FA icon picker ─────────────────────────────────────────────────────────── */
@@ -71,7 +263,7 @@
   align-items: center;
   justify-content: center;
   width: 32px;
-  height: 28px;
+  height: calc(15px * 1.5 + 8px + 2px); /* match .fn-label-inp: font-size*line-height + padding + border */
   border: 1px solid var(--border, #333);
   border-radius: var(--radius-sm, 6px);
   background: var(--surface-2, #2a2a2a);
@@ -79,6 +271,7 @@
   cursor: pointer;
   font-size: 14px;
   transition: border-color 0.15s;
+  box-sizing: border-box;
 }
 .fa-icon-trigger:hover {
   border-color: var(--border-2, #555);

@@ -2,30 +2,69 @@
 import { FA_ICONS, FA_BY_CP, FA_LV_RANGE } from './fa-icons.js';
 
 const Colors = {
+  // Neutrals
   'rgb(0, 0, 0)':       0x0000,
-  'rgb(0, 0, 128)':     0x000F,
-  'rgb(0, 128, 0)':     0x03E0,
-  'rgb(0, 128, 128)':   0x03EF,
-  'rgb(128, 0, 0)':     0x7800,
-  'rgb(128, 0, 128)':   0x780F,
-  'rgb(128, 128, 0)':   0x7BE0,
-  'rgb(211, 211, 211)': 0xD69A,
-  'rgb(128, 128, 128)': 0x7BEF,
-  'rgb(0, 0, 255)':     0x001F,
-  'rgb(0, 255, 0)':     0x07E0,
-  'rgb(0, 255, 255)':   0x07FF,
-  'rgb(255, 0, 0)':     0xF800,
-  'rgb(255, 0, 255)':   0xF81F,
-  'rgb(255, 255, 0)':   0xFFE0,
-  'rgb(255, 255, 255)': 0xFFFF,
-  'rgb(255, 180, 0)':   0xFDA0,
-  'rgb(180, 255, 0)':   0xB7E0,
-  'rgb(255, 192, 203)': 0xFE19,
-  'rgb(150, 75, 0)':    0x9A60,
-  'rgb(255, 215, 0)':   0xFEA0,
+  'rgb(32, 32, 32)':    0x2104,
+  'rgb(64, 64, 64)':    0x4208,
+  'rgb(96, 96, 96)':    0x630C,
+  'rgb(128, 128, 128)': 0x8410,
+  'rgb(160, 160, 160)': 0xA514,
   'rgb(192, 192, 192)': 0xC618,
+  'rgb(255, 255, 255)': 0xFFFF,
+  // Reds
+  'rgb(64, 0, 0)':      0x4000,
+  'rgb(128, 0, 0)':     0x7800,
+  'rgb(200, 0, 0)':     0xC000,
+  'rgb(255, 0, 0)':     0xF800,
+  'rgb(255, 69, 0)':    0xFA20,
+  'rgb(220, 20, 60)':   0xD8A7,
+  'rgb(255, 105, 180)': 0xFB56,
+  'rgb(255, 192, 203)': 0xFE19,
+  // Oranges & yellows
+  'rgb(128, 64, 0)':    0x7900,
+  'rgb(200, 100, 0)':   0xC980,
+  'rgb(255, 128, 0)':   0xFC00,
+  'rgb(255, 180, 0)':   0xFDA0,
+  'rgb(255, 215, 0)':   0xFEA0,
+  'rgb(255, 255, 0)':   0xFFE0,
+  'rgb(180, 255, 0)':   0xB7E0,
+  'rgb(128, 255, 0)':   0x87E0,
+  // Greens
+  'rgb(0, 64, 0)':      0x0200,
+  'rgb(0, 128, 0)':     0x03E0,
+  'rgb(34, 139, 34)':   0x2444,
+  'rgb(0, 200, 0)':     0x0640,
+  'rgb(0, 255, 0)':     0x07E0,
+  'rgb(144, 238, 144)': 0x9772,
+  'rgb(0, 255, 127)':   0x07EF,
+  'rgb(0, 128, 128)':   0x03EF,
+  // Blues & cyans
+  'rgb(0, 255, 255)':   0x07FF,
   'rgb(135, 206, 235)': 0x867D,
+  'rgb(173, 216, 230)': 0xAEBC,
+  'rgb(70, 130, 180)':  0x4BD6,
+  'rgb(30, 144, 255)':  0x249F,
+  'rgb(0, 0, 255)':     0x001F,
+  'rgb(0, 0, 192)':     0x0017,
+  'rgb(0, 0, 128)':     0x000F,
+  // Purples & magentas
+  'rgb(75, 0, 130)':    0x4810,
+  'rgb(128, 0, 128)':   0x780F,
+  'rgb(147, 112, 219)': 0x939B,
   'rgb(180, 46, 226)':  0x915C,
+  'rgb(238, 130, 238)': 0xEC1D,
+  'rgb(255, 0, 255)':   0xF81F,
+  'rgb(255, 20, 147)':  0xF891,
+  'rgb(255, 182, 255)': 0xFD9F,
+  // Browns & warm
+  'rgb(101, 67, 33)':   0x6224,
+  'rgb(150, 75, 0)':    0x9A60,
+  'rgb(210, 105, 30)':  0xD344,
+  'rgb(210, 180, 140)': 0xD591,
+  'rgb(255, 218, 185)': 0xFED6,
+  'rgb(255, 228, 196)': 0xFED7,
+  'rgb(240, 230, 140)': 0xEF11,
+  'rgb(211, 211, 211)': 0xD69A,
 };
 
 const decToRgb = dec => Object.keys(Colors).find(key => Colors[key] === dec);
@@ -51,7 +90,7 @@ const ColorPicker = {
       const colors = Object.keys(Colors);
       const rows = [];
       for (let i = 0; i < colors.length; i++) {
-        if (i % 4 === 0) rows.push([]);
+        if (i % 8 === 0) rows.push([]);
         rows.at(-1).push(colors[i]);
       }
       return rows;
@@ -164,10 +203,13 @@ const FnButton = {
   components: { ColorPicker, FaIconPicker, ButtonPreview },
   data() {
     return {
-      useIcon: false,
+      previewPressed: false,
       config: {
         fn: null,
+        name: '',
         latching: null,
+        idleDisplay: 'label',
+        pressedDisplay: 'label',
         btn: {
           idle:    { label: null, color: null, fill: null, border: null, icon: null },
           pressed: { label: null, color: null, fill: null, border: null, icon: null }
@@ -179,9 +221,8 @@ const FnButton = {
   emits: ['update:modelValue', 'delete'],
   watch: {
     'config.fn': function(value) {
-      if (this.config.btn.idle.label?.match(/F\d*/i) && this.config.btn.pressed.label?.match(/F\d*/i)) {
-        this.config.btn.idle.label = this.config.btn.pressed.label = `F${value}`;
-      }
+      if (this.config.btn.idle.label?.match(/^F\d*$/i))    this.config.btn.idle.label    = `F${value}`;
+      if (this.config.btn.pressed.label?.match(/^F\d*$/i)) this.config.btn.pressed.label = `F${value}`;
     },
     config: {
       handler(val) {
@@ -195,89 +236,116 @@ const FnButton = {
       const stringified = JSON.stringify(this.modelValue);
       if (JSON.stringify(this.config) !== stringified) {
         this.config = JSON.parse(stringified);
-        this.useIcon = !!(this.config.btn.idle.icon ?? this.config.btn.pressed.icon);
+        if (!this.config.name)           this.config.name           = '';
+        if (!this.config.idleDisplay)    this.config.idleDisplay    = this.config.btn.idle.icon    ? 'icon' : 'label';
+        if (!this.config.pressedDisplay) this.config.pressedDisplay = this.config.btn.pressed.icon ? 'icon' : 'label';
       }
     },
     del() { this.$emit('delete'); },
-    toggleIcon(enabled) {
-      this.useIcon = enabled;
-      if (!enabled) {
-        this.config.btn.idle.icon    = null;
-        this.config.btn.pressed.icon = null;
-      }
+    setIdleIcon(val) {
+      this.config.btn.idle.icon = val;
+      if (!val) this.config.idleDisplay = 'label';
+    },
+    setPressedIcon(val) {
+      this.config.btn.pressed.icon = val;
+      if (!val) this.config.pressedDisplay = 'label';
     },
   },
   mounted() { this.load(); },
   template: `
-  <div class="card w-100 fn-row border-0 m-0">
-    <div class="card-body p-2">
-      <div class="d-flex align-items-stretch gap-2">
+  <div class="fn-row d-flex">
 
-        <!-- Drag handle -->
-        <span class="text-muted flex-shrink-0" style="cursor:grab; font-size:1rem; line-height:1; width:14px; text-align:center; align-self:center;">⠿</span>
+    <!-- Left: drag grip + fn number + latch toggle -->
+    <div class="fn-left d-flex align-items-center flex-shrink-0">
+      <span class="fn-drag-grip">⠿</span>
+      <div class="fn-num-col">
+        <span class="fn-num-text">F{{ config.fn }}</span>
+        <span class="fn-latch-cap">Latch</span>
+        <div class="form-check form-switch m-0 p-0 d-flex justify-content-center">
+          <input v-model="config.latching" class="form-check-input m-0" type="checkbox" role="switch" style="float:none; width:2em; height:1em;">
+        </div>
+      </div>
+    </div>
 
-        <!-- Two stacked rows: Fn#+Idle / Latch+Pressed -->
-        <div class="d-flex flex-column gap-1 flex-grow-1">
+    <!-- Centre: name header + idle/pressed columns -->
+    <div class="fn-centre">
 
-          <!-- Idle row -->
-          <div class="d-flex align-items-center gap-2">
-            <div class="d-flex align-items-center gap-1 flex-shrink-0" style="width: 100px;">
-              <label class="small text-muted mb-0">Fn</label>
-              <input v-model="config.fn" type="number" class="form-control form-control-sm text-center" min="0" max="28" style="width: 55px;" />
-            </div>
-            <span class="badge bg-secondary" style="min-width: 55px;">Idle</span>
-            <input v-model="config.btn.idle.label" class="form-control form-control-sm flex-grow-1" placeholder="Label" />
-            <div class="d-flex flex-column align-items-center flex-shrink-0" style="width: 34px;">
-              <span style="font-size: 9px;" class="text-muted">Text</span>
-              <ColorPicker v-model="config.btn.idle.color" />
-            </div>
-            <div class="d-flex flex-column align-items-center flex-shrink-0" style="width: 34px;">
-              <span style="font-size: 9px;" class="text-muted">Fill</span>
-              <ColorPicker v-model="config.btn.idle.fill" />
-            </div>
-            <ButtonPreview :state="config.btn.idle" />
+      <!-- Name header -->
+      <div class="fn-hdr">
+        <div class="fn-name-wrap">
+          <span class="fn-field-label">Name</span>
+          <input v-model="config.name" class="fn-name-input" placeholder="Function name">
+        </div>
+      </div>
+
+      <!-- State columns -->
+      <div class="fn-body-cols">
+
+        <!-- Idle column -->
+        <div class="fn-scol">
+          <div class="fn-col-head-row">
+            <span class="fn-col-head fn-col-idle">Idle</span>
           </div>
-
-          <!-- Pressed row -->
-          <div class="d-flex align-items-center gap-2">
-            <div class="d-flex align-items-center gap-1 flex-shrink-0" style="width: 100px;">
-              <label class="small text-muted mb-0">Latch</label>
-              <div class="form-check form-switch m-0 p-0 d-flex">
-                <input v-model="config.latching" class="form-check-input fs-5 m-0" type="checkbox" role="switch" style="float: none;">
-              </div>
+          <div class="fn-pr">
+            <span class="fn-pl">Type</span>
+            <div class="fn-pill">
+              <button type="button" :class="['fn-pill-opt', config.idleDisplay === 'label' && 'fn-pill-active']" @click="config.idleDisplay = 'label'">Label</button>
+              <button type="button" :class="['fn-pill-opt', config.idleDisplay === 'icon'  && 'fn-pill-active']" @click="config.idleDisplay = 'icon'">Icon</button>
             </div>
-            <span class="badge bg-secondary" style="min-width: 55px;">Pressed</span>
-            <input v-model="config.btn.pressed.label" class="form-control form-control-sm flex-grow-1" placeholder="Label" />
-            <div class="d-flex flex-column align-items-center flex-shrink-0" style="width: 34px;">
-              <ColorPicker v-model="config.btn.pressed.color" />
-            </div>
-            <div class="d-flex flex-column align-items-center flex-shrink-0" style="width: 34px;">
-              <ColorPicker v-model="config.btn.pressed.fill" />
-            </div>
-            <ButtonPreview :state="config.btn.pressed" />
           </div>
-
+          <div class="fn-pr">
+            <span class="fn-pl">Display</span>
+            <input v-show="config.idleDisplay === 'label'" v-model="config.btn.idle.label" class="fn-label-inp" placeholder="Label">
+            <div v-show="config.idleDisplay === 'icon'">
+              <FaIconPicker :modelValue="config.btn.idle.icon" @update:modelValue="setIdleIcon($event)" />
+            </div>
+          </div>
+          <div class="fn-pr">
+            <span class="fn-pl">Colour</span>
+            <span class="fn-clbl">Text/Icon</span><ColorPicker v-model="config.btn.idle.color" />
+            <span class="fn-clbl">Fill</span><ColorPicker v-model="config.btn.idle.fill" />
+          </div>
         </div>
 
-        <div class="vr mx-1"></div>
-
-        <!-- Icon toggle + shared picker -->
-        <div class="d-flex flex-column align-items-center flex-shrink-0 gap-1">
-          <div class="d-flex align-items-center gap-1">
-            <span style="font-size: 9px;" class="text-muted">Icon</span>
-            <div class="form-check form-switch m-0 p-0 d-flex">
-              <input :checked="useIcon" @change="toggleIcon($event.target.checked)" class="form-check-input m-0" type="checkbox" role="switch" style="float: none;">
+        <!-- Pressed column -->
+        <div class="fn-scol fn-scol-pressed">
+          <div class="fn-col-head-row">
+            <span class="fn-col-head fn-col-pressed">Pressed</span>
+          </div>
+          <div class="fn-pr">
+            <span class="fn-pl">Type</span>
+            <div class="fn-pill">
+              <button type="button" :class="['fn-pill-opt', config.pressedDisplay === 'label' && 'fn-pill-active']" @click="config.pressedDisplay = 'label'">Label</button>
+              <button type="button" :class="['fn-pill-opt', config.pressedDisplay === 'icon'  && 'fn-pill-active']" @click="config.pressedDisplay = 'icon'">Icon</button>
             </div>
           </div>
-          <FaIconPicker v-if="useIcon"
-            :modelValue="config.btn.idle.icon"
-            @update:modelValue="config.btn.idle.icon = config.btn.pressed.icon = $event"
-          />
+          <div class="fn-pr">
+            <span class="fn-pl">Display</span>
+            <input v-show="config.pressedDisplay === 'label'" v-model="config.btn.pressed.label" class="fn-label-inp" placeholder="Label">
+            <div v-show="config.pressedDisplay === 'icon'">
+              <FaIconPicker :modelValue="config.btn.pressed.icon" @update:modelValue="setPressedIcon($event)" />
+            </div>
+          </div>
+          <div class="fn-pr">
+            <span class="fn-pl">Colour</span>
+            <span class="fn-clbl">Text/Icon</span><ColorPicker v-model="config.btn.pressed.color" />
+            <span class="fn-clbl">Fill</span><ColorPicker v-model="config.btn.pressed.fill" />
+          </div>
         </div>
-
 
       </div>
     </div>
+
+    <!-- Preview strip -->
+    <div class="fn-preview-strip d-flex flex-column align-items-center justify-content-center flex-shrink-0 gap-1"
+      @click="previewPressed = !previewPressed">
+      <span class="fn-preview-lbl">Button Preview</span>
+      <span class="fn-preview-state">{{ previewPressed ? 'Pressed' : 'Idle' }}</span>
+      <div class="fn-btn-prev">
+        <ButtonPreview :state="previewPressed ? config.btn.pressed : config.btn.idle" />
+      </div>
+    </div>
+
   </div>
   `
 };
@@ -328,7 +396,10 @@ export default {
         {
           key: rand(),
           fn: nextFn,
+          name: '',
           latching: true,
+          idleDisplay: 'label',
+          pressedDisplay: 'label',
           btn: {
             idle:    { label: `F${nextFn}`, color: 0xFFFF, fill: 0x0000, border: 0xFFFF, icon: '' },
             pressed: { label: `F${nextFn}`, color: 0x0000, fill: 0xFFFF, border: 0xFFFF, icon: '' }

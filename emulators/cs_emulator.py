@@ -1,6 +1,7 @@
 import socket
 import re
 from threading import Thread
+from zeroconf import Zeroconf, ServiceInfo
 
 sockets = []
 
@@ -95,11 +96,11 @@ def throttle(c: socket.socket):
     buf = ""
 
     while True:
-        data = c.recv(1024)
+        try:
+            data = c.recv(1024)
+        except (ConnectionAbortedError, ConnectionResetError):
+            break
         if not data:
-            c.close()
-            if c in sockets:
-                sockets.remove(c)
             break
 
         buf += data.decode(errors="replace")
@@ -111,6 +112,10 @@ def throttle(c: socket.socket):
         for cmd in cmds:
             handle_cmd(c, cmd)
 
+    c.close()
+    if c in sockets:
+        sockets.remove(c)
+
 
 s = socket.socket()
 port = 2560
@@ -119,9 +124,24 @@ s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 s.bind(('', port))
 s.listen(5)
 
-print(f"CS emulator listening on port {port}")
+# Advertise via mDNS as _dccex._tcp, matching real DCC-EX CommandStation behaviour
+local_ip = socket.gethostbyname(socket.gethostname())
+zc = Zeroconf()
+mdns_info = ServiceInfo(
+    "_dccex._tcp.local.",
+    "DCC-EX._dccex._tcp.local.",
+    addresses=[socket.inet_aton(local_ip)],
+    port=port,
+    properties={"version": "5.2.76"},
+)
+zc.register_service(mdns_info)
+print(f"CS emulator listening on port {port}, mDNS advertising as DCC-EX._dccex._tcp.local ({local_ip})")
 
-while True:
-    c, addr = s.accept()
-    print("Got connection from", addr)
-    Thread(target=throttle, args=(c,), daemon=True).start()
+try:
+    while True:
+        c, addr = s.accept()
+        print("Got connection from", addr)
+        Thread(target=throttle, args=(c,), daemon=True).start()
+finally:
+    zc.unregister_service(mdns_info)
+    zc.close()
