@@ -11,153 +11,158 @@ bool SettingsUI::throttleProgrammingActive = false;
 SettingsUI::SettingsUI(DCCEXProtocol& dccex, lv_obj_t* parent) : _dccex(dccex), _wifiUI(nullptr), _aboutUI(nullptr), _calibrationUI(nullptr), _programUI(nullptr) {
   _container = lv_obj_create(parent);
   lv_obj_set_size(_container, LV_PCT(100), LV_PCT(100));
-  lv_obj_align(_container, LV_ALIGN_CENTER, 0, 0);
-  lv_obj_set_style_pad_all(_container, 10, 0);
+  lv_obj_set_style_pad_all(_container, 5, 0);
+  lv_obj_set_style_pad_hor(_container, 11, 0);
+  lv_obj_set_style_pad_row(_container, 3, 0);
   lv_obj_set_style_border_width(_container, 0, 0);
-  
-  // Set up the container as a vertically scrolling flex list
   lv_obj_set_flex_flow(_container, LV_FLEX_FLOW_COLUMN);
   lv_obj_set_flex_align(_container, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
-  // Helper lambda for category headers
-  auto add_category = [this](const char* title) {
+  auto add_section = [this](const char* title) {
     lv_obj_t* lbl = lv_label_create(_container);
-    lv_label_set_text_fmt(lbl, "--- %s ---", title);
-    lv_obj_set_style_text_color(lbl, lv_color_make(150, 150, 150), 0);
-    lv_obj_set_style_pad_top(lbl, 10, 0);
-    lv_obj_set_style_pad_bottom(lbl, 5, 0);
+    lv_label_set_text(lbl, title);
+    lv_obj_set_style_text_color(lbl, lv_color_make(38, 166, 154), 0);
+    lv_obj_set_width(lbl, LV_PCT(100));
+    lv_obj_set_style_pad_top(lbl, 6, 0);
   };
+
+  auto make_row = [this](lv_event_cb_t cb) -> lv_obj_t* {
+    lv_obj_t* btn = lv_btn_create(_container);
+    lv_obj_set_width(btn, LV_PCT(100));
+    lv_obj_set_height(btn, 32);
+    lv_obj_set_style_pad_ver(btn, 0, 0);
+    lv_obj_set_style_pad_hor(btn, 7, 0);
+    lv_obj_set_style_bg_color(btn, lv_color_hex(0x2e2e2e), 0);
+    lv_obj_set_flex_flow(btn, LV_FLEX_FLOW_ROW);
+    lv_obj_set_flex_align(btn, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    if (cb) lv_obj_add_event_cb(btn, cb, LV_EVENT_CLICKED, this);
+    return btn;
+  };
+
+  auto make_name = [](lv_obj_t* btn, const char* name) {
+    lv_obj_t* lbl = lv_label_create(btn);
+    lv_label_set_text(lbl, name);
+    lv_obj_set_flex_grow(lbl, 1);
+  };
+
+  auto make_badge = [](lv_obj_t* btn, const char* val, lv_color_t bg, lv_color_t fg) -> lv_obj_t* {
+    lv_obj_t* badge = lv_label_create(btn);
+    lv_label_set_text(badge, val);
+    lv_obj_set_style_bg_color(badge, bg, 0);
+    lv_obj_set_style_bg_opa(badge, LV_OPA_COVER, 0);
+    lv_obj_set_style_text_color(badge, fg, 0);
+    lv_obj_set_style_pad_hor(badge, 5, 0);
+    lv_obj_set_style_pad_ver(badge, 2, 0);
+    lv_obj_set_style_radius(badge, 3, 0);
+    return badge;
+  };
+
+  auto make_chevron = [](lv_obj_t* btn) {
+    lv_obj_t* ch = lv_label_create(btn);
+    lv_label_set_text(ch, LV_SYMBOL_RIGHT);
+    lv_obj_set_style_text_color(ch, lv_color_hex(0x555555), 0);
+  };
+
+  static const lv_color_t VAL_BG = lv_color_hex(0x1a2c3e);
+  static const lv_color_t VAL_FG = lv_color_hex(0x64b5f6);
+  static const lv_color_t ERR_BG = lv_color_hex(0x3a1414);
+  static const lv_color_t ERR_FG = lv_color_make(200, 60, 60);
+  static const char* rotLabels[] = { "Portrait", "Landscape" };
+  static const char* accelLabels[] = { "Off", "Slow", "Med", "Fast" };
+
+  lv_obj_t* b;
+  char buf[16];
 
   // -------------------------------------------------------
   // PROGRAMMING
   // -------------------------------------------------------
-  add_category("Programming");
+  add_section("Programming");
 
-  lv_obj_t* program_btn = lv_btn_create(_container);
-  lv_obj_set_width(program_btn, LV_PCT(100));
-  lv_obj_t* program_lbl = lv_label_create(program_btn);
-  lv_label_set_text(program_lbl, "Loco Programming");
-  lv_obj_center(program_lbl);
-  lv_obj_add_event_cb(program_btn, programming_setup_event_cb, LV_EVENT_CLICKED, this);
+  b = make_row(programming_setup_event_cb);
+  make_name(b, "Loco programming");
+  make_chevron(b);
 
-  lv_obj_t* tprog_btn = lv_btn_create(_container);
-  lv_obj_set_width(tprog_btn, LV_PCT(100));
-  lv_obj_t* tprog_lbl = lv_label_create(tprog_btn);
-  lv_label_set_text(tprog_lbl, "Throttle Programming");
-  lv_obj_center(tprog_lbl);
-  lv_obj_add_event_cb(tprog_btn, throttle_programming_event_cb, LV_EVENT_CLICKED, this);
+  b = make_row(throttle_programming_event_cb);
+  make_name(b, "Throttle programming");
+  make_chevron(b);
 
   // -------------------------------------------------------
   // THROTTLE
   // -------------------------------------------------------
-  add_category("Throttle");
+  add_section("Throttle");
 
-  lv_obj_t* br_btn = lv_btn_create(_container);
-  lv_obj_set_width(br_btn, LV_PCT(100));
-  _brightnessLbl = lv_label_create(br_btn);
-  lv_label_set_text_fmt(_brightnessLbl, "Brightness: %d%%", (Settings.brightness * 100) / 255);
-  lv_obj_center(_brightnessLbl);
-  lv_obj_add_event_cb(br_btn, brightness_btn_event_cb, LV_EVENT_CLICKED, this);
+  b = make_row(brightness_btn_event_cb);
+  make_name(b, "Brightness");
+  snprintf(buf, sizeof(buf), "%d%%", (Settings.brightness * 100) / 255);
+  _brightnessLbl = make_badge(b, buf, VAL_BG, VAL_FG);
 
-  lv_obj_t* theme_btn = lv_btn_create(_container);
-  lv_obj_set_width(theme_btn, LV_PCT(100));
-  _themeLbl = lv_label_create(theme_btn);
-  lv_label_set_text_fmt(_themeLbl, "Theme: %s", Settings.theme == SettingsClass::Theme::DARK ? "Dark" : "Light");
-  lv_obj_center(_themeLbl);
-  lv_obj_add_event_cb(theme_btn, theme_event_cb, LV_EVENT_CLICKED, this);
+  b = make_row(theme_event_cb);
+  make_name(b, "Theme");
+  _themeLbl = make_badge(b, Settings.theme == SettingsClass::Theme::DARK ? "Dark" : "Light", VAL_BG, VAL_FG);
 
-  lv_obj_t* rotation_btn = lv_btn_create(_container);
-  lv_obj_set_width(rotation_btn, LV_PCT(100));
-  _rotationLbl = lv_label_create(rotation_btn);
-  lv_label_set_text_fmt(_rotationLbl, "Rotation: %d", Settings.rotation);
-  lv_obj_center(_rotationLbl);
-  lv_obj_add_event_cb(rotation_btn, rotation_event_cb, LV_EVENT_CLICKED, this);
+  b = make_row(rotation_event_cb);
+  make_name(b, "Rotation");
+  _rotationLbl = make_badge(b, rotLabels[Settings.rotation], VAL_BG, VAL_FG);
 
-  lv_obj_t* cal_btn = lv_btn_create(_container);
-  lv_obj_set_width(cal_btn, LV_PCT(100));
-  lv_obj_t* cal_lbl = lv_label_create(cal_btn);
-  lv_label_set_text(cal_lbl, "Calibrate Touch Screen");
-  lv_obj_center(cal_lbl);
-  lv_obj_add_event_cb(cal_btn, calibrate_event_cb, LV_EVENT_CLICKED, this);
+  b = make_row(calibrate_event_cb);
+  make_name(b, "Calibrate touch screen");
+  make_chevron(b);
 
-  lv_obj_t* speed_btn = lv_btn_create(_container);
-  lv_obj_set_width(speed_btn, LV_PCT(100));
-  _speedStepLbl = lv_label_create(speed_btn);
-  lv_label_set_text_fmt(_speedStepLbl, "Encoder Sensitivity: %d", 1 << Settings.LocoUI.speedStep);
-  lv_obj_center(_speedStepLbl);
-  lv_obj_add_event_cb(speed_btn, speed_step_event_cb, LV_EVENT_CLICKED, this);
+  b = make_row(speed_step_event_cb);
+  make_name(b, "Encoder sensitivity");
+  snprintf(buf, sizeof(buf), "%d", 1 << Settings.LocoUI.speedStep);
+  _speedStepLbl = make_badge(b, buf, VAL_BG, VAL_FG);
 
-  static const char* accelLabels[] = { "Off", "Slow", "Medium", "Fast" };
-  lv_obj_t* accel_btn = lv_btn_create(_container);
-  lv_obj_set_width(accel_btn, LV_PCT(100));
-  _accelLbl = lv_label_create(accel_btn);
-  lv_label_set_text_fmt(_accelLbl, "Encoder Acceleration: %s", accelLabels[Settings.LocoUI.acceleration]);
-  lv_obj_center(_accelLbl);
-  lv_obj_add_event_cb(accel_btn, accel_event_cb, LV_EVENT_CLICKED, this);
+  b = make_row(accel_event_cb);
+  make_name(b, "Encoder acceleration");
+  _accelLbl = make_badge(b, accelLabels[Settings.LocoUI.acceleration], VAL_BG, VAL_FG);
 
-  lv_obj_t* estop_btn = lv_btn_create(_container);
-  lv_obj_set_width(estop_btn, LV_PCT(100));
-  _eStopDelayLbl = lv_label_create(estop_btn);
-  lv_label_set_text_fmt(_eStopDelayLbl, "E-Stop Hold Time: %ds", Settings.emergencyStopDelay);
-  lv_obj_center(_eStopDelayLbl);
-  lv_obj_add_event_cb(estop_btn, estop_delay_event_cb, LV_EVENT_CLICKED, this);
+  b = make_row(estop_delay_event_cb);
+  make_name(b, "E-stop hold time");
+  snprintf(buf, sizeof(buf), "%ds", Settings.emergencyStopDelay);
+  _eStopDelayLbl = make_badge(b, buf, VAL_BG, VAL_FG);
 
   // -------------------------------------------------------
   // STORAGE
   // -------------------------------------------------------
-  add_category("Storage");
+  add_section("Storage");
 
-  lv_obj_t* storage_btn = lv_btn_create(_container);
-  lv_obj_set_width(storage_btn, LV_PCT(100));
-  _storageModeLbl = lv_label_create(storage_btn);
-  lv_label_set_text_fmt(_storageModeLbl, "Storage Location: %s", Settings.storageMode == SettingsClass::StorageMode::SD_CARD ? "SD Card" : "Internal");
-  lv_obj_center(_storageModeLbl);
-  lv_obj_add_event_cb(storage_btn, storage_mode_event_cb, LV_EVENT_CLICKED, this);
+  b = make_row(storage_mode_event_cb);
+  make_name(b, "Storage location");
+  _storageModeLbl = make_badge(b, Settings.storageMode == SettingsClass::StorageMode::SD_CARD ? "SD Card" : "Internal", VAL_BG, VAL_FG);
 
-  lv_obj_t* sd_format_btn = lv_btn_create(_container);
-  lv_obj_set_width(sd_format_btn, LV_PCT(100));
-  lv_obj_t* sd_format_lbl = lv_label_create(sd_format_btn);
-  lv_label_set_text(sd_format_lbl, "Format SD Card");
-  lv_obj_center(sd_format_lbl);
-  lv_obj_add_event_cb(sd_format_btn, sd_format_event_cb, LV_EVENT_CLICKED, this);
+  b = make_row(sd_format_event_cb);
+  make_name(b, "Format SD card");
+  make_badge(b, "Erase", ERR_BG, ERR_FG);
 
   // -------------------------------------------------------
   // CONNECTIONS
   // -------------------------------------------------------
-  add_category("Connections");
+  add_section("Connections");
 
-  lv_obj_t* wifi_btn = lv_btn_create(_container);
-  lv_obj_set_width(wifi_btn, LV_PCT(100));
-  lv_obj_t* wifi_lbl = lv_label_create(wifi_btn);
-  lv_label_set_text(wifi_lbl, "WiFi Setup");
-  lv_obj_center(wifi_lbl);
-  lv_obj_add_event_cb(wifi_btn, wifi_setup_event_cb, LV_EVENT_CLICKED, this);
+  b = make_row(wifi_setup_event_cb);
+  make_name(b, "WiFi setup");
+  make_chevron(b);
 
-  lv_obj_t* ap_btn = lv_btn_create(_container);
-  lv_obj_set_width(ap_btn, LV_PCT(100));
-  _apModeLbl = lv_label_create(ap_btn);
-  lv_label_set_text_fmt(_apModeLbl, "Access Point (SoftAP): %s", Settings.AP.enabled ? "ON" : "OFF");
-  lv_obj_center(_apModeLbl);
-  lv_obj_add_event_cb(ap_btn, ap_mode_event_cb, LV_EVENT_CLICKED, this);
+  b = make_row(ap_mode_event_cb);
+  make_name(b, "Access point");
+  _apModeLbl = make_badge(b,
+    Settings.AP.enabled ? "ON" : "OFF",
+    Settings.AP.enabled ? lv_color_hex(0x1b3a1b) : lv_color_hex(0x2a2a2a),
+    Settings.AP.enabled ? lv_color_make(76, 175, 80) : lv_color_hex(0x666666));
 
   // -------------------------------------------------------
   // ABOUT
   // -------------------------------------------------------
-  add_category("About");
+  add_section("About");
 
-  lv_obj_t* about_btn = lv_btn_create(_container);
-  lv_obj_set_width(about_btn, LV_PCT(100));
-  lv_obj_t* about_lbl = lv_label_create(about_btn);
-  lv_label_set_text(about_lbl, "About DCC-EX-CYD");
-  lv_obj_center(about_lbl);
-  lv_obj_add_event_cb(about_btn, about_event_cb, LV_EVENT_CLICKED, this);
+  b = make_row(about_event_cb);
+  make_name(b, "About DCC-EX-CYD");
+  make_chevron(b);
 
-  lv_obj_t* shot_btn = lv_btn_create(_container);
-  lv_obj_set_width(shot_btn, LV_PCT(100));
-  lv_obj_t* shot_lbl = lv_label_create(shot_btn);
-  lv_label_set_text(shot_lbl, "Take Screenshot (3s Delay)");
-  lv_obj_center(shot_lbl);
-  lv_obj_add_event_cb(shot_btn, screenshot_event_cb, LV_EVENT_CLICKED, this);
+  b = make_row(screenshot_event_cb);
+  make_name(b, "Screenshot (3s delay)");
+  make_chevron(b);
 }
 
 SettingsUI::~SettingsUI() {
@@ -172,37 +177,38 @@ SettingsUI::~SettingsUI() {
 void SettingsUI::speed_step_event_cb(lv_event_t * e) {
   SettingsUI* ui = (SettingsUI*)lv_event_get_user_data(e);
   if (++Settings.LocoUI.speedStep > 2) Settings.LocoUI.speedStep = 0;
-  lv_label_set_text_fmt(ui->_speedStepLbl, "Encoder Sensitivity: %d", 1 << Settings.LocoUI.speedStep);
+  lv_label_set_text_fmt(ui->_speedStepLbl, "%d", 1 << Settings.LocoUI.speedStep);
   Settings.save();
 }
 
 void SettingsUI::accel_event_cb(lv_event_t * e) {
-  static const char* accelLabels[] = { "Off", "Slow", "Medium", "Fast" };
+  static const char* accelLabels[] = { "Off", "Slow", "Med", "Fast" };
   SettingsUI* ui = (SettingsUI*)lv_event_get_user_data(e);
   if (++Settings.LocoUI.acceleration > 3) Settings.LocoUI.acceleration = 0;
-  lv_label_set_text_fmt(ui->_accelLbl, "Encoder Acceleration: %s", accelLabels[Settings.LocoUI.acceleration]);
+  lv_label_set_text_fmt(ui->_accelLbl, "%s", accelLabels[Settings.LocoUI.acceleration]);
   Settings.save();
 }
 
 void SettingsUI::estop_delay_event_cb(lv_event_t * e) {
   SettingsUI* ui = (SettingsUI*)lv_event_get_user_data(e);
   if (++Settings.emergencyStopDelay > 10) Settings.emergencyStopDelay = 1;
-  lv_label_set_text_fmt(ui->_eStopDelayLbl, "E-Stop Hold Time: %ds", Settings.emergencyStopDelay);
+  lv_label_set_text_fmt(ui->_eStopDelayLbl, "%ds", Settings.emergencyStopDelay);
   Settings.save();
 }
 
 void SettingsUI::theme_event_cb(lv_event_t * e) {
   SettingsUI* ui = (SettingsUI*)lv_event_get_user_data(e);
   Settings.theme = (Settings.theme == SettingsClass::Theme::DARK) ? SettingsClass::Theme::LIGHT : SettingsClass::Theme::DARK;
-  lv_label_set_text_fmt(ui->_themeLbl, "Theme: %s", Settings.theme == SettingsClass::Theme::DARK ? "Dark" : "Light");
+  lv_label_set_text_fmt(ui->_themeLbl, "%s", Settings.theme == SettingsClass::Theme::DARK ? "Dark" : "Light");
   Settings.save();
   Settings.dispatchEvent(SettingsClass::Event::THEME_CHANGE);
 }
 
 void SettingsUI::rotation_event_cb(lv_event_t * e) {
   SettingsUI* ui = (SettingsUI*)lv_event_get_user_data(e);
-  if (++Settings.rotation > 2) Settings.rotation = 0;
-  lv_label_set_text_fmt(ui->_rotationLbl, "Rotation: %d", Settings.rotation);
+  if (++Settings.rotation > 1) Settings.rotation = 0;
+  static const char* rotLabels[] = { "Portrait", "Landscape" };
+  lv_label_set_text(ui->_rotationLbl, rotLabels[Settings.rotation]);
   Settings.save();
   Settings.dispatchEvent(SettingsClass::Event::ROTATION_CHANGE);
 }
@@ -211,31 +217,50 @@ void SettingsUI::rotation_event_cb(lv_event_t * e) {
 void SettingsUI::storage_mode_event_cb(lv_event_t * e) {
   SettingsUI* ui = (SettingsUI*)lv_event_get_user_data(e);
   Settings.storageMode = Settings.storageMode == SettingsClass::StorageMode::SD_CARD ? SettingsClass::StorageMode::LITTLEFS : SettingsClass::StorageMode::SD_CARD;
-  lv_label_set_text_fmt(ui->_storageModeLbl, "Storage Location: %s", Settings.storageMode == SettingsClass::StorageMode::SD_CARD ? "SD Card" : "Internal");
+  lv_label_set_text_fmt(ui->_storageModeLbl, "%s", Settings.storageMode == SettingsClass::StorageMode::SD_CARD ? "SD Card" : "Internal");
   Settings.save();
 }
 
 void SettingsUI::ap_mode_event_cb(lv_event_t * e) {
   SettingsUI* ui = (SettingsUI*)lv_event_get_user_data(e);
   Settings.AP.enabled = !Settings.AP.enabled;
-  lv_label_set_text_fmt(ui->_apModeLbl, "Access Point (SoftAP): %s", Settings.AP.enabled ? "ON" : "OFF");
+  bool apOn = Settings.AP.enabled;
+  lv_label_set_text(ui->_apModeLbl, apOn ? "ON" : "OFF");
+  lv_obj_set_style_bg_color(ui->_apModeLbl, apOn ? lv_color_hex(0x1b3a1b) : lv_color_hex(0x2a2a2a), 0);
+  lv_obj_set_style_text_color(ui->_apModeLbl, apOn ? lv_color_make(76, 175, 80) : lv_color_hex(0x666666), 0);
   Settings.save();
   // Dispatch CS_CHANGE to trigger network stack updates in main.cpp
   Settings.dispatchEvent(SettingsClass::Event::CS_CHANGE);
 }
 
+static void style_msgbox(lv_obj_t* mbox, const char* title_text, lv_color_t title_color) {
+    lv_obj_set_width(mbox, LV_PCT(88));
+    lv_obj_set_style_bg_color(mbox, lv_color_hex(0x1e1e1e), 0);
+    lv_obj_set_style_border_color(mbox, lv_color_hex(0x383838), 0);
+    lv_obj_set_style_border_width(mbox, 1, 0);
+    lv_obj_t* title = lv_msgbox_add_title(mbox, title_text);
+    lv_obj_set_style_text_color(title, title_color, 0);
+}
+
+static void style_msgbox_text(lv_obj_t* txt) {
+    lv_obj_set_style_text_font(txt, &lv_font_montserrat_12, 0);
+    lv_obj_set_style_text_color(txt, lv_color_hex(0xaaaaaa), 0);
+}
+
 void SettingsUI::sd_format_event_cb(lv_event_t * e) {
     SettingsUI* ui = (SettingsUI*)lv_event_get_user_data(e);
-    if (ui->_formatMsgbox) return; // Prevent multiple dialogs
-    
+    if (ui->_formatMsgbox) return;
+
     ui->_formatMsgbox = lv_msgbox_create(lv_layer_top());
-    lv_msgbox_add_title(ui->_formatMsgbox, "Format SD Card?");
-    lv_msgbox_add_text(ui->_formatMsgbox, "Formatting will erase the SD card.\nIf successful the throttle will restart.");
-    
+    style_msgbox(ui->_formatMsgbox, "Format SD card?", lv_color_make(200, 60, 60));
+    style_msgbox_text(lv_msgbox_add_text(ui->_formatMsgbox, "Formatting will erase all data on the SD card.\nThe throttle will restart if successful."));
+
     lv_obj_t* format_btn = lv_msgbox_add_footer_button(ui->_formatMsgbox, "Format");
+    lv_obj_set_style_bg_color(format_btn, lv_color_make(140, 40, 40), 0);
     lv_obj_add_event_cb(format_btn, sd_format_confirm_event_cb, LV_EVENT_CLICKED, ui);
-    
+
     lv_obj_t* cancel_btn = lv_msgbox_add_footer_button(ui->_formatMsgbox, "Cancel");
+    lv_obj_set_style_bg_color(cancel_btn, lv_color_hex(0x2e2e2e), 0);
     lv_obj_add_event_cb(cancel_btn, [](lv_event_t* e) {
         SettingsUI* ui = (SettingsUI*)lv_event_get_user_data(e);
         if (ui->_formatMsgbox) {
@@ -243,7 +268,7 @@ void SettingsUI::sd_format_event_cb(lv_event_t * e) {
             ui->_formatMsgbox = nullptr;
         }
     }, LV_EVENT_CLICKED, ui);
-    
+
     lv_obj_center(ui->_formatMsgbox);
 }
 
@@ -253,15 +278,16 @@ void SettingsUI::sd_format_confirm_event_cb(lv_event_t * e) {
         lv_msgbox_close(ui->_formatMsgbox);
         ui->_formatMsgbox = nullptr;
     }
-    
+
     if (SD.begin(5, SPI, 4000000, "/sd", 5, true)) {
         ESP.restart();
     } else {
         ui->_formatMsgbox = lv_msgbox_create(lv_layer_top());
-        lv_msgbox_add_title(ui->_formatMsgbox, "Format Failed");
-        lv_msgbox_add_text(ui->_formatMsgbox, "Unable to mount SD Card.");
-        
+        style_msgbox(ui->_formatMsgbox, "Format failed", lv_color_make(200, 60, 60));
+        style_msgbox_text(lv_msgbox_add_text(ui->_formatMsgbox, "Unable to mount SD card. Check it is inserted correctly."));
+
         lv_obj_t* ok_btn = lv_msgbox_add_footer_button(ui->_formatMsgbox, "OK");
+        lv_obj_set_style_bg_color(ok_btn, lv_color_hex(0x2e2e2e), 0);
         lv_obj_add_event_cb(ok_btn, [](lv_event_t* e) {
             SettingsUI* ui = (SettingsUI*)lv_event_get_user_data(e);
             if (ui->_formatMsgbox) {
@@ -269,7 +295,7 @@ void SettingsUI::sd_format_confirm_event_cb(lv_event_t * e) {
                 ui->_formatMsgbox = nullptr;
             }
         }, LV_EVENT_CLICKED, ui);
-        
+
         lv_obj_center(ui->_formatMsgbox);
     }
 }
@@ -277,19 +303,21 @@ void SettingsUI::sd_format_confirm_event_cb(lv_event_t * e) {
 
 void SettingsUI::brightness_btn_event_cb(lv_event_t * e) {
   SettingsUI* ui = (SettingsUI*)lv_event_get_user_data(e);
-  
+
   lv_obj_t* mbox = lv_msgbox_create(lv_layer_top());
-  lv_obj_set_width(mbox, LV_PCT(90));
-  lv_msgbox_add_title(mbox, "Brightness");
-  lv_msgbox_add_close_button(mbox);
-  
+  style_msgbox(mbox, "Brightness", lv_color_make(38, 166, 154));
+
   lv_obj_t* slider = lv_slider_create(mbox);
   lv_obj_set_width(slider, LV_PCT(100));
-  lv_obj_set_style_margin_top(slider, 20, 0);
-  lv_obj_set_style_margin_bottom(slider, 20, 0);
+  lv_obj_set_style_margin_top(slider, 12, 0);
+  lv_obj_set_style_margin_bottom(slider, 12, 0);
   lv_slider_set_range(slider, 10, 255);
   lv_slider_set_value(slider, Settings.brightness, LV_ANIM_OFF);
   lv_obj_add_event_cb(slider, brightness_event_cb, LV_EVENT_VALUE_CHANGED, ui);
+
+  lv_obj_t* close_btn = lv_msgbox_add_footer_button(mbox, "Close");
+  lv_obj_set_style_bg_color(close_btn, lv_color_hex(0x2e2e2e), 0);
+
   lv_obj_center(mbox);
 }
 
@@ -297,7 +325,7 @@ void SettingsUI::brightness_event_cb(lv_event_t * e) {
   SettingsUI* ui = (SettingsUI*)lv_event_get_user_data(e);
   lv_obj_t* slider = (lv_obj_t*)lv_event_get_target(e);
   Settings.brightness = lv_slider_get_value(slider);
-  lv_label_set_text_fmt(ui->_brightnessLbl, "Brightness: %d%%", (Settings.brightness * 100) / 255);
+  lv_label_set_text_fmt(ui->_brightnessLbl, "%d%%", (Settings.brightness * 100) / 255);
   Settings.save();
   Settings.dispatchEvent(SettingsClass::Event::BRIGHTNESS_CHANGE);
 }
@@ -330,13 +358,14 @@ void SettingsUI::programming_setup_event_cb(lv_event_t * e) {
 
 void SettingsUI::calibrate_event_cb(lv_event_t * e) {
   SettingsUI* ui = (SettingsUI*)lv_event_get_user_data(e);
-  if (ui->_calMsgbox) return; // Prevent multiple dialogs
-  
+  if (ui->_calMsgbox) return;
+
   ui->_calMsgbox = lv_msgbox_create(lv_layer_top());
-  lv_msgbox_add_title(ui->_calMsgbox, "Touch Calibration");
-  lv_msgbox_add_text(ui->_calMsgbox, "You are about to recalibrate the touchscreen.\n\nUse a stylus or pen to precisely tap the targets.\nIncorrect calibration will make the screen unusable!");
-  
+  style_msgbox(ui->_calMsgbox, "Touch calibration", lv_color_make(38, 166, 154));
+  style_msgbox_text(lv_msgbox_add_text(ui->_calMsgbox, "Use a stylus to precisely tap the targets.\nIncorrect calibration will make the screen unusable."));
+
   lv_obj_t* start_btn = lv_msgbox_add_footer_button(ui->_calMsgbox, "Start");
+  lv_obj_set_style_bg_color(start_btn, lv_color_make(40, 140, 40), 0);
   lv_obj_add_event_cb(start_btn, [](lv_event_t* e) {
       SettingsUI* ui = (SettingsUI*)lv_event_get_user_data(e);
       if (ui->_calMsgbox) {
@@ -348,8 +377,10 @@ void SettingsUI::calibrate_event_cb(lv_event_t * e) {
       }
       ui->_calibrationUI->show();
   }, LV_EVENT_CLICKED, ui);
-  
+
   lv_obj_t* cancel_btn = lv_msgbox_add_footer_button(ui->_calMsgbox, "Cancel");
+  lv_obj_set_style_bg_color(cancel_btn, lv_color_hex(0x2e2e2e), 0);
+
   lv_obj_add_event_cb(cancel_btn, [](lv_event_t* e) {
       SettingsUI* ui = (SettingsUI*)lv_event_get_user_data(e);
       if (ui->_calMsgbox) {
@@ -357,7 +388,7 @@ void SettingsUI::calibrate_event_cb(lv_event_t * e) {
           ui->_calMsgbox = nullptr;
       }
   }, LV_EVENT_CLICKED, ui);
-  
+
   lv_obj_center(ui->_calMsgbox);
 }
 
@@ -435,9 +466,13 @@ void SettingsUI::throttle_programming_event_cb(lv_event_t * e) {
   lv_obj_set_style_pad_bottom(lbl, 8, 0);
 
   // Connection info
-  String ip = WiFi.status() == WL_CONNECTED ? WiFi.localIP().toString() : WiFi.softAPIP().toString();
+  bool staConnected = WiFi.status() == WL_CONNECTED;
+  String ip = staConnected ? WiFi.localIP().toString() : WiFi.softAPIP().toString();
   lv_obj_t* ip_lbl = lv_label_create(overlay);
-  lv_label_set_text_fmt(ip_lbl, "Connect to throttle via web browser:\nhttp://%s", ip.c_str());
+  if (staConnected)
+    lv_label_set_text_fmt(ip_lbl, "Connect to throttle via web browser:\nhttp://%s\nhttp://dcc-ex-cyd.local", ip.c_str());
+  else
+    lv_label_set_text_fmt(ip_lbl, "Connect to throttle via web browser:\nhttp://%s", ip.c_str());
   lv_obj_set_style_text_font(ip_lbl, &lv_font_montserrat_12, 0);
   lv_obj_set_style_text_color(ip_lbl, lv_color_hex(0x4488ff), 0);
   lv_obj_set_style_text_align(ip_lbl, LV_TEXT_ALIGN_CENTER, 0);

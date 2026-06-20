@@ -76,7 +76,7 @@ AboutUI::AboutUI(DCCEXProtocol& dccex, lv_obj_t* parent) {
 
   _wifiStat = lv_label_create(content);
   if (WiFi.status() == WL_CONNECTED) {
-      lv_label_set_text_fmt(_wifiStat, "WiFi: Connected\nIP: %s", WiFi.localIP().toString().c_str());
+      lv_label_set_text_fmt(_wifiStat, "WiFi: Connected\nIP: %s\nmDNS: dcc-ex-cyd.local", WiFi.localIP().toString().c_str());
   } else {
       lv_label_set_text(_wifiStat, "WiFi: Disconnected");
   }
@@ -135,7 +135,7 @@ void AboutUI::update_timer_cb(lv_timer_t* timer) {
 
   if (ui->_wifiStat) {
       if (WiFi.status() == WL_CONNECTED)
-          lv_label_set_text_fmt(ui->_wifiStat, "WiFi: Connected\nIP: %s", WiFi.localIP().toString().c_str());
+          lv_label_set_text_fmt(ui->_wifiStat, "WiFi: Connected\nIP: %s\nmDNS: dcc-ex-cyd.local", WiFi.localIP().toString().c_str());
       else
           lv_label_set_text(ui->_wifiStat, "WiFi: Disconnected");
   }

@@ -7,7 +7,7 @@ AccessoriesUI::AccessoriesUI(DCCEXProtocol& dccex, lv_obj_t* parent)
 
     _container = lv_obj_create(parent);
     lv_obj_set_size(_container, LV_PCT(100), LV_PCT(100));
-    lv_obj_set_style_pad_all(_container, 0, 0);
+    lv_obj_set_style_pad_all(_container, 5, 0);
     lv_obj_set_style_border_width(_container, 0, 0);
     lv_obj_set_style_bg_opa(_container, LV_OPA_COVER, 0);
     lv_obj_set_flex_flow(_container, LV_FLEX_FLOW_COLUMN);
@@ -16,7 +16,7 @@ AccessoriesUI::AccessoriesUI(DCCEXProtocol& dccex, lv_obj_t* parent)
     _content = lv_obj_create(_container);
     lv_obj_set_width(_content, LV_PCT(100));
     lv_obj_set_flex_grow(_content, 1);
-    lv_obj_set_style_pad_all(_content, 5, 0);
+    lv_obj_set_style_pad_all(_content, 6, 0);
     lv_obj_set_style_border_width(_content, 0, 0);
     lv_obj_set_flex_flow(_content, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(_content, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
@@ -201,13 +201,13 @@ void AccessoriesUI::kb_event_cb(lv_event_t* e) {
 
 void AccessoriesUI::action_event_cb(lv_event_t* e) {
     AccessoriesUI* ui = (AccessoriesUI*)lv_event_get_user_data(e);
-    int action = (int)(uintptr_t)lv_obj_get_user_data((lv_obj_t*)lv_event_get_target(e));
+    int action = (int)(uintptr_t)lv_obj_get_user_data((lv_obj_t*)lv_event_get_current_target(e));
     ui->sendCommand(action == 1);
 }
 
 void AccessoriesUI::chip_event_cb(lv_event_t* e) {
     AccessoriesUI* ui = (AccessoriesUI*)lv_event_get_user_data(e);
-    uint16_t addr = (uint16_t)(uintptr_t)lv_obj_get_user_data((lv_obj_t*)lv_event_get_target(e));
+    uint16_t addr = (uint16_t)(uintptr_t)lv_obj_get_user_data((lv_obj_t*)lv_event_get_current_target(e));
     char buf[8];
     snprintf(buf, sizeof(buf), "%d", addr);
     lv_textarea_set_text(ui->_textarea, buf);

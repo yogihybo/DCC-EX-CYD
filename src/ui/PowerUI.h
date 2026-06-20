@@ -10,14 +10,23 @@ class PowerUI : public UIView {
     bool _updatingFromBroadcast = false;
     bool _mainOn = false;
     bool _progOn = false;
+    bool _joinOn = false;
 
     lv_obj_t* _container;
-    lv_obj_t* _powerAll;
-    lv_obj_t* _powerMain;
-    lv_obj_t* _powerProg;
-    lv_obj_t* _powerJoin;
+    lv_obj_t* _dot_main;
+    lv_obj_t* _dot_prog;
+    lv_obj_t* _lbl_main_status;
+    lv_obj_t* _lbl_prog_status;
+    lv_obj_t* _btn_main_on;
+    lv_obj_t* _btn_main_off;
+    lv_obj_t* _btn_prog_on;
+    lv_obj_t* _btn_prog_off;
+    lv_obj_t* _btn_all_on;
+    lv_obj_t* _btn_all_off;
+    lv_obj_t* _btn_join;
 
-    static void btn_event_cb(lv_event_t * e);
+    void updateStyles();
+    static void btn_event_cb(lv_event_t* e);
 
   public:
     PowerUI(DCCEXProtocol& dccex, lv_obj_t* parent);
