@@ -108,7 +108,8 @@ The entry point of the firmware.
 
 ### 2. Global View Manager (`LVGL_Layouts.cpp / .h`)
 A native LVGL container system for the UI.
-- **Top Status Bar**: Displays real-time battery voltage, WiFi state, Command Station connection, and active locomotive count utilizing dynamic LVGL symbolic icons (`LV_SYMBOL_WIFI`, `LV_SYMBOL_BATTERY_FULL`, custom Loco and DCC connection icons).
+- **Top Status Bar**: Displays real-time battery voltage, WiFi state, Command Station connection, and active locomotive count utilizing dynamic LVGL symbolic icons (`LV_SYMBOL_WIFI`, `LV_SYMBOL_BATTERY_FULL`, custom Loco and DCC connection icons). The DCC status icon renders as a live square-wave waveform using an `lv_line` polyline — green when connected, red when not.
+- **Rear RGB LED**: The onboard RGB LED (active-LOW on GPIO 4/16/17) mirrors the Command Station connection state — green when connected, red when disconnected.
 - **Navigation**: Deploys an `lv_tabview` anchored to the bottom of the screen. It seamlessly hosts the 4 permanent sub-applications, enabling native physical swiping between them.
 
 ### 3. Loco Control (`LocoUI.cpp`)
@@ -127,7 +128,10 @@ An on-device consist manager accessible from the loco selection menu.
 - **Persistence**: Consists are saved to `/consists/<leadAddr>.json` on LittleFS or SD (whichever is active). Format: `{ name, replicateFunctions, members: [{address, reversed}] }`. Files survive power cycles and reload automatically on next open.
 
 ### 4. Accessory / Turnout Manager (`AccessoriesUI.cpp`)
-A fast-access manager for layout turnouts and switch machines. Tapping ON/OFF dynamically summons a numeric `lv_keyboard` mapped to an input area, letting you rapidly punch in DCC Accessory Addresses (1-2044) and broadcast their states to the track.
+A fast-access manager for layout turnouts and switch machines.
+- **Address Entry**: A numeric `lv_keyboard` is summoned from `lv_layer_top()` (full-screen dock) when the address field is focused, and dismissed on confirm or cancel. Accepts DCC Accessory Addresses 1–2044.
+- **Throw / Close**: Dedicated buttons send the turnout command immediately. The active state is highlighted with semantic colour (orange = thrown, green = closed); the inactive button returns to neutral dark.
+- **Recent Addresses**: The last 5 addresses used are shown as a chip strip below the input. Tapping a chip populates the address field for quick repeat use. Chips are neutral by default and highlight blue on press.
 
 ### 5. Track Power (`PowerUI.cpp`)
 Receives power state via `AppDelegate::receivedTrackPower` and `receivedIndividualTrackPower` callbacks from the `DCCEXProtocol` library. Features tactile toggle switches to control power across the Main Track, Programming Track, or electronically join them together.
@@ -142,8 +146,9 @@ A built-in `AsyncWebServer` that hosts the companion web interface for roster ma
 
 ### 7. Settings & Network Hub (`SettingsUI.cpp`)
 - Controls hardware variables like screen brightness. Includes sub-modules (`WiFiUI.cpp` and `AboutUI.cpp`) that dynamically popup over the settings UI.
---**WiFiUI**; has local AP configuration and local access point mode with QR code, 
---**AboutUI**; tracks live hardware specs and parses Command Station firmware hashes.
+- **WiFiUI**: Local AP configuration and access point mode with QR code.
+- **AboutUI**: Live hardware specs and Command Station firmware info, organised into sections — Throttle, Connection, SD Card, and DCC-EX Command Station.
+- **mDNS**: If the Command Station hostname contains no `.` it is treated as a `.local` mDNS name. `MDNS.begin("dcc-ex-cyd")` is also started so the throttle itself is reachable at `dcc-ex-cyd.local`.
 
 ---
 

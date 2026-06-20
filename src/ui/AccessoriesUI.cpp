@@ -153,6 +153,7 @@ void AccessoriesUI::rebuildRecents() {
         lv_obj_set_style_pad_hor(chip, 10, 0);
         lv_obj_set_style_pad_ver(chip, 0, 0);
         lv_obj_set_style_bg_color(chip, lv_color_hex(0x2e2e2e), 0);
+        lv_obj_set_style_bg_color(chip, lv_palette_main(LV_PALETTE_BLUE), LV_STATE_PRESSED);
         lv_obj_t* lbl = lv_label_create(chip);
         lv_label_set_text_fmt(lbl, "%d", _recents[i]);
         lv_obj_set_style_text_font(lbl, &lv_font_montserrat_12, 0);
