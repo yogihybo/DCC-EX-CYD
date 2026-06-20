@@ -96,14 +96,14 @@ A web interface running on the ESP32 allows for easy input of loco details and a
 
 ## Core Architecture & Key Functions
 
-The system is constructed around a single, persistent root layout. The core UI modules are loaded once into memory during boot, completely eliminating visual teardowns, loading flickers, and latency. 
+The system is constructed around a single, persistent root layout. The core UI modules are loaded once into memory during boot, completely eliminating visual teardowns, loading flickers, and latency.
 
 ### 1. System Initialization & Concurrency (`main.cpp`)
-The entry point of the firmware. 
+The entry point of the firmware.
 - Initializes the ESP32 hardware, the TFT/CYD drivers, and LVGL.
 - Spawns asynchronous FreeRTOS background tasks (`keepWiFiAlive`, `powerCheck`).
 - Manages the `DCCEXProtocol` connection lifecycle: a `WiFiClient` TCP connection is established by `keepWiFiAlive` and handed to `DCCEXProtocol::connect()` in `loop()`. A `TeeStream` wrapper intercepts the raw stream to parse Command Station board/shield info without consuming bytes from the library.
-- An `AppDelegate` implementing `DCCEXProtocolDelegate` receives all CS callbacks (speed updates, power state, CV read/write results) and dispatches them to the relevant UI module.
+- An `AppDelegate` implementing `DCCEXProtocolDelegate` receives all CS callbacks (speed updates, power state, CV read/write results, turnout state changes) and dispatches them to the relevant UI module.
 - **Thread Safety**: Governs a global `lvgl_mutex` Semaphore. `DCCEXProtocol::check()` and `lv_timer_handler()` are called together inside the same mutex block, so delegate callbacks fire already holding the lock and can safely update LVGL widgets directly.
 
 ### 2. Global View Manager (`LVGL_Layouts.cpp / .h`)
@@ -114,10 +114,10 @@ A native LVGL container system for the UI.
 
 ### 3. Loco Control (`LocoUI.cpp`)
 The primary dashboard for driving locomotives and consists.
-- **Throttle**: Features an `lv_arc` serving as a dynamic rotary speedometer.
-- **Function Mapping**: Parses `[address].json` files from LittleFS/SD to dynamically generate a scrolling list of function buttons specific to the active locomotive. A default set (F0–F9) is shown for unrecognised locos.
-- **Selection Submenu**: Clicking the active address instantly spawns a hidden overlay popup menu, allowing you to seamlessly swap locomotives via keypad entry, roster name/group, or consist.
-- **Direction / E-Stop**: Instant DCC directional toggles and emergency track halts.
+- **Throttle**: Features an `lv_arc` serving as a dynamic rotary speedometer. Speed updates from the CS are accepted unless a local change was made within the last 500 ms (preventing CS echo fighting user input).
+- **Function Mapping**: Parses `[address].json` files from LittleFS/SD to dynamically generate up to 6 function buttons per page, specific to the active locomotive. A default set (F0–F9) is shown for unrecognised locos. Each button supports idle and pressed visual states (label, icon, colour) defined per-function in the JSON.
+- **Selection Menu**: Tapping the active address opens a dark-themed overlay panel with options to select a locomotive by address (numeric keypad), by name (roster list), by group, or by consist. A Release button stops and deregisters the current loco or consist.
+- **Direction / E-Stop**: Instant DCC directional toggle (blocked at speed > 0) and a prominent circular emergency stop button.
 - **Consist Mode**: When a consist is active all throttle controls (speed arc, encoder, direction, functions, e-stop) are routed through the DCC-EX consist API. The consist name is shown in place of the loco name.
 
 ### 3a. Consist Builder (`ConsistUI.cpp`)
@@ -129,14 +129,30 @@ An on-device consist manager accessible from the loco selection menu.
 
 ### 4. Accessory / Turnout Manager (`AccessoriesUI.cpp`)
 A fast-access manager for layout turnouts and switch machines.
-- **Address Entry**: A numeric `lv_keyboard` is summoned from `lv_layer_top()` (full-screen dock) when the address field is focused, and dismissed on confirm or cancel. Accepts DCC Accessory Addresses 1–2044.
-- **Throw / Close**: Dedicated buttons send the turnout command immediately. The active state is highlighted with semantic colour (orange = thrown, green = closed); the inactive button returns to neutral dark.
-- **Recent Addresses**: The last 5 addresses used are shown as a chip strip below the input. Tapping a chip populates the address field for quick repeat use. Chips are neutral by default and highlight blue on press.
+- **Address Entry**: A numeric `lv_keyboard` is summoned from `lv_layer_top()` (full-screen dock) when the address field is focused, and dismissed on confirm or cancel. Accepts DCC accessory addresses 1–2044.
+- **Status Query**: When an address is confirmed (keyboard or recent chip), the throttle sends `<T>` to the Command Station. If the entered number matches a defined turnout ID, the CS responds with its current state (`<H id state>`) which is received via `receivedTurnoutAction` and reflected immediately in the Throw/Close button highlights — without requiring the user to send a command first.
+- **Throw / Close**: Dedicated buttons send the turnout command immediately via `activateLinearAccessory` / `deactivateLinearAccessory`. The active state is highlighted with semantic colour (amber = thrown, green = closed); the inactive button returns to neutral dark.
+- **Recent Addresses**: The last 5 addresses used are shown as a chip strip below the input. Tapping a chip populates the address field and triggers a status query. Chips highlight blue on press.
 
 ### 5. Track Power (`PowerUI.cpp`)
-Receives power state via `AppDelegate::receivedTrackPower` and `receivedIndividualTrackPower` callbacks from the `DCCEXProtocol` library. Features tactile toggle switches to control power across the Main Track, Programming Track, or electronically join them together.
+Per-track power control with real-time visual state feedback.
+- **Layout**: Two dark cards (Main Track, Prog Track) each showing a coloured dot indicator, ON/OFF status text, and ON/OFF buttons. A shared All ON / All OFF row and a Join Tracks button sit below.
+- **State**: Power state is updated optimistically on button press (since the CS does not always echo a broadcast). CS broadcasts via `receivedTrackPower` and `receivedIndividualTrackPower` override the local state when received.
+- **Dot Indicators**: 10×10 px circular `lv_obj` widgets coloured green (ON) or red (OFF) — not Unicode glyphs, which are absent from the Montserrat font set.
+- **Join Tracks**: Electronically bridges Main and Prog tracks via `joinProg()`. The button toggles to "Unjoin (cuts power)" when active; pressing it again calls `powerOff()` and resets all state to OFF.
+- **Semantic Colours**: Green `(40,140,40)` = ON/active, muted red `(140,40,40)` = OFF, amber `(180,120,30)` = joined.
 
-### 6. Throttle Server (`ThrottleServer.cpp`)
+### 6. CV Programmer (`ProgramUI.cpp`)
+A multi-step CV programming interface for the DCC programming track.
+- **Sections**: Address (read/write loco address), CV Operations (read/write byte, read/write bit), and a de-emphasised Advanced section (ACK Limit / Min / Max diagnostic tuning).
+- **Common CV Presets**: A row of shortcut chips — Address (CV1), Accel (CV3), Decel (CV4), V-Max (CV5), Steps (CV29) — reads the CV immediately without requiring manual number entry.
+- **Read-then-Write Flow**: After a successful CV read, the result popup shows the current value and offers a "Write new value" button, enabling the common read-modify-write workflow in one continuous flow.
+- **Step Context**: Multi-step prompts carry forward context ("CV 3 — enter value") so the user always knows which CV they are editing.
+- **Read Bit Fix**: Read Bit calls `readCV(cv)` and extracts `(byte >> bit) & 1` from the full byte result, rather than the previous implementation which only validated the bit against 1.
+- **Timeouts**: A 10-second timer fires if the CS does not respond. Error messages distinguish "No ACK — check loco is on prog track" from write failures.
+- **Styled Popups**: All intermediate dialogs (Working, result, confirm, input) use the shared dark `0x1e1e1e` popup style with teal titles.
+
+### 7. Throttle Server (`ThrottleServer.cpp`)
 A built-in `AsyncWebServer` that hosts the companion web interface for roster management. It is only active when **Throttle Programming** mode is enabled from the Settings tab — on entry the LVGL UI is torn down to reclaim RAM, and rebuilt on exit.
 
 - **REST API**: Handles `GET`, `PUT`, `DELETE`, and `HEAD` requests for loco definitions, function sets, icon images, and groups. Files are streamed directly from LittleFS or SD card via chunked `beginResponse` callbacks — no full file is loaded into RAM.
@@ -144,11 +160,21 @@ A built-in `AsyncWebServer` that hosts the companion web interface for roster ma
 - **Backup & Restore**: `GET /backup` streams a full JSON export of the roster; `POST /migrate` copies the roster between internal flash and SD card.
 - **CS status** (`HEAD /cs`): Polled by the web UI to indicate whether the device is connected to a Command Station.
 
-### 7. Settings & Network Hub (`SettingsUI.cpp`)
-- Controls hardware variables like screen brightness. Includes sub-modules (`WiFiUI.cpp` and `AboutUI.cpp`) that dynamically popup over the settings UI.
-- **WiFiUI**: Local AP configuration and access point mode with QR code.
+### 8. Settings & Network Hub (`SettingsUI.cpp`)
+Dark-themed settings panel with teal section headings and value badges. Sections include Throttle (brightness, rotation, encoder acceleration) and CS & Storage (WiFi, SD format, touch calibration, about).
+- **Brightness**: Inline popup with a styled 4 px-track slider; adjusts backlight PWM in real time and persists to flash.
+- **Rotation**: Cycles between USB Down (portrait) and USB Up (landscape) with immediate LVGL rotation.
+- **WiFiUI**: Full-screen scrollable overlay for network credentials and Command Station address/port. A numeric keyboard is shown in-context when a field is focused, and the container bottom padding expands to keep the active field above the keyboard. Includes AP SSID/password and a QR code for easy mobile connection.
 - **AboutUI**: Live hardware specs and Command Station firmware info, organised into sections — Throttle, Connection, SD Card, and DCC-EX Command Station.
 - **mDNS**: If the Command Station hostname contains no `.` it is treated as a `.local` mDNS name. `MDNS.begin("dcc-ex-cyd")` is also started so the throttle itself is reachable at `dcc-ex-cyd.local`.
+
+### UI Design System
+All screens share a consistent dark theme:
+- **Background**: `0x1e1e1e` cards on a default dark LVGL surface
+- **Section headings**: Teal `rgb(38,166,154)` labels
+- **Buttons**: `0x2e2e2e` neutral, green `(40,140,40)` active/ON, muted red `(140,40,40)` OFF/destructive, amber `(180,120,30)` thrown/joined
+- **Popups**: `0x1e1e1e` background, `0x383838` 1 px border, teal title text
+- **Consistent inset**: 5 px container padding + 6 px inner padding = 11 px total horizontal margin across all tabs
 
 ---
 
