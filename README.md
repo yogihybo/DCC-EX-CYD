@@ -86,10 +86,11 @@ A web interface running on the ESP32 allows for easy input of loco details and a
 
 ## Software Stack
 - **PlatformIO**: Primary build environment and C++ Framework
-- **LVGL (v9.1)**: Modern embedded graphics library handling the UI, layouts, widgets, and multi-tab swiping physics.
 - **FreeRTOS**: Handles async WiFi keep-alives, background voltage checks, and strictly manages LVGL thread safety via Mutex locks.
-- **DCCEXProtocol (v1.3+)**: Official DCC-EX client library handling all Command Station communication — throttle, power, programming track, and accessory commands — via a delegate callback pattern.
 - **AsyncTCP**: Low-latency TCP stack used by the web interface.
+- **LVGL (v9.1)**: Modern embedded graphics library handling the UI, layouts, widgets, and multi-tab swiping physics.
+- **DCCEXProtocol (v1.3+)**: Official DCC-EX client library handling all Command Station communication — throttle, power, programming track, and accessory commands — via a delegate callback pattern.
+
 
 ---
 
