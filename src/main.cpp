@@ -108,7 +108,8 @@ class AppDelegate : public DCCEXProtocolDelegate {
   bool _hadIndividualPowerUpdate = false;
 public:
   void receivedServerVersion(int major, int minor, int patch) override {
-    csInfo.version = String(major) + "." + String(minor) + "." + String(patch);
+    char vbuf[16]; snprintf(vbuf, sizeof(vbuf), "%d.%d.%d", major, minor, patch);
+    csInfo.version = vbuf;
     Serial.printf("[DCC] CS Version: %s\n", csInfo.version.c_str());
   }
 

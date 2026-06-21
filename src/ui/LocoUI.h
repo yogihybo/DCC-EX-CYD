@@ -5,6 +5,7 @@
 #include <Locos.h>
 #include <ArduinoJson.h>
 #include <bitset>
+#include <memory>
 #include <vector>
 #include "LVGL_Layouts.h"
 #include "ConsistUI.h"
@@ -48,7 +49,7 @@ class LocoUI : public UIView {
     lv_obj_t* _textarea;
 
     std::vector<lv_obj_t*> _fnButtons;
-    DynamicJsonDocument* _groupsDoc = nullptr;
+    std::unique_ptr<DynamicJsonDocument> _groupsDoc;
     uint8_t _fnPage = 0;
 
     void buildSelectionMenu();

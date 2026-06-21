@@ -218,14 +218,13 @@ void LocoUI::buildControlScreen() {
 
     if (_activeConsist) {
         // Build "#6464FF 3# • #AAAAAA 45# • #AAAAAA 678#" with lead in blue, rest in grey
-        String addrStr;
+        char addrStr[256] = {0};
+        int addrOff = 0;
         bool first = true;
-        for (CSConsistMember* m = _activeConsist->getFirstMember(); m; m = m->next) {
-            if (!first) addrStr += " \xE2\x80\xA2 ";  // UTF-8 bullet U+2022
-            if (first)
-                addrStr += "#6464FF " + String(m->address) + "#";
-            else
-                addrStr += "#AAAAAA " + String(m->address) + "#";
+        for (CSConsistMember* m = _activeConsist->getFirstMember(); m && addrOff < 250; m = m->next) {
+            if (!first) addrOff += snprintf(addrStr + addrOff, sizeof(addrStr) - addrOff, " \xE2\x80\xA2 ");
+            addrOff += snprintf(addrStr + addrOff, sizeof(addrStr) - addrOff,
+                                first ? "#6464FF %d#" : "#AAAAAA %d#", m->address);
             first = false;
         }
         lv_obj_set_size(addr_btn, 150, 40);
@@ -235,7 +234,7 @@ void LocoUI::buildControlScreen() {
         lv_label_set_long_mode(_addressLabel, LV_LABEL_LONG_SCROLL_CIRCULAR);
         lv_obj_set_style_anim_duration(_addressLabel, 16000, 0);
         lv_label_set_recolor(_addressLabel, true);
-        lv_label_set_text(_addressLabel, addrStr.c_str());
+        lv_label_set_text(_addressLabel, addrStr);
         lv_obj_set_style_text_font(_addressLabel, &lv_font_montserrat_16, 0);
     } else if (_loco.address > 0) {
         lv_label_set_text_fmt(_addressLabel, "%d", _loco.address);
@@ -786,7 +785,7 @@ void LocoUI::loco_selected_event_cb(lv_event_t * e) {
     if (address > 0 && address <= 9999) {
         ui->_locos.add(address);
         ui->_nameMenu = nullptr;
-        if (ui->_groupsDoc) { delete ui->_groupsDoc; ui->_groupsDoc = nullptr; }
+        ui->_groupsDoc.reset();
         lv_async_call([](void* user_data) {
             ((LocoUI*)user_data)->refresh();
         }, ui);
@@ -799,7 +798,7 @@ void LocoUI::close_name_menu_event_cb(lv_event_t * e) {
         lv_obj_delete_async(ui->_nameMenu);
         ui->_nameMenu = nullptr;
     }
-    if (ui->_groupsDoc) { delete ui->_groupsDoc; ui->_groupsDoc = nullptr; }
+    ui->_groupsDoc.reset();
     if (ui->_selectionMenu) lv_obj_clear_flag(ui->_selectionMenu, LV_OBJ_FLAG_HIDDEN);
 }
 
@@ -857,8 +856,7 @@ void LocoUI::group_btn_event_cb(lv_event_t * e) {
     fs::FS& fs = Settings.getFS();
 
     if (fs.exists("/groups.json")) {
-        if (ui->_groupsDoc) { delete ui->_groupsDoc; ui->_groupsDoc = nullptr; }
-        ui->_groupsDoc = new DynamicJsonDocument(1024);
+        ui->_groupsDoc = std::make_unique<DynamicJsonDocument>(1024);
         File groupsFile = fs.open("/groups.json");
         ReadBufferingStream buffered(groupsFile, 64);
         deserializeJson(*ui->_groupsDoc, buffered);

@@ -178,7 +178,8 @@ void ProgramUI::timeout_timer_cb(lv_timer_t* timer) {
 
 void ProgramUI::receivedReadLoco(int address) {
     cancelTimeout();
-    result("Address: " + String(address), lv_color_make(76, 175, 80));
+    char buf[32]; snprintf(buf, sizeof(buf), "Address: %d", address);
+    result(buf, lv_color_make(76, 175, 80));
 }
 
 void ProgramUI::receivedWriteLoco(int address) {
@@ -192,8 +193,8 @@ void ProgramUI::receivedReadCV(int cv, int value) {
 
     if (_step == Step::READ_CV_BIT_PENDING) {
         int bitVal = (value >> _stepData[1]) & 1;
-        result("CV " + String(_stepData[0]) + " bit " + String(_stepData[1]) + " = " + String(bitVal),
-               lv_color_make(76, 175, 80));
+        char buf[48]; snprintf(buf, sizeof(buf), "CV %d bit %d = %d", _stepData[0], _stepData[1], bitVal);
+        result(buf, lv_color_make(76, 175, 80));
     } else {
         resultWithWriteBack(cv, value);
     }
@@ -202,7 +203,7 @@ void ProgramUI::receivedReadCV(int cv, int value) {
 void ProgramUI::receivedWriteCV(int cv, int value) {
     cancelTimeout();
     if (value == -1) result("No ACK — write failed", lv_color_make(200, 50, 50));
-    else             result("CV " + String(cv) + " written OK", lv_color_make(76, 175, 80));
+    else { char buf[32]; snprintf(buf, sizeof(buf), "CV %d written OK", cv); result(buf, lv_color_make(76, 175, 80)); }
 }
 
 void ProgramUI::close_btn_event_cb(lv_event_t* e) {
@@ -259,7 +260,7 @@ void ProgramUI::preset_cv_event_cb(lv_event_t* e) {
     ui->_dccex.readCV(cv);
 }
 
-void ProgramUI::newStep(Step step, const String& title, uint16_t max, uint16_t min) {
+void ProgramUI::newStep(Step step, const char* title, uint16_t max, uint16_t min) {
     _step = step;
     clearMsgBox();
 
@@ -268,7 +269,7 @@ void ProgramUI::newStep(Step step, const String& title, uint16_t max, uint16_t m
     lv_obj_set_width(_msgbox, LV_PCT(100));
     lv_obj_align(_msgbox, LV_ALIGN_TOP_MID, 0, 0);
     lv_obj_add_event_cb(_msgbox, msgbox_delete_cb, LV_EVENT_DELETE, this);
-    style_popup_title(_msgbox, title.c_str(), lv_color_make(38, 166, 154));
+    style_popup_title(_msgbox, title, lv_color_make(38, 166, 154));
 
     _ta = lv_textarea_create(_msgbox);
     lv_obj_set_width(_ta, LV_PCT(100));
@@ -307,14 +308,14 @@ void ProgramUI::working() {
     style_popup_title(_msgbox, "Working...", lv_color_hex(0x888888));
 }
 
-void ProgramUI::result(const String& message, lv_color_t color) {
+void ProgramUI::result(const char* message, lv_color_t color) {
     clearMsgBox();
     _msgbox = lv_msgbox_create(_container);
     style_popup(_msgbox);
     lv_obj_set_width(_msgbox, LV_PCT(100));
     lv_obj_align(_msgbox, LV_ALIGN_TOP_MID, 0, 0);
     lv_obj_add_event_cb(_msgbox, msgbox_delete_cb, LV_EVENT_DELETE, this);
-    style_popup_title(_msgbox, message.c_str(), color);
+    style_popup_title(_msgbox, message, color);
     lv_obj_t* ok = make_popup_btn(_msgbox, "OK", lv_color_hex(0x2e2e2e));
     lv_obj_add_event_cb(ok, msgbox_close_cb, LV_EVENT_CLICKED, this);
 }
@@ -327,8 +328,8 @@ void ProgramUI::resultWithWriteBack(int cv, int value) {
     lv_obj_align(_msgbox, LV_ALIGN_TOP_MID, 0, 0);
     lv_obj_add_event_cb(_msgbox, msgbox_delete_cb, LV_EVENT_DELETE, this);
 
-    style_popup_title(_msgbox, ("CV " + String(cv) + "  =  " + String(value)).c_str(),
-                      lv_color_make(76, 175, 80));
+    char title[32]; snprintf(title, sizeof(title), "CV %d  =  %d", cv, value);
+    style_popup_title(_msgbox, title, lv_color_make(76, 175, 80));
 
     lv_obj_t* write_btn = make_popup_btn(_msgbox, "Write new value", lv_color_hex(0x1a3a3a));
     lv_obj_set_style_text_color(lv_obj_get_child(write_btn, 0), lv_color_make(38, 166, 154), 0);
@@ -340,12 +341,11 @@ void ProgramUI::resultWithWriteBack(int cv, int value) {
 
 void ProgramUI::write_back_btn_cb(lv_event_t* e) {
     ProgramUI* ui = (ProgramUI*)lv_event_get_user_data(e);
-    ui->newStep(Step::WRITE_CV_BYTE_WRITEBACK,
-                "CV " + String(ui->_stepData[0]) + " — enter new value",
-                255, 0);
+    char title[48]; snprintf(title, sizeof(title), "CV %d \xe2\x80\x94 enter new value", ui->_stepData[0]);
+    ui->newStep(Step::WRITE_CV_BYTE_WRITEBACK, title, 255, 0);
 }
 
-void ProgramUI::confirm(const String& message) {
+void ProgramUI::confirm(const char* message) {
     clearMsgBox();
     _msgbox = lv_msgbox_create(_container);
     style_popup(_msgbox);
@@ -354,7 +354,7 @@ void ProgramUI::confirm(const String& message) {
     lv_obj_add_event_cb(_msgbox, msgbox_delete_cb, LV_EVENT_DELETE, this);
     style_popup_title(_msgbox, "Confirm", lv_color_make(38, 166, 154));
 
-    lv_obj_t* txt = lv_msgbox_add_text(_msgbox, message.c_str());
+    lv_obj_t* txt = lv_msgbox_add_text(_msgbox, message);
     lv_obj_set_style_text_font(txt, &lv_font_montserrat_12, 0);
     lv_obj_set_style_text_color(txt, lv_color_hex(0xaaaaaa), 0);
 
@@ -391,7 +391,7 @@ void ProgramUI::keypadEnter(uint32_t number) {
     switch (_step) {
         case Step::WRITE_ADDRESS_GET_ADDRESS:
             _stepData[2] = number;
-            confirm("Address: " + String(number));
+            { char buf[32]; snprintf(buf, sizeof(buf), "Address: %lu", number); confirm(buf); }
             break;
 
         case Step::READ_CV_BYTE_GET_CV:
@@ -402,20 +402,20 @@ void ProgramUI::keypadEnter(uint32_t number) {
 
         case Step::WRITE_CV_BYTE_GET_CV:
             _stepData[0] = number;
-            newStep(Step::WRITE_CV_BYTE_GET_VALUE,
-                    "CV " + String(number) + " — enter value", 255, 0);
+            { char buf[48]; snprintf(buf, sizeof(buf), "CV %lu \xe2\x80\x94 enter value", number);
+              newStep(Step::WRITE_CV_BYTE_GET_VALUE, buf, 255, 0); }
             break;
 
         case Step::WRITE_CV_BYTE_GET_VALUE:
         case Step::WRITE_CV_BYTE_WRITEBACK:
             _stepData[2] = number;
-            confirm("CV " + String(_stepData[0]) + "  =  " + String(number));
+            { char buf[32]; snprintf(buf, sizeof(buf), "CV %d  =  %lu", _stepData[0], number); confirm(buf); }
             break;
 
         case Step::READ_CV_BIT_GET_CV:
             _stepData[0] = number;
-            newStep(Step::READ_CV_BIT_GET_BIT,
-                    "CV " + String(number) + " — enter bit (0-7)", 7, 0);
+            { char buf[48]; snprintf(buf, sizeof(buf), "CV %lu \xe2\x80\x94 enter bit (0-7)", number);
+              newStep(Step::READ_CV_BIT_GET_BIT, buf, 7, 0); }
             break;
 
         case Step::READ_CV_BIT_GET_BIT:
@@ -427,37 +427,37 @@ void ProgramUI::keypadEnter(uint32_t number) {
 
         case Step::WRITE_CV_BIT_GET_CV:
             _stepData[0] = number;
-            newStep(Step::WRITE_CV_BIT_GET_BIT,
-                    "CV " + String(number) + " — enter bit (0-7)", 7, 0);
+            { char buf[48]; snprintf(buf, sizeof(buf), "CV %lu \xe2\x80\x94 enter bit (0-7)", number);
+              newStep(Step::WRITE_CV_BIT_GET_BIT, buf, 7, 0); }
             break;
 
         case Step::WRITE_CV_BIT_GET_BIT:
             _stepData[1] = number;
-            newStep(Step::WRITE_CV_BIT_GET_VALUE,
-                    "CV " + String(_stepData[0]) + " bit " + String(number) + " — enter value (0-1)", 1, 0);
+            { char buf[56]; snprintf(buf, sizeof(buf), "CV %d bit %lu \xe2\x80\x94 enter value (0-1)", _stepData[0], number);
+              newStep(Step::WRITE_CV_BIT_GET_VALUE, buf, 1, 0); }
             break;
 
         case Step::WRITE_CV_BIT_GET_VALUE:
             _stepData[2] = number;
-            confirm("CV " + String(_stepData[0]) + " bit " + String(_stepData[1]) + " = " + String(number));
+            { char buf[48]; snprintf(buf, sizeof(buf), "CV %d bit %d = %lu", _stepData[0], _stepData[1], number); confirm(buf); }
             break;
 
         case Step::ACK_LIMIT: {
             char cmd[32]; snprintf(cmd, sizeof(cmd), "D ACK LIMIT %lu", number);
             _dccex.sendCommand(cmd);
-            result("ACK Limit set to " + String(number), lv_color_make(76, 175, 80));
+            { char buf[32]; snprintf(buf, sizeof(buf), "ACK Limit set to %lu", number); result(buf, lv_color_make(76, 175, 80)); }
         } break;
 
         case Step::ACK_MIN: {
             char cmd[32]; snprintf(cmd, sizeof(cmd), "D ACK MIN %lu", number);
             _dccex.sendCommand(cmd);
-            result("ACK Min set to " + String(number), lv_color_make(76, 175, 80));
+            { char buf[32]; snprintf(buf, sizeof(buf), "ACK Min set to %lu", number); result(buf, lv_color_make(76, 175, 80)); }
         } break;
 
         case Step::ACK_MAX: {
             char cmd[32]; snprintf(cmd, sizeof(cmd), "D ACK MAX %lu", number);
             _dccex.sendCommand(cmd);
-            result("ACK Max set to " + String(number), lv_color_make(76, 175, 80));
+            { char buf[32]; snprintf(buf, sizeof(buf), "ACK Max set to %lu", number); result(buf, lv_color_make(76, 175, 80)); }
         } break;
 
         default: break;

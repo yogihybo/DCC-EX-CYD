@@ -40,11 +40,11 @@ class ProgramUI : public UIView {
     Step _step;
     uint16_t _stepData[3];
 
-    void newStep(Step step, const String& title, uint16_t max, uint16_t min);
+    void newStep(Step step, const char* title, uint16_t max, uint16_t min);
     void keypadEnter(uint32_t number);
-    void confirm(const String& message);
+    void confirm(const char* message);
     void working();
-    void result(const String& message, lv_color_t color);
+    void result(const char* message, lv_color_t color);
     void resultWithWriteBack(int cv, int value);
     void clearMsgBox();
     void startTimeout();

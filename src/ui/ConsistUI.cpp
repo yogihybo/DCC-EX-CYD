@@ -6,7 +6,9 @@ LV_FONT_DECLARE(fa_gauge_high_16);
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 String ConsistUI::_consistPath(int leadAddr) {
-    return String("/consists/") + leadAddr + ".json";
+    char buf[32];
+    snprintf(buf, sizeof(buf), "/consists/%d.json", leadAddr);
+    return String(buf);
 }
 
 // Looks up a loco name from the roster, returns empty string if not found.
@@ -177,11 +179,14 @@ void ConsistUI::_rebuildMemberRows(lv_obj_t* list) {
         lv_obj_set_user_data(row, (void*)(intptr_t)(i + 1)); // non-null tag
 
         // Address + name
+        char rank[4];
+        if (i == 0) rank[0] = 'L', rank[1] = '\0';
+        else snprintf(rank, sizeof(rank), "%d", i + 1);
         lv_obj_t* lbl = lv_label_create(row);
         if (name.isEmpty())
-            lv_label_set_text_fmt(lbl, "[%s] %d", i == 0 ? "L" : String(i + 1).c_str(), m.address);
+            lv_label_set_text_fmt(lbl, "[%s] %d", rank, m.address);
         else
-            lv_label_set_text_fmt(lbl, "[%s] %d %s", i == 0 ? "L" : String(i + 1).c_str(), m.address, name.c_str());
+            lv_label_set_text_fmt(lbl, "[%s] %d %s", rank, m.address, name.c_str());
         lv_obj_align(lbl, LV_ALIGN_LEFT_MID, 0, 0);
         lv_label_set_long_mode(lbl, LV_LABEL_LONG_CLIP);
         lv_obj_set_width(lbl, 110);

@@ -91,12 +91,15 @@ WiFiUI::WiFiUI(lv_obj_t* parent) {
     _textareaServer = create_textarea("IP or hostname.local", Settings.CS.server().c_str(), 2);
 
     add_label("Port");
-    _textareaPort = create_textarea("Port", String(Settings.CS.port()).c_str(), 3);
+    char portBuf[8];
+    snprintf(portBuf, sizeof(portBuf), "%d", Settings.CS.port());
+    _textareaPort = create_textarea("Port", portBuf, 3);
 
     _labelIP = lv_label_create(_container);
-    lv_label_set_text(_labelIP, WiFi.isConnected()
-        ? String("IP: " + WiFi.localIP().toString()).c_str()
-        : "IP: Not connected");
+    if (WiFi.isConnected())
+        lv_label_set_text_fmt(_labelIP, "IP: %s", WiFi.localIP().toString().c_str());
+    else
+        lv_label_set_text(_labelIP, "IP: Not connected");
     lv_obj_set_style_text_color(_labelIP, lv_color_hex(0x555555), 0);
     lv_obj_set_style_text_font(_labelIP, &lv_font_montserrat_12, 0);
     lv_obj_set_style_pad_top(_labelIP, 4, 0);
@@ -117,8 +120,10 @@ WiFiUI::WiFiUI(lv_obj_t* parent) {
     lv_obj_set_style_margin_top(_qr, 6, 0);
     lv_obj_set_style_align(_qr, LV_ALIGN_CENTER, 0);
 
-    String qr_data = "WIFI:S:" + Settings.AP.SSID + ";T:WPA;P:" + Settings.AP.password + ";;";
-    lv_qrcode_update(_qr, qr_data.c_str(), qr_data.length());
+    char qr_data[256];
+    snprintf(qr_data, sizeof(qr_data), "WIFI:S:%s;T:WPA;P:%s;;",
+             Settings.AP.SSID.c_str(), Settings.AP.password.c_str());
+    lv_qrcode_update(_qr, (uint8_t*)qr_data, strlen(qr_data));
 }
 
 WiFiUI::~WiFiUI() {
