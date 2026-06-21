@@ -2,7 +2,7 @@
 #include <algorithm>
 
 Locos::Locos() {
-  _locos.reserve(50);
+  _locos.reserve(8);
 }
 
 void Locos::change() {

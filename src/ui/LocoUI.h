@@ -48,6 +48,7 @@ class LocoUI : public UIView {
     lv_obj_t* _textarea;
 
     std::vector<lv_obj_t*> _fnButtons;
+    DynamicJsonDocument* _groupsDoc = nullptr;
     uint8_t _fnPage = 0;
 
     void buildSelectionMenu();

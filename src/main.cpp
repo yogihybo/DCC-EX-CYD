@@ -443,7 +443,7 @@ void setup() {
   // Set delegate before connecting
   dccexProtocol.setDelegate(&appDelegate);
 
-  xTaskCreatePinnedToCore(powerCheck, "powerCheck", 2048, NULL, 1, NULL, 1);
+  xTaskCreatePinnedToCore(powerCheck, "powerCheck", 4096, NULL, 1, NULL, 1);
   xTaskCreatePinnedToCore(keepWiFiAlive, "keepWiFiAlive", 4096, NULL, 1, NULL, 1);
 
   throttleServer.begin();

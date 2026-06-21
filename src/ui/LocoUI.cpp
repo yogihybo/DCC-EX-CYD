@@ -2,6 +2,7 @@
 #include <FileSystems.h>
 #include <SD.h>
 #include <Settings.h>
+#include <StreamUtils.h>
 
 LV_FONT_DECLARE(fa_icons_18);
 
@@ -160,7 +161,7 @@ void LocoUI::buildSelectionMenu() {
 }
 
 void LocoUI::buildControlScreen() {
-    DynamicJsonDocument locoDoc(10240);
+    StaticJsonDocument<2048> locoDoc;
 
     char path[32];
     sprintf(path, "/locos/%d.json", _loco.address);
@@ -169,7 +170,11 @@ void LocoUI::buildControlScreen() {
 
     if (_loco.address != 0 && fs.exists(path)) {
         File locoFile = fs.open(path);
-        deserializeJson(locoDoc, locoFile);
+        StaticJsonDocument<16> filterDoc;
+        filterDoc["name"] = true;
+        filterDoc["functions"] = true;
+        ReadBufferingStream buffered(locoFile, 64);
+        deserializeJson(locoDoc, buffered, DeserializationOption::Filter(filterDoc));
         locoFile.close();
     }
 
@@ -177,10 +182,9 @@ void LocoUI::buildControlScreen() {
         _locoName = "Unknown Loco";
         if (locoDoc.containsKey("name")) _locoName = locoDoc["name"].as<const char*>();
     }
-    String nameStr = _locoName;
 
     _nameLabel = lv_label_create(_container);
-    lv_label_set_text(_nameLabel, nameStr.c_str());
+    lv_label_set_text(_nameLabel, _locoName.c_str());
     lv_obj_set_style_text_color(_nameLabel, lv_color_hex(0xbbbbbb), 0);
     lv_obj_set_style_text_font(_nameLabel, &lv_font_montserrat_12, 0);
     lv_obj_align(_nameLabel, LV_ALIGN_TOP_MID, 0, 4);
@@ -421,6 +425,20 @@ void LocoUI::buildFunctionButtons(JsonDocument& locoDoc) {
         }
     }
 
+    static lv_style_t fn_btn_base_style;
+    static bool fn_btn_style_init = false;
+    if (!fn_btn_style_init) {
+        lv_style_init(&fn_btn_base_style);
+        lv_style_set_radius(&fn_btn_base_style, LV_RADIUS_CIRCLE);
+        lv_style_set_bg_color(&fn_btn_base_style, lv_color_hex(0x2e2e2e));
+        lv_style_set_border_color(&fn_btn_base_style, lv_color_hex(0x555555));
+        lv_style_set_border_width(&fn_btn_base_style, 1);
+        lv_style_set_shadow_width(&fn_btn_base_style, 8);
+        lv_style_set_shadow_color(&fn_btn_base_style, lv_color_hex(0x000000));
+        lv_style_set_shadow_opa(&fn_btn_base_style, LV_OPA_40);
+        fn_btn_style_init = true;
+    }
+
     for (JsonArrayConst const& row : locoFunctions) {
         for (JsonObjectConst const& fn : row) {
             uint8_t func = fn["fn"];
@@ -439,14 +457,7 @@ void LocoUI::buildFunctionButtons(JsonDocument& locoDoc) {
 
             lv_obj_t* btn = lv_btn_create(_container);
             lv_obj_set_size(btn, 36, 36);
-            lv_obj_set_style_radius(btn, LV_RADIUS_CIRCLE, 0);
-            lv_obj_set_style_radius(btn, LV_RADIUS_CIRCLE, LV_STATE_CHECKED);
-            lv_obj_set_style_bg_color(btn, lv_color_hex(0x2e2e2e), 0);
-            lv_obj_set_style_border_color(btn, lv_color_hex(0x555555), 0);
-            lv_obj_set_style_border_width(btn, 1, 0);
-            lv_obj_set_style_shadow_width(btn, 8, 0);
-            lv_obj_set_style_shadow_color(btn, lv_color_hex(0x000000), 0);
-            lv_obj_set_style_shadow_opa(btn, LV_OPA_40, 0);
+            lv_obj_add_style(btn, &fn_btn_base_style, 0);
             lv_obj_set_style_bg_color(btn, press_fill, LV_STATE_CHECKED);
             lv_obj_set_style_border_color(btn, press_color, LV_STATE_CHECKED);
 
@@ -732,27 +743,27 @@ void LocoUI::name_btn_event_cb(lv_event_t * e) {
     auto addLocos = [ui, list](fs::FS& fs) {
         File dir = fs.open("/locos");
         if (dir) {
+            StaticJsonDocument<16> filterDoc;
+            filterDoc["name"] = true;
+            StaticJsonDocument<64> locoDoc;
             while (File file = dir.openNextFile()) {
                 if (!file.isDirectory()) {
                     uint16_t address = strtoul(file.name(), (char**)NULL, 10);
 
-                    StaticJsonDocument<16> filterDoc;
-                    filterDoc["name"] = true;
-                    StaticJsonDocument<256> locoDoc;
-                    deserializeJson(locoDoc, file, DeserializationOption::Filter(filterDoc));
+                    locoDoc.clear();
+                    ReadBufferingStream buffered(file, 64);
+                    deserializeJson(locoDoc, buffered, DeserializationOption::Filter(filterDoc));
 
-                    String nameStr = "#";
-                    nameStr += address;
-                    nameStr += " - ";
-                    if (locoDoc.containsKey("name")) nameStr += locoDoc["name"].as<const char*>();
-                    else nameStr += "Unknown";
+                    char nameStr[56];
+                    const char* locoName = locoDoc["name"] | "Unknown";
+                    snprintf(nameStr, sizeof(nameStr), "#%d - %s", address, locoName);
 
                     lv_obj_t* btn = lv_btn_create(list);
                     lv_obj_set_width(btn, LV_PCT(100));
                     lv_obj_set_height(btn, 36);
                     lv_obj_set_style_bg_color(btn, lv_color_hex(0x2e2e2e), 0);
                     lv_obj_t* lbl = lv_label_create(btn);
-                    lv_label_set_text(lbl, nameStr.c_str());
+                    lv_label_set_text(lbl, nameStr);
                     lv_obj_center(lbl);
 
                     lv_obj_set_user_data(btn, (void*)(uintptr_t)address);
@@ -775,6 +786,7 @@ void LocoUI::loco_selected_event_cb(lv_event_t * e) {
     if (address > 0 && address <= 9999) {
         ui->_locos.add(address);
         ui->_nameMenu = nullptr;
+        if (ui->_groupsDoc) { delete ui->_groupsDoc; ui->_groupsDoc = nullptr; }
         lv_async_call([](void* user_data) {
             ((LocoUI*)user_data)->refresh();
         }, ui);
@@ -787,6 +799,7 @@ void LocoUI::close_name_menu_event_cb(lv_event_t * e) {
         lv_obj_delete_async(ui->_nameMenu);
         ui->_nameMenu = nullptr;
     }
+    if (ui->_groupsDoc) { delete ui->_groupsDoc; ui->_groupsDoc = nullptr; }
     if (ui->_selectionMenu) lv_obj_clear_flag(ui->_selectionMenu, LV_OBJ_FLAG_HIDDEN);
 }
 
@@ -844,12 +857,14 @@ void LocoUI::group_btn_event_cb(lv_event_t * e) {
     fs::FS& fs = Settings.getFS();
 
     if (fs.exists("/groups.json")) {
+        if (ui->_groupsDoc) { delete ui->_groupsDoc; ui->_groupsDoc = nullptr; }
+        ui->_groupsDoc = new DynamicJsonDocument(1024);
         File groupsFile = fs.open("/groups.json");
-        DynamicJsonDocument groupsDoc(4096);
-        deserializeJson(groupsDoc, groupsFile);
+        ReadBufferingStream buffered(groupsFile, 64);
+        deserializeJson(*ui->_groupsDoc, buffered);
         groupsFile.close();
 
-        JsonArray groups = groupsDoc.as<JsonArray>();
+        JsonArray groups = ui->_groupsDoc->as<JsonArray>();
         int index = 0;
         for (JsonObjectConst group : groups) {
             lv_obj_t* btn = lv_btn_create(list);
@@ -876,15 +891,8 @@ void LocoUI::group_selected_event_cb(lv_event_t * e) {
     lv_obj_t* btn = (lv_obj_t*)lv_event_get_target(e);
     int index = (uintptr_t)lv_obj_get_user_data(btn);
 
-    fs::FS& fs = Settings.getFS();
-    if (!fs.exists("/groups.json")) return;
-
-    File groupsFile = fs.open("/groups.json");
-    DynamicJsonDocument groupsDoc(4096);
-    deserializeJson(groupsDoc, groupsFile);
-    groupsFile.close();
-
-    JsonArray groups = groupsDoc.as<JsonArray>();
+    if (!ui->_groupsDoc) return;
+    JsonArray groups = ui->_groupsDoc->as<JsonArray>();
     if (index >= 0 && index < groups.size()) {
         JsonObjectConst group = groups[index];
         JsonArrayConst locos = group["locos"];
@@ -897,33 +905,31 @@ void LocoUI::group_selected_event_cb(lv_event_t * e) {
         lv_label_set_text_fmt(title, "Group: %s", group["name"] | "Unknown");
 
         fs::FS& fs2 = Settings.getFS();
+        StaticJsonDocument<16> filterDoc;
+        filterDoc["name"] = true;
+        StaticJsonDocument<64> locoDoc;
         for (uint16_t address : locos) {
             char path[32];
             sprintf(path, "/locos/%d.json", address);
 
-            String nameStr = "#";
-            nameStr += address;
-            nameStr += " - ";
-
+            char nameStr[56];
+            const char* locoName = "Missing";
             if (fs2.exists(path)) {
-                StaticJsonDocument<16> filterDoc;
-                filterDoc["name"] = true;
-                StaticJsonDocument<256> locoDoc;
+                locoDoc.clear();
                 File locoFile = fs2.open(path);
-                deserializeJson(locoDoc, locoFile, DeserializationOption::Filter(filterDoc));
+                ReadBufferingStream buffered(locoFile, 64);
+                deserializeJson(locoDoc, buffered, DeserializationOption::Filter(filterDoc));
                 locoFile.close();
-                if (locoDoc.containsKey("name")) nameStr += locoDoc["name"].as<const char*>();
-                else nameStr += "Unknown";
-            } else {
-                nameStr += "Missing";
+                locoName = locoDoc["name"] | "Unknown";
             }
+            snprintf(nameStr, sizeof(nameStr), "#%d - %s", address, locoName);
 
             lv_obj_t* loco_btn = lv_btn_create(list);
             lv_obj_set_width(loco_btn, LV_PCT(100));
             lv_obj_set_height(loco_btn, 36);
             lv_obj_set_style_bg_color(loco_btn, lv_color_hex(0x2e2e2e), 0);
             lv_obj_t* lbl = lv_label_create(loco_btn);
-            lv_label_set_text(lbl, nameStr.c_str());
+            lv_label_set_text(lbl, nameStr);
             lv_obj_center(lbl);
 
             lv_obj_set_user_data(loco_btn, (void*)(uintptr_t)address);

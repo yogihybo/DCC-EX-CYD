@@ -5,7 +5,7 @@
 
 void SettingsClass::load() {
   File json = ConfigFS.open("/settings.json");
-  DynamicJsonDocument doc(2048);
+  StaticJsonDocument<512> doc;
   DeserializationError error = deserializeJson(doc, json);
 
   json.close();
@@ -42,7 +42,7 @@ void SettingsClass::load() {
 }
 
 void SettingsClass::save() {
-  DynamicJsonDocument doc(2048);
+  StaticJsonDocument<512> doc;
 
   doc["version"] = version;
   doc["rotation"] = rotation;

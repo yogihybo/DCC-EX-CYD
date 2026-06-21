@@ -34,8 +34,9 @@ public:
   virtual ~ThrottleAPIHandler() {}
 
   bool canHandle(AsyncWebServerRequest *request) const override {
-    String url = request->url();
-    if (url.startsWith("/$/")) url = url.substring(2);
+    const String& raw = request->url();
+    String stripped;
+    const String& url = raw.startsWith("/$/") ? (stripped = raw.substring(2), stripped) : raw;
 
     if (request->method() == HTTP_GET) {
       if (url == "/locos" || url == "/fns" || url == "/icons" || url == "/consists") return true;
@@ -58,13 +59,14 @@ public:
   }
 
   void handleRequest(AsyncWebServerRequest *request) override {
-    String url = request->url();
-    Serial.printf("[Web] Request: %s %s\n", request->methodToString(), url.c_str());
-    if (url.startsWith("/$/")) url = url.substring(2);
+    const String& raw = request->url();
+    Serial.printf("[Web] Request: %s %s\n", request->methodToString(), raw.c_str());
+    String stripped;
+    const String& url = raw.startsWith("/$/") ? (stripped = raw.substring(2), stripped) : raw;
 
     if (request->method() == HTTP_GET) {
       if (url == "/locos" || url == "/fns" || url == "/icons" || url == "/consists") {
-        AsyncJsonResponse* response = new AsyncJsonResponse(true, 2048);
+        AsyncJsonResponse* response = new AsyncJsonResponse(true, 1024);
         JsonVariant& list = response->getRoot();
 
         auto listDir = [](File dir, auto cb) {
@@ -80,16 +82,16 @@ public:
 
         if (url == "/icons") {
           if (xSemaphoreTake(lvgl_mutex, portMAX_DELAY) == pdTRUE) {
-            listDir(ConfigFS.open(url), [&list](File file) {
-              list.add("/$" + String(file.path()));
-            });
-            listDir(WebsiteFS.open(url), [&list](File file) {
-              list.add("/$" + String(file.path()));
-            });
-
+            auto addPrefixed = [&list](File file) {
+              char buf[64];
+              snprintf(buf, sizeof(buf), "/$%s", file.path());
+              list.add(buf);
+            };
+            listDir(ConfigFS.open(url), addPrefixed);
+            listDir(WebsiteFS.open(url), addPrefixed);
             if (SD.cardType() != CARD_NONE) {
               listDir(SD.open(url), [&list](File file) {
-                list.add(String(file.path()));
+                list.add(file.path());
               });
             }
             xSemaphoreGive(lvgl_mutex);
@@ -224,7 +226,9 @@ public:
     if (request->method() == HTTP_PUT) {
       if (xSemaphoreTake(lvgl_mutex, portMAX_DELAY) == pdTRUE) {
         if (!request->_tempFile) {
-          String url = request->url();
+          const String& raw = request->url();
+          String stripped;
+          const String& url = raw.startsWith("/$/") ? (stripped = raw.substring(2), stripped) : raw;
           int slash = url.lastIndexOf('/');
           if (slash > 0) Settings.getFS().mkdir(url.substring(0, slash));
           request->_tempFile = Settings.getFS().open(url, "w", true);
@@ -295,14 +299,17 @@ void ThrottleServer::begin() {
     if (Settings.CS.valid()) { // Save new settings as we're valid
       request->send(204);
       // Defer save — Settings.save() needs more stack than async_tcp provides
-      xTaskCreate([](void*) {
+      if (xTaskCreate([](void*) {
         if (xSemaphoreTake(lvgl_mutex, portMAX_DELAY) == pdTRUE) {
           Settings.save();
           xSemaphoreGive(lvgl_mutex);
         }
         Settings.dispatchEvent(SettingsClass::Event::CS_CHANGE);
         vTaskDelete(NULL);
-      }, "cs_save", 8192, nullptr, 1, nullptr);
+      }, "cs_save", 8192, nullptr, 1, nullptr) != pdPASS) {
+        request->send(503);
+        return;
+      }
     } else { // New settings are invalid so reload
       Settings.load();
       request->send(404);
@@ -310,11 +317,6 @@ void ThrottleServer::begin() {
   }));
 
   on("/backup", HTTP_GET, [](AsyncWebServerRequest* request) {
-    if (xSemaphoreTake(lvgl_mutex, portMAX_DELAY) != pdTRUE) {
-      request->send(500);
-      return;
-    }
-
     fs::FS& fs = Settings.getFS();
     AsyncResponseStream* response = request->beginResponseStream("application/json");
     response->addHeader("Content-Disposition", "attachment; filename=\"dcc-ex-cyd-backup.json\"");
@@ -322,26 +324,42 @@ void ThrottleServer::begin() {
     auto streamDir = [&](const char* key, const char* dirPath) {
       response->printf("\"%s\":[", key);
       bool first = true;
-      File dir = fs.open(dirPath);
-      if (dir && dir.isDirectory()) {
-        while (File file = dir.openNextFile()) {
-          if (!file.isDirectory()) {
+
+      // Collect paths under mutex (fast directory scan only)
+      std::vector<String> paths;
+      if (xSemaphoreTake(lvgl_mutex, portMAX_DELAY) == pdTRUE) {
+        File dir = fs.open(dirPath);
+        if (dir && dir.isDirectory()) {
+          while (File f = dir.openNextFile()) {
+            if (!f.isDirectory()) paths.push_back(String(f.path()));
+            f.close();
+          }
+          dir.close();
+        }
+        xSemaphoreGive(lvgl_mutex);
+      }
+
+      // Stream each file under its own brief mutex hold
+      for (const String& path : paths) {
+        if (xSemaphoreTake(lvgl_mutex, portMAX_DELAY) == pdTRUE) {
+          File file = fs.open(path);
+          if (file && !file.isDirectory()) {
             if (!first) response->print(",");
             first = false;
-            response->printf("{\"path\":\"%s\",\"data\":", file.path());
+            response->printf("{\"path\":\"%s\",\"data\":", path.c_str());
             uint8_t buf[256];
             while (file.available()) {
               size_t n = file.read(buf, sizeof(buf));
               if (n > 0) response->write((const char*)buf, n);
-              yield();
             }
             response->print("}");
+            file.close();
           }
-          file.close();
-          yield();
+          xSemaphoreGive(lvgl_mutex);
         }
-        dir.close();
+        yield();
       }
+
       response->print("]");
     };
 
@@ -351,21 +369,22 @@ void ThrottleServer::begin() {
     streamDir("fns", "/fns");
     response->print(",\"groups\":");
 
-    File groups = fs.open("/groups.json");
-    if (groups && groups.size() > 0) {
-      uint8_t buf[256];
-      while (groups.available()) {
-        size_t n = groups.read(buf, sizeof(buf));
-        if (n > 0) response->write((const char*)buf, n);
-        yield();
+    if (xSemaphoreTake(lvgl_mutex, portMAX_DELAY) == pdTRUE) {
+      File groups = fs.open("/groups.json");
+      if (groups && groups.size() > 0) {
+        uint8_t buf[256];
+        while (groups.available()) {
+          size_t n = groups.read(buf, sizeof(buf));
+          if (n > 0) response->write((const char*)buf, n);
+        }
+        groups.close();
+      } else {
+        response->print("[]");
       }
-      groups.close();
-    } else {
-      response->print("[]");
+      xSemaphoreGive(lvgl_mutex);
     }
 
     response->print("}");
-    xSemaphoreGive(lvgl_mutex);
     request->send(response);
   });
 
@@ -394,72 +413,83 @@ void ThrottleServer::begin() {
     fs::FS& targetFS = *targetFSPtr;
     fs::FS& sourceFS = *sourceFSPtr;
 
-    if (xSemaphoreTake(lvgl_mutex, portMAX_DELAY) == pdTRUE) {
-      auto copyAndBackupFile = [](fs::FS& sFS, fs::FS& tFS, String path, String backupPath) {
-        if (!sFS.exists(path)) return;
-        File source = sFS.open(path, "r");
-        if (!source) return;
-        
-        String targetDir = path.substring(0, path.lastIndexOf('/'));
-        if (targetDir.length() > 0 && !tFS.exists(targetDir)) tFS.mkdir(targetDir);
-        
-        File target = tFS.open(path, "w", true);
-        if (target) {
-          size_t len = source.size();
-          uint8_t buf[512];
-          while (len) {
-            size_t toRead = len > 512 ? 512 : len;
-            source.read(buf, toRead);
-            target.write(buf, toRead);
-            len -= toRead;
-            yield();
-          }
-          target.close();
-        }
-        source.close();
-        
-        String backupDir = backupPath.substring(0, backupPath.lastIndexOf('/'));
-        if (backupDir.length() > 0 && !sFS.exists(backupDir)) sFS.mkdir(backupDir);
-        sFS.rename(path, backupPath);
-      };
+    // copyAndBackupFile: takes/releases mutex internally around each chunk
+    auto copyAndBackupFile = [](fs::FS& sFS, fs::FS& tFS, const char* path, const char* backupPath) {
+      if (xSemaphoreTake(lvgl_mutex, portMAX_DELAY) != pdTRUE) return;
+      if (!sFS.exists(path)) { xSemaphoreGive(lvgl_mutex); return; }
+      File source = sFS.open(path, "r");
+      if (!source) { xSemaphoreGive(lvgl_mutex); return; }
 
-      auto migrateDir = [&](fs::FS& sFS, fs::FS& tFS, String dirName) {
-        File dir = sFS.open(dirName);
-        if (!dir || !dir.isDirectory()) return;
-        
-        std::vector<String> filesToMigrate;
-        while (File file = dir.openNextFile()) {
-          if (!file.isDirectory()) {
-            filesToMigrate.push_back(String(file.path()));
-          }
-          file.close();
-          yield();
-        }
-        dir.close();
+      String targetDir = String(path);
+      targetDir = targetDir.substring(0, targetDir.lastIndexOf('/'));
+      if (targetDir.length() > 0 && !tFS.exists(targetDir.c_str())) tFS.mkdir(targetDir.c_str());
 
-        for (const String& path : filesToMigrate) {
-          String backupPath = "/backup" + path;
-          copyAndBackupFile(sFS, tFS, path, backupPath);
+      File target = tFS.open(path, "w", true);
+      if (target) {
+        uint8_t buf[512];
+        size_t len = source.size();
+        while (len) {
+          size_t toRead = len > 512 ? 512 : len;
+          source.read(buf, toRead);
+          target.write(buf, toRead);
+          len -= toRead;
         }
-      };
-      
-      sourceFS.mkdir("/backup");
-      migrateDir(sourceFS, targetFS, "/locos");
-      migrateDir(sourceFS, targetFS, "/fns");
-      migrateDir(sourceFS, targetFS, "/icons");
-      
-      if (sourceFS.exists("/groups.json")) {
-        copyAndBackupFile(sourceFS, targetFS, "/groups.json", "/backup/groups.json");
+        target.close();
       }
-      
+      source.close();
+
+      String backupDir = String(backupPath);
+      backupDir = backupDir.substring(0, backupDir.lastIndexOf('/'));
+      if (backupDir.length() > 0 && !sFS.exists(backupDir.c_str())) sFS.mkdir(backupDir.c_str());
+      sFS.rename(path, backupPath);
+      xSemaphoreGive(lvgl_mutex);
+      yield();
+    };
+
+    auto migrateDir = [&](fs::FS& sFS, fs::FS& tFS, const char* dirName) {
+      // Collect paths under a brief mutex hold
+      std::vector<String> filesToMigrate;
+      if (xSemaphoreTake(lvgl_mutex, portMAX_DELAY) == pdTRUE) {
+        File dir = sFS.open(dirName);
+        if (dir && dir.isDirectory()) {
+          while (File file = dir.openNextFile()) {
+            if (!file.isDirectory()) filesToMigrate.push_back(String(file.path()));
+            file.close();
+          }
+          dir.close();
+        }
+        xSemaphoreGive(lvgl_mutex);
+      }
+      // Copy each file with its own mutex hold — LVGL can run between files
+      for (const String& path : filesToMigrate) {
+        char backupPath[64];
+        snprintf(backupPath, sizeof(backupPath), "/backup%s", path.c_str());
+        copyAndBackupFile(sFS, tFS, path.c_str(), backupPath);
+      }
+    };
+
+    if (xSemaphoreTake(lvgl_mutex, portMAX_DELAY) == pdTRUE) {
+      sourceFS.mkdir("/backup");
+      xSemaphoreGive(lvgl_mutex);
+    }
+
+    migrateDir(sourceFS, targetFS, "/locos");
+    migrateDir(sourceFS, targetFS, "/fns");
+    migrateDir(sourceFS, targetFS, "/icons");
+
+    if (xSemaphoreTake(lvgl_mutex, portMAX_DELAY) == pdTRUE) {
+      bool hasGroups = sourceFS.exists("/groups.json");
+      xSemaphoreGive(lvgl_mutex);
+      if (hasGroups) copyAndBackupFile(sourceFS, targetFS, "/groups.json", "/backup/groups.json");
+    }
+
+    if (xSemaphoreTake(lvgl_mutex, portMAX_DELAY) == pdTRUE) {
       Settings.storageMode = toMode;
       Settings.save();
-      
       xSemaphoreGive(lvgl_mutex);
-      request->send(200);
-    } else {
-      request->send(500, "text/plain", "Mutex timeout");
     }
+
+    request->send(200);
   }));
 
   addHandler(new WebLoggerHandler());

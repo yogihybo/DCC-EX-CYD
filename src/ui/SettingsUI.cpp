@@ -171,6 +171,8 @@ SettingsUI::~SettingsUI() {
   if (_aboutUI) delete _aboutUI;
   if (_calibrationUI) delete _calibrationUI;
   if (_programUI) delete _programUI;
+  if (_formatMsgbox) { lv_msgbox_close(_formatMsgbox); _formatMsgbox = nullptr; }
+  if (_calMsgbox)    { lv_msgbox_close(_calMsgbox);    _calMsgbox    = nullptr; }
   if (_container) lv_obj_del(_container);
 }
 
