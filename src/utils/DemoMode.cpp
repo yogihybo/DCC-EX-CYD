@@ -64,8 +64,10 @@ static void style_text(lv_obj_t* txt) {
 static void apply(int step) {
     const DemoStep& ds = STEPS[step];
     lv_tabview_set_act(main_tabview, ds.tab, LV_ANIM_OFF);
+#ifdef DEMO_UI_STEPS_ENABLED
     if (ds.locoStep  >= 0 && locoUI) locoUI->demoStep(ds.locoStep);
     if (ds.powerStep >= 0 && pwrUI)  pwrUI->demoStep(ds.powerStep);
+#endif
 }
 
 static void timer_cb(lv_timer_t*) {
@@ -86,8 +88,10 @@ static void timer_cb(lv_timer_t*) {
     s.timer = nullptr;
     s.step  = 0;
 
+#ifdef DEMO_UI_STEPS_ENABLED
     if (locoUI) locoUI->demoStep(0);
     if (pwrUI)  pwrUI->demoStep(0);
+#endif
     lv_tabview_set_act(main_tabview, 0, LV_ANIM_OFF);
 
     char summary[72];
