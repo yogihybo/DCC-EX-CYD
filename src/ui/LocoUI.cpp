@@ -378,7 +378,7 @@ void LocoUI::buildControlScreen() {
     _lockOverlay = lv_obj_create(_container);
     lv_obj_set_size(_lockOverlay, LV_PCT(100), LV_PCT(100));
     lv_obj_align(_lockOverlay, LV_ALIGN_CENTER, 0, 0);
-    lv_obj_set_style_bg_opa(_lockOverlay, LV_OPA_70, 0);
+    lv_obj_set_style_bg_opa(_lockOverlay, LV_OPA_90, 0);
     lv_obj_set_style_bg_color(_lockOverlay, tc(TC_SURFACE_DEEP), 0);
     lv_obj_set_style_border_width(_lockOverlay, 0, 0);
     lv_obj_set_style_radius(_lockOverlay, 0, 0);
@@ -392,6 +392,9 @@ void LocoUI::buildControlScreen() {
     lv_label_set_text(lock_icon, "\xEF\x80\xA3");  // FA lock U+F023
     lv_obj_set_style_text_font(lock_icon, &fa_icons_18, 0);
     lv_obj_set_style_text_color(lock_icon, tc(TC_TEXT_HINT), 0);
+    lv_obj_set_style_transform_scale(lock_icon, 384, 0);  // 1.5× (256 = 1.0)
+    lv_obj_set_style_transform_pivot_x(lock_icon, LV_PCT(50), 0);
+    lv_obj_set_style_transform_pivot_y(lock_icon, LV_PCT(50), 0);
 
     lv_obj_t* lock_lbl = lv_label_create(_lockOverlay);
     lv_label_set_text(lock_lbl, "Select Locomotive");
