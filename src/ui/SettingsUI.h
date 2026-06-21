@@ -26,7 +26,7 @@ class SettingsUI : public UIView {
     lv_obj_t* _eStopDelayLbl;
     lv_obj_t* _formatMsgbox = nullptr;
     lv_obj_t* _calMsgbox = nullptr;
-    lv_obj_t* _demoMsgbox = nullptr;
+    // lv_obj_t* _demoMsgbox = nullptr;
 
     lv_obj_t* _apModeLbl;
     static void ap_mode_event_cb(lv_event_t * e);
@@ -46,7 +46,7 @@ class SettingsUI : public UIView {
     static void calibrate_event_cb(lv_event_t * e);
     static void programming_setup_event_cb(lv_event_t * e);
     static void screenshot_event_cb(lv_event_t * e);
-    static void demo_event_cb(lv_event_t * e);
+    // static void demo_event_cb(lv_event_t * e);
     static void throttle_programming_event_cb(lv_event_t * e);
 
   public:

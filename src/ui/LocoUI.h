@@ -94,5 +94,5 @@ class LocoUI : public UIView {
     void nudgeSpeed(int delta);
     void onLocoUpdate(Loco* loco);
     void onConsistUpdate(int leadLoco, CSConsist* consist);
-    void demoStep(int step);
+    // void demoStep(int step);
 };

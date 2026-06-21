@@ -1155,54 +1155,33 @@ void LocoUI::estop_btn_event_cb(lv_event_t * e) {
     if (ui->_dirBtn)     lv_obj_set_style_opa(lv_obj_get_parent(ui->_dirBtn), LV_OPA_COVER, 0);
 }
 
-void LocoUI::demoStep(int step) {
-    if (!_speedArc || !_dirBtn) return;
-
-    auto setSpeed = [this](int speed) {
-        lv_arc_set_value(_speedArc, speed);
-        lv_label_set_text_fmt(_speedLabel, "%d", speed);
-        lv_color_t color;
-        if (speed < 42)      color = lv_color_make(50, 255, 50);
-        else if (speed < 84) color = lv_color_make(255, 255, 50);
-        else                 color = lv_color_make(255, 50, 50);
-        lv_obj_set_style_arc_color(_speedArc, color, LV_PART_INDICATOR);
-        lv_obj_set_style_opa(lv_obj_get_parent(_dirBtn), speed == 0 ? LV_OPA_COVER : LV_OPA_40, 0);
-    };
-
-    auto setDir = [this](bool fwd) {
-        if (fwd) lv_obj_add_state(_dirBtn, LV_STATE_CHECKED);
-        else     lv_obj_remove_state(_dirBtn, LV_STATE_CHECKED);
-        lv_obj_set_style_text_color(_dirFwdLabel, fwd ? tc(TC_TEXT_PRIMARY) : tc(TC_TEXT_MUTED), 0);
-        lv_obj_set_style_text_color(_dirRevLabel, fwd ? tc(TC_TEXT_MUTED) : tc(TC_TEXT_PRIMARY), 0);
-    };
-
-    switch (step) {
-        case 0: // no loco — show lock overlay
-            if (_lockOverlay) lv_obj_clear_flag(_lockOverlay, LV_OBJ_FLAG_HIDDEN);
-            setSpeed(0);
-            setDir(true);
-            break;
-        case 1: // loco acquired, idle
-            if (_lockOverlay) lv_obj_add_flag(_lockOverlay, LV_OBJ_FLAG_HIDDEN);
-            lv_label_set_text(_addressLabel, "3");
-            lv_label_set_text(_nameLabel, "Steam Loco");
-            setSpeed(0);
-            setDir(true);
-            break;
-        case 2: // half speed
-            setSpeed(42);
-            break;
-        case 3: // full speed
-            setSpeed(126);
-            break;
-        case 4: // e-stop
-            setSpeed(0);
-            break;
-        case 5: // reverse direction
-            setDir(false);
-            break;
-    }
-}
+// void LocoUI::demoStep(int step) {
+//     if (!_speedArc || !_dirBtn) return;
+//     auto setSpeed = [this](int speed) {
+//         lv_arc_set_value(_speedArc, speed);
+//         lv_label_set_text_fmt(_speedLabel, "%d", speed);
+//         lv_color_t color;
+//         if (speed < 42)      color = lv_color_make(50, 255, 50);
+//         else if (speed < 84) color = lv_color_make(255, 255, 50);
+//         else                 color = lv_color_make(255, 50, 50);
+//         lv_obj_set_style_arc_color(_speedArc, color, LV_PART_INDICATOR);
+//         lv_obj_set_style_opa(lv_obj_get_parent(_dirBtn), speed == 0 ? LV_OPA_COVER : LV_OPA_40, 0);
+//     };
+//     auto setDir = [this](bool fwd) {
+//         if (fwd) lv_obj_add_state(_dirBtn, LV_STATE_CHECKED);
+//         else     lv_obj_remove_state(_dirBtn, LV_STATE_CHECKED);
+//         lv_obj_set_style_text_color(_dirFwdLabel, fwd ? tc(TC_TEXT_PRIMARY) : tc(TC_TEXT_MUTED), 0);
+//         lv_obj_set_style_text_color(_dirRevLabel, fwd ? tc(TC_TEXT_MUTED) : tc(TC_TEXT_PRIMARY), 0);
+//     };
+//     switch (step) {
+//         case 0: if (_lockOverlay) lv_obj_clear_flag(_lockOverlay, LV_OBJ_FLAG_HIDDEN); setSpeed(0); setDir(true); break;
+//         case 1: if (_lockOverlay) lv_obj_add_flag(_lockOverlay, LV_OBJ_FLAG_HIDDEN); lv_label_set_text(_addressLabel, "3"); lv_label_set_text(_nameLabel, "Steam Loco"); setSpeed(0); setDir(true); break;
+//         case 2: setSpeed(42);   break;
+//         case 3: setSpeed(126);  break;
+//         case 4: setSpeed(0);    break;
+//         case 5: setDir(false);  break;
+//     }
+// }
 
 void LocoUI::nudgeSpeed(int delta) {
     if (!_speedArc) return;
