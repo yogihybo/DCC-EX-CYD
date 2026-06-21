@@ -113,17 +113,6 @@ WiFiUI::WiFiUI(lv_obj_t* parent) {
     lv_obj_set_style_text_font(ap_lbl, &lv_font_montserrat_12, 0);
     lv_obj_set_style_pad_top(ap_lbl, 2, 0);
 
-    _qr = lv_qrcode_create(_container);
-    lv_qrcode_set_size(_qr, 90);
-    lv_qrcode_set_dark_color(_qr, lv_color_black());
-    lv_qrcode_set_light_color(_qr, lv_color_white());
-    lv_obj_set_style_margin_top(_qr, 6, 0);
-    lv_obj_set_style_align(_qr, LV_ALIGN_CENTER, 0);
-
-    char qr_data[256];
-    snprintf(qr_data, sizeof(qr_data), "WIFI:S:%s;T:WPA;P:%s;;",
-             Settings.AP.SSID.c_str(), Settings.AP.password.c_str());
-    lv_qrcode_update(_qr, (uint8_t*)qr_data, strlen(qr_data));
 }
 
 WiFiUI::~WiFiUI() {

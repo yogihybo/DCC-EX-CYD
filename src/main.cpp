@@ -251,9 +251,30 @@ void setup() {
   lv_indev_t * indev = lv_indev_get_next(NULL);
   if (indev) lv_indev_set_read_cb(indev, touch_read);
 
-  SPI.begin(18, 19, 23, 5);
-  SD.begin(5, SPI, 4000000, "/sd", 5, true);
-  Serial.printf("[Boot] After SD.begin: %u bytes free\n", ESP.getFreeHeap());
+  // Only mount the SD FAT driver when the saved storageMode requires it.
+  // On first boot (no settings.json) we must also init so Settings::init()
+  // can detect whether a card is present to choose the default mode.
+  {
+    bool needSD = !ConfigFS.exists("/settings.json");
+    if (!needSD) {
+      File f = ConfigFS.open("/settings.json");
+      if (f) {
+        StaticJsonDocument<16> filter;
+        filter["storageMode"] = true;
+        StaticJsonDocument<32> peek;
+        deserializeJson(peek, f, DeserializationOption::Filter(filter));
+        f.close();
+        needSD = (peek["storageMode"] | 0) == SettingsClass::StorageMode::SD_CARD;
+      }
+    }
+    if (needSD) {
+      SPI.begin(18, 19, 23, 5);
+      SD.begin(5, SPI, 4000000, "/sd", 5, true);
+      Serial.printf("[Boot] After SD.begin: %u bytes free\n", ESP.getFreeHeap());
+    } else {
+      Serial.printf("[Boot] SD skipped (LittleFS mode): %u bytes free\n", ESP.getFreeHeap());
+    }
+  }
 
   lv_port_fs_init();
 

@@ -163,6 +163,11 @@ SettingsUI::SettingsUI(DCCEXProtocol& dccex, lv_obj_t* parent) : _dccex(dccex), 
   b = make_row(screenshot_event_cb);
   make_name(b, "Screenshot (3s delay)");
   make_chevron(b);
+
+  b = make_row(demo_event_cb);
+  make_name(b, "Demo mode");
+  make_badge(b, "TEMP", lv_color_hex(0x3a2e14), lv_color_make(200, 150, 50));
+  make_chevron(b);
 }
 
 SettingsUI::~SettingsUI() {
@@ -440,6 +445,112 @@ static void screenshot_timer_cb(lv_timer_t* timer) {
 
 void SettingsUI::screenshot_event_cb(lv_event_t * e) {
   lv_timer_create(screenshot_timer_cb, 3000, nullptr);
+}
+
+// ---------------------------------------------------------------------------
+// Demo Mode
+// ---------------------------------------------------------------------------
+#include "../AppUI.h"
+
+struct DemoStep {
+    uint8_t tab;
+    int8_t  locoStep;  // -1 = skip
+    int8_t  powerStep; // -1 = skip
+};
+
+static const DemoStep DEMO_STEPS[] = {
+    {0,  0, -1},  // loco: no loco selected
+    {0,  1, -1},  // loco: addr 3 "Steam Loco", speed 0 FWD
+    {0,  2, -1},  // loco: speed 42 (green arc)
+    {0,  3, -1},  // loco: speed 126 (red arc, full throttle)
+    {0,  4, -1},  // loco: e-stop, speed 0
+    {0,  5, -1},  // loco: direction reversed
+    {1, -1, -1},  // accessories tab
+    {2, -1,  0},  // power: all off
+    {2, -1,  1},  // power: main track on
+    {2, -1,  2},  // power: both tracks on
+    {3, -1, -1},  // settings tab
+};
+static const int DEMO_TOTAL = sizeof(DEMO_STEPS) / sizeof(DEMO_STEPS[0]);
+
+struct DemoState {
+    int step = 0;
+    lv_timer_t* timer = nullptr;
+};
+static DemoState s_demo;
+
+static void demo_apply_step(int step) {
+    const DemoStep& ds = DEMO_STEPS[step];
+    lv_tabview_set_act(main_tabview, ds.tab, LV_ANIM_OFF);
+    if (ds.locoStep  >= 0 && locoUI)  locoUI->demoStep(ds.locoStep);
+    if (ds.powerStep >= 0 && pwrUI)   pwrUI->demoStep(ds.powerStep);
+}
+
+static void demo_timer_cb(lv_timer_t*) {
+    char filename[32];
+    snprintf(filename, sizeof(filename), "/demo_%02d.bmp", s_demo.step);
+    saveScreenshot(filename);
+    Serial.printf("[Demo] Frame %d/%d saved: %s\n", s_demo.step + 1, DEMO_TOTAL, filename);
+
+    s_demo.step++;
+
+    if (s_demo.step < DEMO_TOTAL) {
+        demo_apply_step(s_demo.step);
+    } else {
+        lv_timer_del(s_demo.timer);
+        s_demo.timer = nullptr;
+        s_demo.step  = 0;
+
+        // Reset UI state and return to loco tab
+        if (locoUI) locoUI->demoStep(0);
+        if (pwrUI)  pwrUI->demoStep(0);
+        lv_tabview_set_act(main_tabview, 0, LV_ANIM_OFF);
+
+        char summary[64];
+        snprintf(summary, sizeof(summary), "%d frames saved to SD:\ndemo_00.bmp – demo_%02d.bmp", DEMO_TOTAL, DEMO_TOTAL - 1);
+
+        lv_obj_t* mbox = lv_msgbox_create(lv_layer_top());
+        style_msgbox(mbox, "Demo complete", lv_color_make(38, 166, 154));
+        style_msgbox_text(lv_msgbox_add_text(mbox, summary));
+        lv_obj_t* ok_btn = lv_msgbox_add_footer_button(mbox, "OK");
+        lv_obj_set_style_bg_color(ok_btn, lv_color_hex(0x2e2e2e), 0);
+        lv_obj_add_event_cb(ok_btn, [](lv_event_t* e) {
+            lv_msgbox_close((lv_obj_t*)lv_event_get_user_data(e));
+        }, LV_EVENT_CLICKED, mbox);
+        lv_obj_center(mbox);
+    }
+}
+
+void SettingsUI::demo_event_cb(lv_event_t* e) {
+    SettingsUI* ui = (SettingsUI*)lv_event_get_user_data(e);
+    if (ui->_demoMsgbox) return;
+
+    ui->_demoMsgbox = lv_msgbox_create(lv_layer_top());
+    style_msgbox(ui->_demoMsgbox, "Demo mode", lv_color_make(200, 150, 50));
+    style_msgbox_text(lv_msgbox_add_text(ui->_demoMsgbox,
+        "Cycles through all tabs with UI\ninteractions, capturing a screenshot\nat each step to SD card.\n\nRequires SD card inserted."));
+
+    lv_obj_t* start_btn = lv_msgbox_add_footer_button(ui->_demoMsgbox, "Start");
+    lv_obj_set_style_bg_color(start_btn, lv_color_make(38, 120, 100), 0);
+    lv_obj_add_event_cb(start_btn, [](lv_event_t* e) {
+        SettingsUI* ui = (SettingsUI*)lv_event_get_user_data(e);
+        lv_msgbox_close(ui->_demoMsgbox);
+        ui->_demoMsgbox = nullptr;
+
+        s_demo.step = 0;
+        demo_apply_step(0);
+        s_demo.timer = lv_timer_create(demo_timer_cb, 2000, nullptr);
+    }, LV_EVENT_CLICKED, ui);
+
+    lv_obj_t* cancel_btn = lv_msgbox_add_footer_button(ui->_demoMsgbox, "Cancel");
+    lv_obj_set_style_bg_color(cancel_btn, lv_color_hex(0x2e2e2e), 0);
+    lv_obj_add_event_cb(cancel_btn, [](lv_event_t* e) {
+        SettingsUI* ui = (SettingsUI*)lv_event_get_user_data(e);
+        lv_msgbox_close(ui->_demoMsgbox);
+        ui->_demoMsgbox = nullptr;
+    }, LV_EVENT_CLICKED, ui);
+
+    lv_obj_center(ui->_demoMsgbox);
 }
 
 // ---------------------------------------------------------------------------

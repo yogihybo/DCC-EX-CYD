@@ -34,4 +34,5 @@ class PowerUI : public UIView {
 
     void onPowerUpdate(bool main, bool prog, bool join);
     void onIndividualPowerUpdate(TrackPower state, int track);
+    void demoStep(int step);
 };

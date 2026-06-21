@@ -15,8 +15,6 @@ class WiFiUI : public UIView {
     lv_obj_t* _textareaPassword;
     lv_obj_t* _textareaServer;
     lv_obj_t* _textareaPort;
-    lv_obj_t* _qr;
-    
     lv_obj_t* _keyboard;
 
     wifi_event_id_t _ipGotHandler;

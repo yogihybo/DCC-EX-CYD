@@ -161,7 +161,7 @@ void LocoUI::buildSelectionMenu() {
 }
 
 void LocoUI::buildControlScreen() {
-    StaticJsonDocument<2048> locoDoc;
+    DynamicJsonDocument locoDoc(4096);
 
     char path[32];
     sprintf(path, "/locos/%d.json", _loco.address);
@@ -170,7 +170,7 @@ void LocoUI::buildControlScreen() {
 
     if (_loco.address != 0 && fs.exists(path)) {
         File locoFile = fs.open(path);
-        StaticJsonDocument<16> filterDoc;
+        StaticJsonDocument<64> filterDoc;
         filterDoc["name"] = true;
         filterDoc["functions"] = true;
         ReadBufferingStream buffered(locoFile, 64);
@@ -374,8 +374,8 @@ void LocoUI::buildControlScreen() {
 }
 
 static const char* BUILTIN_PATHS[] = {
-    "/fns/builtin-basic.json",
-    "/fns/builtin-extended.json",
+    "/www/fns/builtin-basic.json",
+    "/www/fns/builtin-extended.json",
 };
 
 void LocoUI::buildFunctionButtons(JsonDocument& locoDoc) {
@@ -394,7 +394,7 @@ void LocoUI::buildFunctionButtons(JsonDocument& locoDoc) {
                 if (idx >= 0 && idx < (int)(sizeof(BUILTIN_PATHS) / sizeof(BUILTIN_PATHS[0]))) {
                     File builtinFile = WebsiteFS.open(BUILTIN_PATHS[idx]);
                     if (builtinFile) {
-                        StaticJsonDocument<16> filter;
+                        StaticJsonDocument<32> filter;
                         filter["functions"] = true;
                         locoDoc.clear();
                         deserializeJson(locoDoc, builtinFile, DeserializationOption::Filter(filter));
@@ -416,7 +416,7 @@ void LocoUI::buildFunctionButtons(JsonDocument& locoDoc) {
         }
 
         if (functionFile) {
-            StaticJsonDocument<16> filter;
+            StaticJsonDocument<32> filter;
             filter["functions"] = true;
             deserializeJson(locoDoc, functionFile, DeserializationOption::Filter(filter));
             locoFunctions = locoDoc["functions"].as<JsonArray>();
@@ -1125,6 +1125,55 @@ void LocoUI::estop_btn_event_cb(lv_event_t * e) {
     if (ui->_speedLabel) lv_label_set_text(ui->_speedLabel, "0");
     if (ui->_speedArc)   lv_obj_set_style_arc_color(ui->_speedArc, lv_color_make(50, 255, 50), LV_PART_INDICATOR);
     if (ui->_dirBtn)     lv_obj_set_style_opa(lv_obj_get_parent(ui->_dirBtn), LV_OPA_COVER, 0);
+}
+
+void LocoUI::demoStep(int step) {
+    if (!_speedArc || !_dirBtn) return;
+
+    auto setSpeed = [this](int speed) {
+        lv_arc_set_value(_speedArc, speed);
+        lv_label_set_text_fmt(_speedLabel, "%d", speed);
+        lv_color_t color;
+        if (speed < 42)      color = lv_color_make(50, 255, 50);
+        else if (speed < 84) color = lv_color_make(255, 255, 50);
+        else                 color = lv_color_make(255, 50, 50);
+        lv_obj_set_style_arc_color(_speedArc, color, LV_PART_INDICATOR);
+        lv_obj_set_style_opa(lv_obj_get_parent(_dirBtn), speed == 0 ? LV_OPA_COVER : LV_OPA_40, 0);
+    };
+
+    auto setDir = [this](bool fwd) {
+        if (fwd) lv_obj_add_state(_dirBtn, LV_STATE_CHECKED);
+        else     lv_obj_remove_state(_dirBtn, LV_STATE_CHECKED);
+        lv_obj_set_style_text_color(_dirFwdLabel, fwd ? lv_color_hex(0xffffff) : lv_color_hex(0x555555), 0);
+        lv_obj_set_style_text_color(_dirRevLabel, fwd ? lv_color_hex(0x555555) : lv_color_hex(0xffffff), 0);
+    };
+
+    switch (step) {
+        case 0: // no loco
+            lv_label_set_text(_addressLabel, "None");
+            lv_label_set_text(_nameLabel, "");
+            setSpeed(0);
+            setDir(true);
+            break;
+        case 1: // loco acquired, idle
+            lv_label_set_text(_addressLabel, "3");
+            lv_label_set_text(_nameLabel, "Steam Loco");
+            setSpeed(0);
+            setDir(true);
+            break;
+        case 2: // half speed
+            setSpeed(42);
+            break;
+        case 3: // full speed
+            setSpeed(126);
+            break;
+        case 4: // e-stop
+            setSpeed(0);
+            break;
+        case 5: // reverse direction
+            setDir(false);
+            break;
+    }
 }
 
 void LocoUI::nudgeSpeed(int delta) {

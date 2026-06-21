@@ -193,6 +193,14 @@ void PowerUI::onIndividualPowerUpdate(TrackPower state, int track) {
     _updatingFromBroadcast = false;
 }
 
+void PowerUI::demoStep(int step) {
+    switch (step) {
+        case 0: onPowerUpdate(false, false, false); break;
+        case 1: onPowerUpdate(true,  false, false); break;
+        case 2: onPowerUpdate(true,  true,  false); break;
+    }
+}
+
 void PowerUI::btn_event_cb(lv_event_t* e) {
     PowerUI* ui = (PowerUI*)lv_event_get_user_data(e);
     if (ui->_updatingFromBroadcast) return;
