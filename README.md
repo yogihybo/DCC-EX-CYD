@@ -9,7 +9,8 @@ DCC-EX-CYD is port of EX-T3-WiFi that transforms a Cheap Yellow Display (CYD) ES
 The firmware uses **FreeRTOS** and **LVGL 9** to provide a robust and clean UI
 
 <p align="center">
-  <img width="240" height="320" alt="interface" src="https://github.com/user-attachments/assets/890e1d9d-f5f0-474c-9332-c6f434f1d76e" />
+<img width="240" height="320" alt="demo" src="https://github.com/user-attachments/assets/fd9401f1-40ce-46f9-9039-7acc50f2ab25" />
+
 </p>
 
 
