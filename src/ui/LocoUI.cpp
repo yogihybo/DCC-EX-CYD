@@ -45,6 +45,7 @@ LocoUI::LocoUI(DCCEXProtocol& dccex, Locos& locos, lv_obj_t* parent)
     _keyboard = nullptr;
     _textarea = nullptr;
     _nameMenu = nullptr;
+    _lockOverlay = nullptr;
 
     if (_loco.address == 0) {
         buildControlScreen();
@@ -372,6 +373,32 @@ void LocoUI::buildControlScreen() {
 
     buildFunctionButtons(locoDoc);
     renderFunctionPage();
+
+    // Lock overlay — shown when no loco is selected
+    _lockOverlay = lv_obj_create(_container);
+    lv_obj_set_size(_lockOverlay, LV_PCT(100), LV_PCT(100));
+    lv_obj_align(_lockOverlay, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_set_style_bg_opa(_lockOverlay, LV_OPA_70, 0);
+    lv_obj_set_style_bg_color(_lockOverlay, tc(TC_SURFACE_DEEP), 0);
+    lv_obj_set_style_border_width(_lockOverlay, 0, 0);
+    lv_obj_set_style_radius(_lockOverlay, 0, 0);
+    lv_obj_set_flex_flow(_lockOverlay, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(_lockOverlay, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_row(_lockOverlay, 8, 0);
+    lv_obj_clear_flag(_lockOverlay, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_add_event_cb(_lockOverlay, open_selection_event_cb, LV_EVENT_CLICKED, this);
+
+    lv_obj_t* lock_icon = lv_label_create(_lockOverlay);
+    lv_label_set_text(lock_icon, "\xEF\x80\xA3");  // FA lock U+F023
+    lv_obj_set_style_text_font(lock_icon, &fa_icons_18, 0);
+    lv_obj_set_style_text_color(lock_icon, tc(TC_TEXT_HINT), 0);
+
+    lv_obj_t* lock_lbl = lv_label_create(_lockOverlay);
+    lv_label_set_text(lock_lbl, "Select Locomotive");
+    lv_obj_set_style_text_font(lock_lbl, &lv_font_montserrat_14, 0);
+    lv_obj_set_style_text_color(lock_lbl, tc(TC_TEXT_SECONDARY), 0);
+
+    if (_loco.address != 0) lv_obj_add_flag(_lockOverlay, LV_OBJ_FLAG_HIDDEN);
 }
 
 static const char* BUILTIN_PATHS[] = {
@@ -634,6 +661,7 @@ void LocoUI::refresh() {
     _pageBtnLabel = nullptr;
     _prevBtn = nullptr;
     _nextBtn = nullptr;
+    _lockOverlay = nullptr;
 
     if (_activeConsist) {
         uint16_t newAddr = (uint16_t)_locos;
@@ -1146,13 +1174,13 @@ void LocoUI::demoStep(int step) {
     };
 
     switch (step) {
-        case 0: // no loco
-            lv_label_set_text(_addressLabel, "None");
-            lv_label_set_text(_nameLabel, "");
+        case 0: // no loco — show lock overlay
+            if (_lockOverlay) lv_obj_clear_flag(_lockOverlay, LV_OBJ_FLAG_HIDDEN);
             setSpeed(0);
             setDir(true);
             break;
         case 1: // loco acquired, idle
+            if (_lockOverlay) lv_obj_add_flag(_lockOverlay, LV_OBJ_FLAG_HIDDEN);
             lv_label_set_text(_addressLabel, "3");
             lv_label_set_text(_nameLabel, "Steam Loco");
             setSpeed(0);

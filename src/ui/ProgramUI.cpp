@@ -265,9 +265,9 @@ void ProgramUI::newStep(Step step, const char* title, uint16_t max, uint16_t min
     _step = step;
     clearMsgBox();
 
-    _msgbox = lv_msgbox_create(_container);
+    _msgbox = lv_msgbox_create(lv_layer_top());
     style_popup(_msgbox);
-    lv_obj_set_width(_msgbox, LV_PCT(100));
+    lv_obj_set_width(_msgbox, 220);
     lv_obj_align(_msgbox, LV_ALIGN_TOP_MID, 0, 0);
     lv_obj_add_event_cb(_msgbox, msgbox_delete_cb, LV_EVENT_DELETE, this);
     style_popup_title(_msgbox, title, tc(TC_SECTION));
@@ -282,7 +282,7 @@ void ProgramUI::newStep(Step step, const char* title, uint16_t max, uint16_t min
     lv_obj_set_style_bg_color(cancel_btn, tc(TC_SURFACE_RAISED), 0);
     lv_obj_add_event_cb(cancel_btn, msgbox_close_cb, LV_EVENT_CLICKED, this);
 
-    _keyboard = lv_keyboard_create(_container);
+    _keyboard = lv_keyboard_create(lv_layer_top());
     lv_keyboard_set_mode(_keyboard, LV_KEYBOARD_MODE_NUMBER);
     lv_keyboard_set_textarea(_keyboard, _ta);
     lv_obj_add_event_cb(_keyboard, keypad_event_cb, LV_EVENT_READY, this);
@@ -301,9 +301,9 @@ void ProgramUI::keypad_event_cb(lv_event_t* e) {
 
 void ProgramUI::working() {
     clearMsgBox();
-    _msgbox = lv_msgbox_create(_container);
+    _msgbox = lv_msgbox_create(lv_layer_top());
     style_popup(_msgbox);
-    lv_obj_set_width(_msgbox, LV_PCT(100));
+    lv_obj_set_width(_msgbox, 220);
     lv_obj_align(_msgbox, LV_ALIGN_TOP_MID, 0, 0);
     lv_obj_add_event_cb(_msgbox, msgbox_delete_cb, LV_EVENT_DELETE, this);
     style_popup_title(_msgbox, "Working...", tc(TC_TEXT_HINT));
@@ -311,9 +311,9 @@ void ProgramUI::working() {
 
 void ProgramUI::result(const char* message, lv_color_t color) {
     clearMsgBox();
-    _msgbox = lv_msgbox_create(_container);
+    _msgbox = lv_msgbox_create(lv_layer_top());
     style_popup(_msgbox);
-    lv_obj_set_width(_msgbox, LV_PCT(100));
+    lv_obj_set_width(_msgbox, 220);
     lv_obj_align(_msgbox, LV_ALIGN_TOP_MID, 0, 0);
     lv_obj_add_event_cb(_msgbox, msgbox_delete_cb, LV_EVENT_DELETE, this);
     style_popup_title(_msgbox, message, color);
@@ -323,9 +323,9 @@ void ProgramUI::result(const char* message, lv_color_t color) {
 
 void ProgramUI::resultWithWriteBack(int cv, int value) {
     clearMsgBox();
-    _msgbox = lv_msgbox_create(_container);
+    _msgbox = lv_msgbox_create(lv_layer_top());
     style_popup(_msgbox);
-    lv_obj_set_width(_msgbox, LV_PCT(100));
+    lv_obj_set_width(_msgbox, 220);
     lv_obj_align(_msgbox, LV_ALIGN_TOP_MID, 0, 0);
     lv_obj_add_event_cb(_msgbox, msgbox_delete_cb, LV_EVENT_DELETE, this);
 
@@ -342,15 +342,15 @@ void ProgramUI::resultWithWriteBack(int cv, int value) {
 
 void ProgramUI::write_back_btn_cb(lv_event_t* e) {
     ProgramUI* ui = (ProgramUI*)lv_event_get_user_data(e);
-    char title[48]; snprintf(title, sizeof(title), "CV %d \xe2\x80\x94 enter new value", ui->_stepData[0]);
+    char title[48]; snprintf(title, sizeof(title), "CV %d - enter new value", ui->_stepData[0]);
     ui->newStep(Step::WRITE_CV_BYTE_WRITEBACK, title, 255, 0);
 }
 
 void ProgramUI::confirm(const char* message) {
     clearMsgBox();
-    _msgbox = lv_msgbox_create(_container);
+    _msgbox = lv_msgbox_create(lv_layer_top());
     style_popup(_msgbox);
-    lv_obj_set_width(_msgbox, LV_PCT(100));
+    lv_obj_set_width(_msgbox, 220);
     lv_obj_align(_msgbox, LV_ALIGN_TOP_MID, 0, 0);
     lv_obj_add_event_cb(_msgbox, msgbox_delete_cb, LV_EVENT_DELETE, this);
     style_popup_title(_msgbox, "Confirm", tc(TC_SECTION));
