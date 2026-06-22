@@ -113,35 +113,26 @@ void ConsistUI::_showList() {
                     lv_obj_t* row = lv_obj_create(_content);
                     lv_obj_set_width(row, LV_PCT(100));
                     lv_obj_set_height(row, 38);
-                    lv_obj_set_style_pad_all(row, 4, 0);
+                    lv_obj_set_style_pad_ver(row, 4, 0);
+                    lv_obj_set_style_pad_hor(row, 2, 0);
+                    lv_obj_set_style_pad_column(row, 4, 0);
                     lv_obj_set_style_border_width(row, 0, 0);
                     lv_obj_clear_flag(row, LV_OBJ_FLAG_SCROLLABLE);
+                    lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
+                    lv_obj_set_flex_align(row, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
                     lv_obj_t* lbl = lv_label_create(row);
                     lv_label_set_text_fmt(lbl, "%s  (%d)", name.c_str(), memberCount);
-                    lv_obj_align(lbl, LV_ALIGN_LEFT_MID, 0, 0);
                     lv_label_set_long_mode(lbl, LV_LABEL_LONG_CLIP);
-                    lv_obj_set_width(lbl, 190);
+                    lv_obj_set_flex_grow(lbl, 1);
 
                     // Store lead address from first member
                     int leadAddr = doc["members"][0]["address"] | -1;
-
-                    // Settings button (edit)
-                    lv_obj_t* set_btn = lv_btn_create(row);
-                    lv_obj_set_size(set_btn, 34, 30);
-                    lv_obj_set_style_shadow_width(set_btn, 0, 0);
-                    lv_obj_align(set_btn, LV_ALIGN_RIGHT_MID, 0, 0);
-                    lv_obj_t* set_lbl = lv_label_create(set_btn);
-                    lv_label_set_text(set_lbl, LV_SYMBOL_SETTINGS);
-                    lv_obj_center(set_lbl);
-                    lv_obj_set_user_data(set_btn, (void*)(intptr_t)leadAddr);
-                    lv_obj_add_event_cb(set_btn, consist_item_cb, LV_EVENT_CLICKED, this);
 
                     // Throttle button (drive)
                     lv_obj_t* drv_btn = lv_btn_create(row);
                     lv_obj_set_size(drv_btn, 34, 30);
                     lv_obj_set_style_shadow_width(drv_btn, 0, 0);
-                    lv_obj_align(drv_btn, LV_ALIGN_RIGHT_MID, -38, 0);
                     lv_obj_set_style_bg_color(drv_btn, lv_color_make(40, 140, 40), 0);
                     lv_obj_t* drv_lbl = lv_label_create(drv_btn);
                     lv_label_set_text(drv_lbl, "\xEF\x98\xA5");  // loco/throttle icon (U+F625, fa_gauge_high_16)
@@ -149,6 +140,16 @@ void ConsistUI::_showList() {
                     lv_obj_center(drv_lbl);
                     lv_obj_set_user_data(drv_btn, (void*)(intptr_t)leadAddr);
                     lv_obj_add_event_cb(drv_btn, consist_drive_cb, LV_EVENT_CLICKED, this);
+
+                    // Settings button (edit)
+                    lv_obj_t* set_btn = lv_btn_create(row);
+                    lv_obj_set_size(set_btn, 34, 30);
+                    lv_obj_set_style_shadow_width(set_btn, 0, 0);
+                    lv_obj_t* set_lbl = lv_label_create(set_btn);
+                    lv_label_set_text(set_lbl, LV_SYMBOL_SETTINGS);
+                    lv_obj_center(set_lbl);
+                    lv_obj_set_user_data(set_btn, (void*)(intptr_t)leadAddr);
+                    lv_obj_add_event_cb(set_btn, consist_item_cb, LV_EVENT_CLICKED, this);
                 }
                 f.close();
             }
@@ -266,10 +267,10 @@ void ConsistUI::_showEditor() {
     if (_replicateFunctions) lv_obj_add_state(rep_sw, LV_STATE_CHECKED);
     lv_obj_add_event_cb(rep_sw, replicate_fn_cb, LV_EVENT_VALUE_CHANGED, this);
 
-    // Member list (scrollable)
+    // Member list (scrollable) — grows to fill remaining flex space
     lv_obj_t* member_list = lv_obj_create(_content);
     lv_obj_set_width(member_list, LV_PCT(100));
-    lv_obj_set_height(member_list, 130);
+    lv_obj_set_flex_grow(member_list, 1);
     lv_obj_set_style_pad_all(member_list, 2, 0);
     lv_obj_set_style_pad_row(member_list, 2, 0);
     lv_obj_set_style_border_width(member_list, 1, 0);

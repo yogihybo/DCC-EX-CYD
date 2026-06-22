@@ -1,6 +1,5 @@
 #include "ProgramUI.h"
 #include "Theme.h"
-
 static void style_popup(lv_obj_t* mbox) {
     lv_obj_set_width(mbox, LV_PCT(90));
     lv_obj_set_style_bg_color(mbox, tc(TC_OVERLAY_BG), 0);
@@ -266,7 +265,6 @@ void ProgramUI::newStep(Step step, const char* title, uint16_t max, uint16_t min
 
     _msgbox = lv_msgbox_create(lv_layer_top());
     style_popup(_msgbox);
-    lv_obj_set_width(_msgbox, 220);
     lv_obj_align(_msgbox, LV_ALIGN_TOP_MID, 0, 0);
     lv_obj_add_event_cb(_msgbox, msgbox_delete_cb, LV_EVENT_DELETE, this);
     style_popup_title(_msgbox, title, tc(TC_SECTION));
@@ -302,7 +300,6 @@ void ProgramUI::working() {
     clearMsgBox();
     _msgbox = lv_msgbox_create(lv_layer_top());
     style_popup(_msgbox);
-    lv_obj_set_width(_msgbox, 220);
     lv_obj_align(_msgbox, LV_ALIGN_TOP_MID, 0, 0);
     lv_obj_add_event_cb(_msgbox, msgbox_delete_cb, LV_EVENT_DELETE, this);
     style_popup_title(_msgbox, "Working...", tc(TC_TEXT_HINT));
@@ -312,7 +309,6 @@ void ProgramUI::result(const char* message, lv_color_t color) {
     clearMsgBox();
     _msgbox = lv_msgbox_create(lv_layer_top());
     style_popup(_msgbox);
-    lv_obj_set_width(_msgbox, 220);
     lv_obj_align(_msgbox, LV_ALIGN_TOP_MID, 0, 0);
     lv_obj_add_event_cb(_msgbox, msgbox_delete_cb, LV_EVENT_DELETE, this);
     style_popup_title(_msgbox, message, color);
@@ -324,7 +320,6 @@ void ProgramUI::resultWithWriteBack(int cv, int value) {
     clearMsgBox();
     _msgbox = lv_msgbox_create(lv_layer_top());
     style_popup(_msgbox);
-    lv_obj_set_width(_msgbox, 220);
     lv_obj_align(_msgbox, LV_ALIGN_TOP_MID, 0, 0);
     lv_obj_add_event_cb(_msgbox, msgbox_delete_cb, LV_EVENT_DELETE, this);
 
@@ -349,7 +344,6 @@ void ProgramUI::confirm(const char* message) {
     clearMsgBox();
     _msgbox = lv_msgbox_create(lv_layer_top());
     style_popup(_msgbox);
-    lv_obj_set_width(_msgbox, 220);
     lv_obj_align(_msgbox, LV_ALIGN_TOP_MID, 0, 0);
     lv_obj_add_event_cb(_msgbox, msgbox_delete_cb, LV_EVENT_DELETE, this);
     style_popup_title(_msgbox, "Confirm", tc(TC_SECTION));

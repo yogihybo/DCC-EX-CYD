@@ -277,7 +277,10 @@ void LocoUI::buildControlScreen() {
     }
 
     _speedArc = lv_arc_create(_container);
-    lv_obj_set_size(_speedArc, 130, 130);
+    {
+        lv_coord_t arcSize = (lv_coord_t)(lv_display_get_horizontal_resolution(lv_display_get_default()) * 55 / 100);
+        lv_obj_set_size(_speedArc, arcSize, arcSize);
+    }
     lv_arc_set_rotation(_speedArc, 135);
     lv_arc_set_bg_angles(_speedArc, 0, 270);
     lv_arc_set_range(_speedArc, 0, 126);
@@ -554,7 +557,8 @@ void LocoUI::renderFunctionPage() {
         lv_obj_t* btn = _fnButtons[idx];
         lv_obj_clear_flag(btn, LV_OBJ_FLAG_HIDDEN);
 
-        int y_pos = 56 + (i % 3) * 44;
+        lv_coord_t contentH = (lv_coord_t)(lv_display_get_vertical_resolution(lv_display_get_default()) - 70);
+        int y_pos = (int)(contentH * 56 / 250) + (i % 3) * (int)(contentH * 44 / 250);
         if (i < 3) lv_obj_align(btn, LV_ALIGN_TOP_LEFT, 2, y_pos);
         else        lv_obj_align(btn, LV_ALIGN_TOP_RIGHT, -2, y_pos);
     }
