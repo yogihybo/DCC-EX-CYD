@@ -45,6 +45,7 @@ static lv_obj_t* make_action_btn(lv_obj_t* parent, const char* label, int action
     lv_obj_set_flex_grow(btn, 1);
     lv_obj_set_height(btn, 32);
     lv_obj_set_style_bg_color(btn, tc(TC_SURFACE_RAISED), 0);
+    lv_obj_set_style_shadow_width(btn, 0, 0);
     lv_obj_t* lbl = lv_label_create(btn);
     lv_label_set_text(lbl, label);
     lv_obj_center(lbl);
@@ -111,6 +112,7 @@ PowerUI::PowerUI(DCCEXProtocol& dccex, lv_obj_t* parent) : _dccex(dccex) {
     _btn_join = lv_btn_create(_container);
     lv_obj_set_width(_btn_join, LV_PCT(100));
     lv_obj_set_style_margin_hor(_btn_join, 6, 0);
+    lv_obj_set_style_shadow_width(_btn_join, 0, 0);
     lv_obj_set_height(_btn_join, 32);
     lv_obj_set_style_bg_color(_btn_join, tc(TC_SURFACE_DEEP), 0);
     lv_obj_set_style_border_width(_btn_join, 1, 0);
@@ -130,32 +132,34 @@ PowerUI::~PowerUI() {
 }
 
 void PowerUI::updateStyles() {
-    lv_obj_set_style_bg_color(_btn_main_on,
-        _mainOn ? lv_color_make(40, 140, 40) : tc(TC_SURFACE_RAISED), 0);
-    lv_obj_set_style_bg_color(_btn_main_off,
-        !_mainOn ? lv_color_make(140, 40, 40) : tc(TC_SURFACE_RAISED), 0);
+    static const lv_color_t WHITE = lv_color_hex(0xffffff);
+    static const lv_color_t GREEN_BG  = lv_color_make(40,  140, 40);
+    static const lv_color_t RED_BG    = lv_color_make(140, 40,  40);
+    static const lv_color_t GREEN_FG  = lv_color_make(76,  175, 80);
+    static const lv_color_t RED_FG    = lv_color_make(180, 50,  50);
 
-    lv_obj_set_style_bg_color(_dot_main,
-        _mainOn ? lv_color_make(76, 175, 80) : lv_color_make(180, 50, 50), 0);
+    auto set_btn = [&](lv_obj_t* btn, bool active, lv_color_t active_bg) {
+        lv_obj_set_style_bg_color(btn, active ? active_bg : tc(TC_SURFACE_RAISED), 0);
+        lv_obj_t* lbl = lv_obj_get_child(btn, 0);
+        if (lbl) lv_obj_set_style_text_color(lbl, active ? WHITE : tc(TC_TEXT_PRIMARY), 0);
+    };
+
+    set_btn(_btn_main_on,  _mainOn,  GREEN_BG);
+    set_btn(_btn_main_off, !_mainOn, RED_BG);
+
+    lv_obj_set_style_bg_color(_dot_main, _mainOn ? GREEN_FG : RED_FG, 0);
     lv_label_set_text(_lbl_main_status, _mainOn ? "ON" : "OFF");
-    lv_obj_set_style_text_color(_lbl_main_status,
-        _mainOn ? lv_color_make(76, 175, 80) : lv_color_make(180, 50, 50), 0);
+    lv_obj_set_style_text_color(_lbl_main_status, _mainOn ? GREEN_FG : RED_FG, 0);
 
-    lv_obj_set_style_bg_color(_btn_prog_on,
-        _progOn ? lv_color_make(40, 140, 40) : tc(TC_SURFACE_RAISED), 0);
-    lv_obj_set_style_bg_color(_btn_prog_off,
-        !_progOn ? lv_color_make(140, 40, 40) : tc(TC_SURFACE_RAISED), 0);
+    set_btn(_btn_prog_on,  _progOn,  GREEN_BG);
+    set_btn(_btn_prog_off, !_progOn, RED_BG);
 
-    lv_obj_set_style_bg_color(_dot_prog,
-        _progOn ? lv_color_make(76, 175, 80) : lv_color_make(180, 50, 50), 0);
+    lv_obj_set_style_bg_color(_dot_prog, _progOn ? GREEN_FG : RED_FG, 0);
     lv_label_set_text(_lbl_prog_status, _progOn ? "ON" : "OFF");
-    lv_obj_set_style_text_color(_lbl_prog_status,
-        _progOn ? lv_color_make(76, 175, 80) : lv_color_make(180, 50, 50), 0);
+    lv_obj_set_style_text_color(_lbl_prog_status, _progOn ? GREEN_FG : RED_FG, 0);
 
-    lv_obj_set_style_bg_color(_btn_all_on,
-        (_mainOn && _progOn) ? lv_color_make(40, 140, 40) : tc(TC_SURFACE_RAISED), 0);
-    lv_obj_set_style_bg_color(_btn_all_off,
-        (!_mainOn && !_progOn) ? lv_color_make(140, 40, 40) : tc(TC_SURFACE_RAISED), 0);
+    set_btn(_btn_all_on,  (_mainOn && _progOn),   GREEN_BG);
+    set_btn(_btn_all_off, (!_mainOn && !_progOn),  RED_BG);
 
     lv_obj_set_style_bg_color(_btn_join,
         _joinOn ? lv_color_make(180, 120, 30) : tc(TC_SURFACE_DEEP), 0);
@@ -163,7 +167,7 @@ void PowerUI::updateStyles() {
     if (join_lbl) {
         lv_label_set_text(join_lbl, _joinOn ? "Unjoin (cuts power)" : "Join tracks");
         lv_obj_set_style_text_color(join_lbl,
-            _joinOn ? tc(TC_TEXT_PRIMARY) : tc(TC_TEXT_HINT), 0);
+            _joinOn ? WHITE : tc(TC_TEXT_HINT), 0);
     }
 }
 

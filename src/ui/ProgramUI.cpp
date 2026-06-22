@@ -46,14 +46,10 @@ ProgramUI::ProgramUI(DCCEXProtocol& dccex, lv_obj_t* parent)
     lv_obj_set_style_text_color(title, tc(TC_SECTION), 0);
     lv_obj_align(title, LV_ALIGN_LEFT_MID, 0, 0);
 
-    lv_obj_t* back_btn = lv_btn_create(title_row);
+    lv_obj_t* back_btn = make_danger_btn(title_row, "Back");
     lv_obj_set_size(back_btn, LV_SIZE_CONTENT, 28);
     lv_obj_set_style_pad_hor(back_btn, 10, 0);
-    lv_obj_set_style_bg_color(back_btn, tc(TC_SURFACE_RAISED), 0);
     lv_obj_align(back_btn, LV_ALIGN_RIGHT_MID, 0, 0);
-    lv_obj_t* back_lbl = lv_label_create(back_btn);
-    lv_label_set_text(back_lbl, "Back");
-    lv_obj_center(back_lbl);
     lv_obj_add_event_cb(back_btn, close_btn_event_cb, LV_EVENT_CLICKED, this);
 
     // --- Helpers ---
@@ -84,6 +80,7 @@ ProgramUI::ProgramUI(DCCEXProtocol& dccex, lv_obj_t* parent)
         lv_obj_set_flex_grow(btn, 1);
         lv_obj_set_height(btn, 32);
         lv_obj_set_style_bg_color(btn, tc(TC_SURFACE_RAISED), 0);
+        lv_obj_set_style_shadow_width(btn, 0, 0);
         lv_obj_t* lbl = lv_label_create(btn);
         lv_label_set_text(lbl, label);
         lv_obj_center(lbl);
@@ -114,6 +111,7 @@ ProgramUI::ProgramUI(DCCEXProtocol& dccex, lv_obj_t* parent)
         lv_obj_set_style_pad_hor(chip, 2, 0);
         lv_obj_set_style_pad_ver(chip, 0, 0);
         lv_obj_set_style_bg_color(chip, tc(TC_TEAL_BG), 0);
+        lv_obj_set_style_shadow_width(chip, 0, 0);
         lv_obj_t* chip_lbl = lv_label_create(chip);
         lv_label_set_text(chip_lbl, p.name);
         lv_obj_set_style_text_font(chip_lbl, &lv_font_montserrat_12, 0);
@@ -141,6 +139,7 @@ ProgramUI::ProgramUI(DCCEXProtocol& dccex, lv_obj_t* parent)
         lv_obj_set_flex_grow(btn, 1);
         lv_obj_set_height(btn, 28);
         lv_obj_set_style_bg_color(btn, tc(TC_SURFACE_DEEP), 0);
+        lv_obj_set_style_shadow_width(btn, 0, 0);
         lv_obj_set_style_border_width(btn, 1, 0);
         lv_obj_set_style_border_color(btn, tc(TC_BORDER), 0);
         lv_obj_t* lbl = lv_label_create(btn);

@@ -21,6 +21,7 @@ static const uint32_t DARK[TC_COUNT] = {
     /* TC_OVERLAY_BG     */ 0x1e1e1e,
     /* TC_OVERLAY_BORDER */ 0x383838,
     /* TC_OVERLAY_TEXT   */ 0xaaaaaa,
+    /* TC_DANGER         */ 0xc83232,
 };
 
 static const uint32_t LIGHT[TC_COUNT] = {
@@ -43,9 +44,21 @@ static const uint32_t LIGHT[TC_COUNT] = {
     /* TC_OVERLAY_BG     */ 0xfafafa,
     /* TC_OVERLAY_BORDER */ 0xdddddd,
     /* TC_OVERLAY_TEXT   */ 0x555555,
+    /* TC_DANGER         */ 0xc83232,
 };
 
 lv_color_t tc(ThemeColor color) {
     bool dark = (Settings.theme == SettingsClass::Theme::DARK);
     return lv_color_hex(dark ? DARK[color] : LIGHT[color]);
+}
+
+lv_obj_t* make_danger_btn(lv_obj_t* parent, const char* label) {
+    lv_obj_t* btn = lv_btn_create(parent);
+    lv_obj_set_style_bg_color(btn, tc(TC_DANGER), 0);
+    lv_obj_set_style_shadow_width(btn, 0, 0);
+    lv_obj_t* lbl = lv_label_create(btn);
+    lv_label_set_text(lbl, label);
+    lv_obj_set_style_text_color(lbl, lv_color_hex(0xffffff), 0);
+    lv_obj_center(lbl);
+    return btn;
 }

@@ -1,4 +1,5 @@
 #include "ConsistUI.h"
+#include "Theme.h"
 #include <Settings.h>
 
 LV_FONT_DECLARE(fa_gauge_high_16);
@@ -52,12 +53,8 @@ ConsistUI::ConsistUI(DCCEXProtocol& dccex, lv_obj_t* parent, DriveCallback onDri
     lv_label_set_text(title, "Consists");
     lv_obj_align(title, LV_ALIGN_LEFT_MID, 10, 0);
 
-    lv_obj_t* close_btn = lv_btn_create(header);
+    lv_obj_t* close_btn = make_danger_btn(header, "Close");
     lv_obj_align(close_btn, LV_ALIGN_RIGHT_MID, -10, 0);
-    lv_obj_set_style_bg_color(close_btn, lv_color_make(200, 50, 50), 0);
-    lv_obj_t* close_lbl = lv_label_create(close_btn);
-    lv_label_set_text(close_lbl, "Close");
-    lv_obj_center(close_lbl);
     lv_obj_add_event_cb(close_btn, close_btn_cb, LV_EVENT_CLICKED, this);
 
     _showList();
@@ -95,6 +92,7 @@ void ConsistUI::_showList() {
     lv_obj_set_width(new_btn, LV_PCT(100));
     lv_obj_set_height(new_btn, 38);
     lv_obj_set_style_bg_color(new_btn, lv_color_make(40, 140, 40), 0);
+    lv_obj_set_style_shadow_width(new_btn, 0, 0);
     lv_obj_t* new_lbl = lv_label_create(new_btn);
     lv_label_set_text(new_lbl, "+ New Consist");
     lv_obj_center(new_lbl);
@@ -131,6 +129,7 @@ void ConsistUI::_showList() {
                     // Settings button (edit)
                     lv_obj_t* set_btn = lv_btn_create(row);
                     lv_obj_set_size(set_btn, 34, 30);
+                    lv_obj_set_style_shadow_width(set_btn, 0, 0);
                     lv_obj_align(set_btn, LV_ALIGN_RIGHT_MID, 0, 0);
                     lv_obj_t* set_lbl = lv_label_create(set_btn);
                     lv_label_set_text(set_lbl, LV_SYMBOL_SETTINGS);
@@ -141,6 +140,7 @@ void ConsistUI::_showList() {
                     // Throttle button (drive)
                     lv_obj_t* drv_btn = lv_btn_create(row);
                     lv_obj_set_size(drv_btn, 34, 30);
+                    lv_obj_set_style_shadow_width(drv_btn, 0, 0);
                     lv_obj_align(drv_btn, LV_ALIGN_RIGHT_MID, -38, 0);
                     lv_obj_set_style_bg_color(drv_btn, lv_color_make(40, 140, 40), 0);
                     lv_obj_t* drv_lbl = lv_label_create(drv_btn);
@@ -194,6 +194,7 @@ void ConsistUI::_rebuildMemberRows(lv_obj_t* list) {
         // Direction toggle
         lv_obj_t* dir_btn = lv_btn_create(row);
         lv_obj_set_size(dir_btn, 44, 28);
+        lv_obj_set_style_shadow_width(dir_btn, 0, 0);
         lv_obj_align(dir_btn, LV_ALIGN_RIGHT_MID, -48, 0);
         lv_obj_set_style_bg_color(dir_btn,
             m.reversed ? lv_color_make(180, 120, 30) : lv_color_make(40, 140, 40), 0);
@@ -205,13 +206,9 @@ void ConsistUI::_rebuildMemberRows(lv_obj_t* list) {
         lv_obj_add_event_cb(dir_btn, toggle_reversed_cb, LV_EVENT_CLICKED, this);
 
         // Remove button (not for lead loco)
-        lv_obj_t* rem_btn = lv_btn_create(row);
+        lv_obj_t* rem_btn = make_danger_btn(row, LV_SYMBOL_TRASH);
         lv_obj_set_size(rem_btn, 38, 28);
         lv_obj_align(rem_btn, LV_ALIGN_RIGHT_MID, 0, 0);
-        lv_obj_set_style_bg_color(rem_btn, lv_color_make(200, 50, 50), 0);
-        lv_obj_t* rem_lbl = lv_label_create(rem_btn);
-        lv_label_set_text(rem_lbl, LV_SYMBOL_TRASH);
-        lv_obj_center(rem_lbl);
         lv_obj_set_user_data(rem_btn, (void*)(intptr_t)i);
         lv_obj_add_event_cb(rem_btn, remove_member_cb, LV_EVENT_CLICKED, this);
         if (i == 0) lv_obj_add_state(rem_btn, LV_STATE_DISABLED); // lead can't be removed
@@ -285,6 +282,7 @@ void ConsistUI::_showEditor() {
     lv_obj_t* add_btn = lv_btn_create(_content);
     lv_obj_set_width(add_btn, LV_PCT(100));
     lv_obj_set_height(add_btn, 35);
+    lv_obj_set_style_shadow_width(add_btn, 0, 0);
     lv_obj_t* add_lbl = lv_label_create(add_btn);
     lv_label_set_text(add_lbl, "+ Add Loco");
     lv_obj_center(add_lbl);
@@ -305,6 +303,7 @@ void ConsistUI::_showEditor() {
     lv_obj_t* drive_btn = lv_btn_create(act_row);
     lv_obj_set_flex_grow(drive_btn, 1);
     lv_obj_set_height(drive_btn, 35);
+    lv_obj_set_style_shadow_width(drive_btn, 0, 0);
     lv_obj_set_style_bg_color(drive_btn, lv_color_make(40, 140, 40), 0);
     lv_obj_t* drive_lbl = lv_label_create(drive_btn);
     lv_label_set_text(drive_lbl, LV_SYMBOL_PLAY " Drive");
@@ -315,6 +314,7 @@ void ConsistUI::_showEditor() {
     lv_obj_t* save_btn = lv_btn_create(act_row);
     lv_obj_set_flex_grow(save_btn, 1);
     lv_obj_set_height(save_btn, 35);
+    lv_obj_set_style_shadow_width(save_btn, 0, 0);
     lv_obj_t* save_lbl = lv_label_create(save_btn);
     lv_label_set_text(save_lbl, LV_SYMBOL_SAVE " Save");
     lv_obj_center(save_lbl);
@@ -322,13 +322,9 @@ void ConsistUI::_showEditor() {
     if (_members.empty()) lv_obj_add_state(save_btn, LV_STATE_DISABLED);
 
     if (_editLeadAddr != -1) {
-        lv_obj_t* del_btn = lv_btn_create(act_row);
+        lv_obj_t* del_btn = make_danger_btn(act_row, LV_SYMBOL_TRASH);
         lv_obj_set_flex_grow(del_btn, 1);
         lv_obj_set_height(del_btn, 35);
-        lv_obj_set_style_bg_color(del_btn, lv_color_make(200, 50, 50), 0);
-        lv_obj_t* del_lbl = lv_label_create(del_btn);
-        lv_label_set_text(del_lbl, LV_SYMBOL_TRASH);
-        lv_obj_center(del_lbl);
         lv_obj_add_event_cb(del_btn, delete_btn_cb, LV_EVENT_CLICKED, this);
     }
 }

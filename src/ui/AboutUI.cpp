@@ -1,4 +1,5 @@
 #include "AboutUI.h"
+#include "Theme.h"
 #include <Version.h>
 #include <WiFi.h>
 #include <Settings.h>
@@ -30,12 +31,8 @@ AboutUI::AboutUI(DCCEXProtocol& dccex, lv_obj_t* parent) {
   lv_label_set_text(title, "About");
   lv_obj_align(title, LV_ALIGN_LEFT_MID, 10, 0);
 
-  lv_obj_t* close_btn = lv_btn_create(header);
+  lv_obj_t* close_btn = make_danger_btn(header, "Back");
   lv_obj_align(close_btn, LV_ALIGN_RIGHT_MID, -10, 0);
-  lv_obj_set_style_bg_color(close_btn, lv_color_make(200, 50, 50), 0);
-  lv_obj_t* close_lbl = lv_label_create(close_btn);
-  lv_label_set_text(close_lbl, "Back");
-  lv_obj_center(close_lbl);
   lv_obj_add_event_cb(close_btn, close_btn_event_cb, LV_EVENT_CLICKED, this);
 
   lv_obj_t* content = lv_obj_create(_container);

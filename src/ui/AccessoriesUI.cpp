@@ -74,6 +74,7 @@ void AccessoriesUI::_buildContent() {
     _btn_throw = lv_btn_create(action_cont);
     lv_obj_set_flex_grow(_btn_throw, 1);
     lv_obj_set_height(_btn_throw, 35);
+    lv_obj_set_style_shadow_width(_btn_throw, 0, 0);
     lv_obj_t* throw_lbl = lv_label_create(_btn_throw);
     lv_label_set_text(throw_lbl, "Throw");
     lv_obj_center(throw_lbl);
@@ -83,6 +84,7 @@ void AccessoriesUI::_buildContent() {
     _btn_close = lv_btn_create(action_cont);
     lv_obj_set_flex_grow(_btn_close, 1);
     lv_obj_set_height(_btn_close, 35);
+    lv_obj_set_style_shadow_width(_btn_close, 0, 0);
     lv_obj_set_style_bg_color(_btn_close, lv_color_make(40, 140, 40), 0);
     lv_obj_t* close_lbl = lv_label_create(_btn_close);
     lv_label_set_text(close_lbl, "Close");
@@ -154,6 +156,7 @@ void AccessoriesUI::rebuildRecents() {
         lv_obj_set_style_pad_hor(chip, 10, 0);
         lv_obj_set_style_pad_ver(chip, 0, 0);
         lv_obj_set_style_bg_color(chip, tc(TC_SURFACE_RAISED), 0);
+        lv_obj_set_style_shadow_width(chip, 0, 0);
         lv_obj_set_style_bg_color(chip, lv_palette_main(LV_PALETTE_BLUE), LV_STATE_PRESSED);
         lv_obj_t* lbl = lv_label_create(chip);
         lv_label_set_text_fmt(lbl, "%d", _recents[i]);

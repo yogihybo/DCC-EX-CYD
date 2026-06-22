@@ -34,6 +34,7 @@ SettingsUI::SettingsUI(DCCEXProtocol& dccex, lv_obj_t* parent) : _dccex(dccex), 
     lv_obj_set_style_pad_ver(btn, 0, 0);
     lv_obj_set_style_pad_hor(btn, 7, 0);
     lv_obj_set_style_bg_color(btn, tc(TC_SURFACE_RAISED), 0);
+    lv_obj_set_style_shadow_width(btn, 0, 0);
     lv_obj_set_flex_flow(btn, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(btn, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     if (cb) lv_obj_add_event_cb(btn, cb, LV_EVENT_CLICKED, this);
@@ -263,7 +264,8 @@ void SettingsUI::sd_format_event_cb(lv_event_t * e) {
     style_msgbox_text(lv_msgbox_add_text(ui->_formatMsgbox, "Formatting will erase all data on the SD card.\nThe throttle will restart if successful."));
 
     lv_obj_t* format_btn = lv_msgbox_add_footer_button(ui->_formatMsgbox, "Format");
-    lv_obj_set_style_bg_color(format_btn, lv_color_make(140, 40, 40), 0);
+    lv_obj_set_style_bg_color(format_btn, tc(TC_DANGER), 0);
+    lv_obj_set_style_text_color(format_btn, lv_color_hex(0xffffff), 0);
     lv_obj_add_event_cb(format_btn, sd_format_confirm_event_cb, LV_EVENT_CLICKED, ui);
 
     lv_obj_t* cancel_btn = lv_msgbox_add_footer_button(ui->_formatMsgbox, "Cancel");
@@ -502,14 +504,8 @@ void SettingsUI::throttle_programming_event_cb(lv_event_t * e) {
   lv_obj_set_style_pad_bottom(ip_lbl, 20, 0);
 
   // Red close button
-  lv_obj_t* close_btn = lv_btn_create(overlay);
-  lv_obj_set_style_bg_color(close_btn, lv_color_make(200, 30, 30), 0);
-  lv_obj_set_style_bg_color(close_btn, lv_color_make(160, 20, 20), LV_STATE_PRESSED);
+  lv_obj_t* close_btn = make_danger_btn(overlay, LV_SYMBOL_CLOSE "  Close");
   lv_obj_set_width(close_btn, LV_PCT(60));
-
-  lv_obj_t* close_lbl = lv_label_create(close_btn);
-  lv_label_set_text(close_lbl, LV_SYMBOL_CLOSE "  Close");
-  lv_obj_center(close_lbl);
 
   // Pass overlay pointer via user data so the callback can delete it
   lv_obj_add_event_cb(close_btn, [](lv_event_t* e) {

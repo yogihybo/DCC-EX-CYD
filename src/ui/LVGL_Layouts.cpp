@@ -147,7 +147,7 @@ static void create_header_bar() {
     train_img = lv_label_create(loco_group);
     lv_label_set_text(train_img, "\xEF\x88\xB8");  // U+F238 fa-train
     lv_obj_set_style_text_font(train_img, &fa_icons_18, 0);
-    lv_obj_set_style_text_color(train_img, tc(TC_TEXT_SECONDARY), 0);
+    lv_obj_set_style_text_color(train_img, tc(TC_ICON_INACTIVE), 0);
     lv_obj_set_style_pad_left(train_img, 10, 0);
     lv_obj_set_style_pad_top(train_img, -4, 0);           // compress flex layout height
     lv_obj_set_style_pad_bottom(train_img, -4, 0);
@@ -331,6 +331,8 @@ void create_main_ui() {
 
 void set_header_loco_count(int count) {
     if (loco_label) lv_label_set_text_fmt(loco_label, "%03d", count);
+    if (train_img)
+        lv_obj_set_style_text_color(train_img, count > 0 ? tc(TC_ICON_ACTIVE) : tc(TC_ICON_INACTIVE), 0);
 }
 
 static void fill_bars(lv_obj_t* bars[4], int level, lv_color_t on_color) {

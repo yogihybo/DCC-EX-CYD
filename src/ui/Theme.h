@@ -35,8 +35,15 @@ enum ThemeColor {
     TC_OVERLAY_BORDER,   // msgbox border
     TC_OVERLAY_TEXT,     // msgbox body text
 
+    // Danger / destructive actions
+    TC_DANGER,           // red background for destructive buttons
+
     TC_COUNT
 };
 
 // Returns the lv_color_t for the given token under the current theme.
 lv_color_t tc(ThemeColor color);
+
+// Creates a button with the danger style (red bg, white text, no shadow).
+// Returns the button object; label is a child accessible via lv_obj_get_child(btn, 0).
+lv_obj_t* make_danger_btn(lv_obj_t* parent, const char* label);

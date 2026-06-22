@@ -37,14 +37,10 @@ WiFiUI::WiFiUI(lv_obj_t* parent) {
     lv_obj_set_style_text_color(title, tc(TC_SECTION), 0);
     lv_obj_align(title, LV_ALIGN_LEFT_MID, 0, 0);
 
-    lv_obj_t* back_btn = lv_btn_create(title_row);
+    lv_obj_t* back_btn = make_danger_btn(title_row, "Back");
     lv_obj_set_size(back_btn, LV_SIZE_CONTENT, 28);
     lv_obj_set_style_pad_hor(back_btn, 10, 0);
-    lv_obj_set_style_bg_color(back_btn, tc(TC_SURFACE_RAISED), 0);
     lv_obj_align(back_btn, LV_ALIGN_RIGHT_MID, 0, 0);
-    lv_obj_t* back_lbl = lv_label_create(back_btn);
-    lv_label_set_text(back_lbl, "Back");
-    lv_obj_center(back_lbl);
     lv_obj_add_event_cb(back_btn, close_btn_event_cb, LV_EVENT_CLICKED, this);
 
     auto add_section = [this](const char* title) {
