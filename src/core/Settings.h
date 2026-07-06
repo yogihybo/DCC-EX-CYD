@@ -40,10 +40,17 @@ class SettingsClass : public Events {
     uint8_t emergencyStopDelay = 5; // seconds of encoder button hold to trigger e-stop
 
     struct TouchCal {
+#ifdef ST7796_DRIVER
+      int xMin = 350;   // rx at left edge
+      int xMax = 3700;  // rx at right edge
+      int yMin = 250;   // ry at bottom edge (Y mapping is inverted: large ry = top)
+      int yMax = 3900;  // ry at top edge
+#else
       int xMin = 200;
       int xMax = 3750;
       int yMin = 200;
       int yMax = 3700;
+#endif
     } TouchCal;
 
     fs::FS& getFS() const;

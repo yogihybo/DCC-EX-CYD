@@ -32,9 +32,26 @@
 //   TOUCH_MOSI, TOUCH_MISO, TOUCH_CLK, TOUCH_CS, TOUCH_IRQ
 //   ENCODER_CLK_PIN, ENCODER_DT_PIN, ENCODER_BTN_PIN
 
+// ST7796 board: touch shares the LCD SPI bus (IO12/13/14). XPT2046_Bitbang reconfigures
+// those pins as GPIO outputs which severs the HSPI hardware connection used by TFT_eSPI.
+// Use TFT_eSPI's built-in getTouch() instead — it manages CS switching correctly.
+#ifndef ST7796_DRIVER
 XPT2046_Bitbang touchscreen(TOUCH_MOSI, TOUCH_MISO, TOUCH_CLK, TOUCH_CS, TOUCH_IRQ);
+#endif
 
 static void touch_read(lv_indev_t * indev, lv_indev_data_t * data) {
+#ifdef ST7796_DRIVER
+  uint16_t rx, ry;
+  if (LVGL_CYD::tft->getTouchRawZ() > 300 && LVGL_CYD::tft->getTouchRaw(&rx, &ry)) {
+    int x = map(rx, Settings.TouchCal.xMin, Settings.TouchCal.xMax, 0, TFT_WIDTH  - 1);
+    int y = map(ry, Settings.TouchCal.yMin, Settings.TouchCal.yMax, TFT_HEIGHT - 1, 0);
+    data->point.x = constrain(x, 0, TFT_WIDTH  - 1);
+    data->point.y = constrain(y, 0, TFT_HEIGHT - 1);
+    data->state = LV_INDEV_STATE_PRESSED;
+  } else {
+    data->state = LV_INDEV_STATE_RELEASED;
+  }
+#else
   if (touchscreen.isTouched()) {
     Point p = touchscreen.getTouch();
 
@@ -58,6 +75,7 @@ static void touch_read(lv_indev_t * indev, lv_indev_data_t * data) {
   } else {
     data->state = LV_INDEV_STATE_RELEASED;
   }
+#endif
 }
 
 
@@ -212,7 +230,13 @@ void powerCheck(void *) {
   for (;;) {
     float total = 0;
     for (uint8_t i = 0; i < 10; i++) {
+#ifdef ST7796_DRIVER
+      // IO34 is GPI-only; analogReadMilliVolts handles ESP32 ADC non-linearity.
+      // Board uses a 1:1 voltage divider (two equal resistors) so multiply by 2.
+      total += analogReadMilliVolts(BATT_PIN) / 1000.0f * 2.0f;
+#else
       total += touchscreen.readBattery();
+#endif
       delay(100);
     }
 
@@ -260,7 +284,9 @@ void setup() {
   }
 #endif
 
+#ifndef ST7796_DRIVER
   touchscreen.begin();
+#endif
 
   lv_indev_t * indev = lv_indev_get_next(NULL);
   if (indev) lv_indev_set_read_cb(indev, touch_read);

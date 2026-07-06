@@ -35,10 +35,16 @@ static int16_t besttwoavg(int16_t a, int16_t b, int16_t c);
 
 #endif  // !ST7796_DRIVER
 
-// RGB LED — CYD-specific hardware, present on all CYD variants
+// RGB LED — pin defaults match the 2.8" CYD; override via build flags for other boards
+#ifndef LED_R
 #define LED_R        4
+#endif
+#ifndef LED_G
 #define LED_G        16
+#endif
+#ifndef LED_B
 #define LED_B        17
+#endif
 #define R_CORRECTION 0.25f
 #define G_CORRECTION 1.0f
 #define B_CORRECTION 0.4f
@@ -69,11 +75,10 @@ void LVGL_CYD::begin(lv_display_rotation_t rotation) {
   Serial.printf("[LVGL] ST7796 %dx%d\n", TFT_WIDTH, TFT_HEIGHT);
 
   // XPT2046 shares the LCD SPI bus on this board — no separate SPI init here.
-  // Detect presence via the IRQ line; main.cpp owns XPT2046_Bitbang and
-  // overrides the read callback immediately after begin() returns.
-  pinMode(TOUCH_IRQ, INPUT_PULLDOWN);
-  LVGL_CYD::resistive = digitalRead(TOUCH_IRQ);
+  // IO36 is a GPI-only pad (no internal pull resistors); use INPUT only.
+  // XPT2046 holds IRQ high when idle so digitalRead gives 1 = touch present.
   pinMode(TOUCH_IRQ, INPUT);
+  LVGL_CYD::resistive = digitalRead(TOUCH_IRQ);
   if (LVGL_CYD::resistive) Serial.println("[LVGL] Resistive touch detected");
 
   if (LVGL_CYD::resistive) {

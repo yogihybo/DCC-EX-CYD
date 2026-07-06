@@ -2,9 +2,12 @@
 #include <Arduino.h>
 #include <lvgl.h>
 #include <Settings.h>
-#include "XPT2046_Bitbang.h"
-
-extern XPT2046_Bitbang touchscreen;
+#ifdef ST7796_DRIVER
+#  include "LVGL_CYD.h"
+#else
+#  include "XPT2046_Bitbang.h"
+   extern XPT2046_Bitbang touchscreen;
+#endif
 
 class CalibrationUI {
 public:

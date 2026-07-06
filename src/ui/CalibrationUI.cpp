@@ -69,13 +69,23 @@ void CalibrationUI::poll_timer_cb(lv_timer_t* timer) {
 }
 
 void CalibrationUI::processTouch() {
+#ifdef ST7796_DRIVER
+    uint16_t rx, ry;
+    bool isTouched = (LVGL_CYD::tft->getTouchRawZ() > 300) &&
+                     LVGL_CYD::tft->getTouchRaw(&rx, &ry);
+#else
     bool isTouched = touchscreen.isTouched();
+#endif
 
     if (_state == 0) { // Wait for Top Left Press
         if (isTouched) {
+#ifdef ST7796_DRIVER
+            _rx1 = rx; _ry1 = ry;
+#else
             Point p = touchscreen.getTouch();
             _rx1 = p.x;
             _ry1 = p.y;
+#endif
             _state = 1;
             lv_label_set_text(_instructions, "Release...");
             lv_obj_set_style_bg_color(_target, lv_color_make(0, 255, 0), 0);
@@ -89,9 +99,13 @@ void CalibrationUI::processTouch() {
         }
     } else if (_state == 2) { // Wait for Bottom Right Press
         if (isTouched) {
+#ifdef ST7796_DRIVER
+            _rx2 = rx; _ry2 = ry;
+#else
             Point p = touchscreen.getTouch();
             _rx2 = p.x;
             _ry2 = p.y;
+#endif
             _state = 3;
             lv_label_set_text(_instructions, "Release...");
             lv_obj_set_style_bg_color(_target, lv_color_make(0, 255, 0), 0);
@@ -128,20 +142,30 @@ void CalibrationUI::processTouch() {
             }
 
             // 4. Calculate xMin/xMax
-            // main.cpp maps p.x to (TFT_WIDTH-1)..0 using: map(p.x, xMin, xMax, TFT_WIDTH-1, 0)
-            // This means xMin corresponds to TFT_WIDTH-1, and xMax corresponds to 0.
+            // CYD:    map(rx, xMin, xMax, TFT_WIDTH-1, 0) — xMin→TFT_WIDTH-1, xMax→0
+            // ST7796: map(rx, xMin, xMax, 0, TFT_WIDTH-1) — xMin→0, xMax→TFT_WIDTH-1
             float mx = (float)(_rx2 - _rx1) / (x_map2 - x_map1);
             float cx = _rx1 - mx * x_map1;
+#ifdef ST7796_DRIVER
+            int xMin = round(mx * 0 + cx);
+            int xMax = round(mx * (TFT_WIDTH - 1) + cx);
+#else
             int xMin = round(mx * (TFT_WIDTH - 1) + cx);
             int xMax = round(mx * 0 + cx);
+#endif
 
             // 5. Calculate yMin/yMax
-            // main.cpp maps p.y to 0..(TFT_HEIGHT-1) using: map(p.y, yMin, yMax, 0, TFT_HEIGHT-1)
-            // This means yMin corresponds to 0, and yMax corresponds to TFT_HEIGHT-1.
+            // CYD:    map(ry, yMin, yMax, 0, TFT_HEIGHT-1) — yMin→0, yMax→TFT_HEIGHT-1
+            // ST7796: map(ry, yMin, yMax, TFT_HEIGHT-1, 0) — yMin→TFT_HEIGHT-1, yMax→0
             float my = (float)(_ry2 - _ry1) / (y_map2 - y_map1);
             float cy = _ry1 - my * y_map1;
+#ifdef ST7796_DRIVER
+            int yMin = round(my * (TFT_HEIGHT - 1) + cy);
+            int yMax = round(my * 0 + cy);
+#else
             int yMin = round(my * 0 + cy);
             int yMax = round(my * (TFT_HEIGHT - 1) + cy);
+#endif
 
             // Safety Check: Validate the calculated bounds before saving.
             // A typical 12-bit ADC ranges from 0 to 4095. 
