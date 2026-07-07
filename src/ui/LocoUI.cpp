@@ -128,7 +128,16 @@ void LocoUI::onLocoUpdate(Loco* loco) {
 
 void LocoUI::buildSelectionMenu() {
     _selectionMenu = lv_obj_create(_container);
-    lv_obj_set_size(_selectionMenu, LV_PCT(90), LV_PCT(95));
+    lv_obj_set_width(_selectionMenu, LV_PCT(90));
+#if defined(TFT_HEIGHT) && TFT_HEIGHT >= 480
+    // 3.5": the taller panel fits everything — size the menu snugly to its
+    // content (capped) so it never scrolls or bounces.
+    lv_obj_set_height(_selectionMenu, LV_SIZE_CONTENT);
+    lv_obj_set_style_max_height(_selectionMenu, LV_PCT(95), 0);
+#else
+    // CYD: content can exceed the small screen; keep a capped height and scroll.
+    lv_obj_set_height(_selectionMenu, LV_PCT(95));
+#endif
     lv_obj_align(_selectionMenu, LV_ALIGN_CENTER, 0, 0);
     lv_obj_set_style_bg_color(_selectionMenu, tc(TC_OVERLAY_BG), 0);
     lv_obj_set_style_border_color(_selectionMenu, tc(TC_OVERLAY_BORDER), 0);
@@ -138,9 +147,13 @@ void LocoUI::buildSelectionMenu() {
     lv_obj_set_style_pad_row(_selectionMenu, us(5), 0);
     lv_obj_set_flex_flow(_selectionMenu, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(_selectionMenu, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    // Allow vertical scrolling: with the Recent chips added the content can exceed
-    // the fixed menu height on the smaller panel; scrolling keeps Release reachable.
+#if defined(TFT_HEIGHT) && TFT_HEIGHT >= 480
+    // 3.5": no scrolling — content is sized to fit.
+    lv_obj_clear_flag(_selectionMenu, LV_OBJ_FLAG_SCROLLABLE);
+#else
+    // CYD: allow vertical scrolling so the Recent chips can't clip Release.
     lv_obj_set_scroll_dir(_selectionMenu, LV_DIR_VER);
+#endif
     lv_obj_add_flag(_selectionMenu, LV_OBJ_FLAG_HIDDEN);
 
     lv_obj_t* title_row = lv_obj_create(_selectionMenu);
