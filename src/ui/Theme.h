@@ -53,32 +53,23 @@ enum ThemeColor {
 };
 
 // ─── UI scale ────────────────────────────────────────────────────────────────
-// Hardcoded pixel dimensions are authored for the 2.8" CYD (240x320). Larger
-// panels scale those values up so controls keep the same apparent size relative
-// to the screen. Keyed on TFT_HEIGHT: 1.0x for the CYD, 1.5x for the 3.5" (480).
-#if defined(TFT_HEIGHT) && TFT_HEIGHT >= 480
-#  define UI_SCALE_NUM 3
-#  define UI_SCALE_DEN 2
-#else
-#  define UI_SCALE_NUM 1
-#  define UI_SCALE_DEN 1
-#endif
-
-// Scale a pixel dimension by the board's UI factor. us(30) -> 30 on CYD, 45 on 3.5".
-static inline int us(int px) { return px * UI_SCALE_NUM / UI_SCALE_DEN; }
-
-// Width-based scale (screen-width ratio, 4/3 on the 3.5"). Use for controls that
-// must hold the same proportion of screen WIDTH across boards — e.g. the bottom
-// control row (stop / page / direction) — so they read the same relative size
-// on both panels rather than the taller height-based us() factor.
-#if defined(TFT_HEIGHT) && TFT_HEIGHT >= 480
-#  define UIW_SCALE_NUM 4
-#  define UIW_SCALE_DEN 3
-#else
-#  define UIW_SCALE_NUM 1
-#  define UIW_SCALE_DEN 1
-#endif
-static inline int usw(int px) { return px * UIW_SCALE_NUM / UIW_SCALE_DEN; }
+// Hardcoded pixel dimensions are authored against the 2.8" CYD (240x320).
+// Larger panels scale those values up proportionally so controls keep the same
+// apparent size relative to the screen. Both factors are derived from the
+// board's own TFT_WIDTH/TFT_HEIGHT vs the CYD reference, so a new board variant
+// scales automatically with no extra #ifdefs.
+//
+//   us(px)  — height-ratio scale (e.g. 480/320 = 1.5x on the 3.5"). Default for
+//             most dimensions; ties vertical layout to the taller screen.
+//   usw(px) — width-ratio scale  (e.g. 320/240 = 1.33x on the 3.5"). For controls
+//             that must hold the same proportion of screen WIDTH across boards
+//             (e.g. the bottom control row: stop / page / direction).
+//
+// On the CYD both are exactly 1.0x, so that build is unaffected.
+#define UI_REF_WIDTH  240
+#define UI_REF_HEIGHT 320
+static inline int us(int px)  { return px * TFT_HEIGHT / UI_REF_HEIGHT; }
+static inline int usw(int px) { return px * TFT_WIDTH  / UI_REF_WIDTH; }
 
 // Returns the default body font for the current board (scaled up on larger panels).
 const lv_font_t* ui_font_default();
