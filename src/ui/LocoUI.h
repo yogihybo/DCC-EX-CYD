@@ -70,6 +70,7 @@ class LocoUI : public UIView {
 
     void buildSelectionMenu();
     void buildControlScreen();
+    void buildGauge();   // speedometer dial (in LocoUI_Gauge.cpp)
     void buildFunctionButtons(JsonDocument& locoDoc);
     void renderFunctionPage();
     void toggleFunctionButtons(std::bitset<32> toggle);
