@@ -41,13 +41,25 @@ XPT2046_Bitbang touchscreen(TOUCH_MOSI, TOUCH_MISO, TOUCH_CLK, TOUCH_CS, TOUCH_I
 
 static void touch_read(lv_indev_t * indev, lv_indev_data_t * data) {
 #ifdef ST7796_DRIVER
-  uint16_t rx, ry;
-  if (LVGL_CYD::tft->getTouchRawZ() > 300 && LVGL_CYD::tft->getTouchRaw(&rx, &ry)) {
-    int x = map(rx, Settings.TouchCal.xMin, Settings.TouchCal.xMax, 0, TFT_WIDTH  - 1);
-    int y = map(ry, Settings.TouchCal.yMin, Settings.TouchCal.yMax, TFT_HEIGHT - 1, 0);
-    data->point.x = constrain(x, 0, TFT_WIDTH  - 1);
-    data->point.y = constrain(y, 0, TFT_HEIGHT - 1);
-    data->state = LV_INDEV_STATE_PRESSED;
+  // Lower pressure gate + multi-sample averaging to match the CYD's feel.
+  // (The CYD detects via the XPT2046 IRQ line and median-filters 3 samples;
+  // a single raw read behind a Z>300 gate felt insensitive by comparison.)
+  if (LVGL_CYD::tft->getTouchRawZ() > 120) {
+    uint32_t sx = 0, sy = 0;
+    int n = 0;
+    for (int s = 0; s < 3; s++) {
+      uint16_t tx, ty;
+      if (LVGL_CYD::tft->getTouchRaw(&tx, &ty)) { sx += tx; sy += ty; n++; }
+    }
+    if (n > 0) {
+      int x = map(sx / n, Settings.TouchCal.xMin, Settings.TouchCal.xMax, 0, TFT_WIDTH  - 1);
+      int y = map(sy / n, Settings.TouchCal.yMin, Settings.TouchCal.yMax, TFT_HEIGHT - 1, 0);
+      data->point.x = constrain(x, 0, TFT_WIDTH  - 1);
+      data->point.y = constrain(y, 0, TFT_HEIGHT - 1);
+      data->state = LV_INDEV_STATE_PRESSED;
+    } else {
+      data->state = LV_INDEV_STATE_RELEASED;
+    }
   } else {
     data->state = LV_INDEV_STATE_RELEASED;
   }

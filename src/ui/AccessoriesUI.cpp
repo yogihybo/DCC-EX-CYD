@@ -8,7 +8,7 @@ AccessoriesUI::AccessoriesUI(DCCEXProtocol& dccex, lv_obj_t* parent)
 
     _container = lv_obj_create(parent);
     lv_obj_set_size(_container, LV_PCT(100), LV_PCT(100));
-    lv_obj_set_style_pad_all(_container, 5, 0);
+    lv_obj_set_style_pad_all(_container, us(5), 0);
     lv_obj_set_style_border_width(_container, 0, 0);
     lv_obj_set_style_bg_opa(_container, LV_OPA_COVER, 0);
     lv_obj_set_flex_flow(_container, LV_FLEX_FLOW_COLUMN);
@@ -17,11 +17,11 @@ AccessoriesUI::AccessoriesUI(DCCEXProtocol& dccex, lv_obj_t* parent)
     _content = lv_obj_create(_container);
     lv_obj_set_width(_content, LV_PCT(100));
     lv_obj_set_flex_grow(_content, 1);
-    lv_obj_set_style_pad_all(_content, 6, 0);
+    lv_obj_set_style_pad_all(_content, us(6), 0);
     lv_obj_set_style_border_width(_content, 0, 0);
     lv_obj_set_flex_flow(_content, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(_content, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_pad_row(_content, 4, 0);
+    lv_obj_set_style_pad_row(_content, us(4), 0);
     lv_obj_clear_flag(_content, LV_OBJ_FLAG_SCROLLABLE);
 
     _buildContent();
@@ -51,19 +51,19 @@ void AccessoriesUI::_buildContent() {
 
     _recents_cont = lv_obj_create(_content);
     lv_obj_set_width(_recents_cont, LV_PCT(100));
-    lv_obj_set_height(_recents_cont, 30);
+    lv_obj_set_height(_recents_cont, us(30));
     lv_obj_set_style_pad_all(_recents_cont, 0, 0);
     lv_obj_set_style_border_width(_recents_cont, 0, 0);
     lv_obj_set_style_bg_opa(_recents_cont, 0, 0);
     lv_obj_set_flex_flow(_recents_cont, LV_FLEX_FLOW_ROW);
-    lv_obj_set_style_pad_column(_recents_cont, 4, 0);
+    lv_obj_set_style_pad_column(_recents_cont, us(4), 0);
     lv_obj_clear_flag(_recents_cont, LV_OBJ_FLAG_SCROLLABLE);
     rebuildRecents();
 
     // --- Throw / Close ---
     lv_obj_t* action_cont = lv_obj_create(_content);
     lv_obj_set_width(action_cont, LV_PCT(100));
-    lv_obj_set_height(action_cont, 38);
+    lv_obj_set_height(action_cont, us(38));
     lv_obj_set_style_pad_all(action_cont, 0, 0);
     lv_obj_set_style_border_width(action_cont, 0, 0);
     lv_obj_set_style_bg_opa(action_cont, 0, 0);
@@ -73,7 +73,7 @@ void AccessoriesUI::_buildContent() {
 
     _btn_throw = lv_btn_create(action_cont);
     lv_obj_set_flex_grow(_btn_throw, 1);
-    lv_obj_set_height(_btn_throw, 35);
+    lv_obj_set_height(_btn_throw, us(35));
     lv_obj_set_style_shadow_width(_btn_throw, 0, 0);
     lv_obj_t* throw_lbl = lv_label_create(_btn_throw);
     lv_label_set_text(throw_lbl, "Throw");
@@ -83,7 +83,7 @@ void AccessoriesUI::_buildContent() {
 
     _btn_close = lv_btn_create(action_cont);
     lv_obj_set_flex_grow(_btn_close, 1);
-    lv_obj_set_height(_btn_close, 35);
+    lv_obj_set_height(_btn_close, us(35));
     lv_obj_set_style_shadow_width(_btn_close, 0, 0);
     lv_obj_set_style_bg_color(_btn_close, lv_color_make(40, 140, 40), 0);
     lv_obj_t* close_lbl = lv_label_create(_btn_close);
@@ -152,8 +152,8 @@ void AccessoriesUI::rebuildRecents() {
     }
     for (int i = 0; i < _recentCount; i++) {
         lv_obj_t* chip = lv_btn_create(_recents_cont);
-        lv_obj_set_size(chip, LV_SIZE_CONTENT, 28);
-        lv_obj_set_style_pad_hor(chip, 10, 0);
+        lv_obj_set_size(chip, LV_SIZE_CONTENT, us(28));
+        lv_obj_set_style_pad_hor(chip, us(10), 0);
         lv_obj_set_style_pad_ver(chip, 0, 0);
         lv_obj_set_style_bg_color(chip, tc(TC_SURFACE_RAISED), 0);
         lv_obj_set_style_shadow_width(chip, 0, 0);

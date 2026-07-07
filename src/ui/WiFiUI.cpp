@@ -8,9 +8,9 @@ WiFiUI::WiFiUI(lv_obj_t* parent) {
 
     _container = lv_obj_create(parent);
     lv_obj_set_size(_container, LV_PCT(100), LV_PCT(100));
-    lv_obj_set_style_pad_all(_container, 5, 0);
-    lv_obj_set_style_pad_hor(_container, 11, 0);
-    lv_obj_set_style_pad_row(_container, 3, 0);
+    lv_obj_set_style_pad_all(_container, us(5), 0);
+    lv_obj_set_style_pad_hor(_container, us(11), 0);
+    lv_obj_set_style_pad_row(_container, us(3), 0);
     lv_obj_set_style_border_width(_container, 0, 0);
     lv_obj_set_flex_flow(_container, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(_container, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
@@ -26,7 +26,7 @@ WiFiUI::WiFiUI(lv_obj_t* parent) {
     // --- Title row ---
     lv_obj_t* title_row = lv_obj_create(_container);
     lv_obj_set_width(title_row, LV_PCT(100));
-    lv_obj_set_height(title_row, 36);
+    lv_obj_set_height(title_row, us(36));
     lv_obj_set_style_pad_all(title_row, 0, 0);
     lv_obj_set_style_border_width(title_row, 0, 0);
     lv_obj_set_style_bg_opa(title_row, 0, 0);
@@ -38,8 +38,8 @@ WiFiUI::WiFiUI(lv_obj_t* parent) {
     lv_obj_align(title, LV_ALIGN_LEFT_MID, 0, 0);
 
     lv_obj_t* back_btn = make_danger_btn(title_row, "Back");
-    lv_obj_set_size(back_btn, LV_SIZE_CONTENT, 28);
-    lv_obj_set_style_pad_hor(back_btn, 10, 0);
+    lv_obj_set_size(back_btn, LV_SIZE_CONTENT, us(28));
+    lv_obj_set_style_pad_hor(back_btn, us(10), 0);
     lv_obj_align(back_btn, LV_ALIGN_RIGHT_MID, 0, 0);
     lv_obj_add_event_cb(back_btn, close_btn_event_cb, LV_EVENT_CLICKED, this);
 
@@ -48,7 +48,7 @@ WiFiUI::WiFiUI(lv_obj_t* parent) {
         lv_label_set_text(lbl, title);
         lv_obj_set_style_text_color(lbl, tc(TC_SECTION), 0);
         lv_obj_set_width(lbl, LV_PCT(100));
-        lv_obj_set_style_pad_top(lbl, 6, 0);
+        lv_obj_set_style_pad_top(lbl, us(6), 0);
     };
 
     auto add_label = [this](const char* text) {
@@ -57,7 +57,7 @@ WiFiUI::WiFiUI(lv_obj_t* parent) {
         lv_obj_set_width(lbl, LV_PCT(100));
         lv_obj_set_style_text_color(lbl, tc(TC_TEXT_HINT), 0);
         lv_obj_set_style_text_font(lbl, &lv_font_montserrat_12, 0);
-        lv_obj_set_style_pad_top(lbl, 2, 0);
+        lv_obj_set_style_pad_top(lbl, us(2), 0);
     };
 
     auto create_textarea = [this](const char* placeholder, const char* initial_text, int field) -> lv_obj_t* {
@@ -99,7 +99,7 @@ WiFiUI::WiFiUI(lv_obj_t* parent) {
         lv_label_set_text(_labelIP, "IP: Not connected");
     lv_obj_set_style_text_color(_labelIP, tc(TC_TEXT_MUTED), 0);
     lv_obj_set_style_text_font(_labelIP, &lv_font_montserrat_12, 0);
-    lv_obj_set_style_pad_top(_labelIP, 4, 0);
+    lv_obj_set_style_pad_top(_labelIP, us(4), 0);
 
     // --- Access Point ---
     add_section("Access point");
@@ -108,7 +108,7 @@ WiFiUI::WiFiUI(lv_obj_t* parent) {
     lv_label_set_text_fmt(ap_lbl, "SSID: %s\nPassword: %s", Settings.AP.SSID.c_str(), Settings.AP.password.c_str());
     lv_obj_set_style_text_color(ap_lbl, tc(TC_TEXT_HINT), 0);
     lv_obj_set_style_text_font(ap_lbl, &lv_font_montserrat_12, 0);
-    lv_obj_set_style_pad_top(ap_lbl, 2, 0);
+    lv_obj_set_style_pad_top(ap_lbl, us(2), 0);
 
 }
 
@@ -145,7 +145,7 @@ void WiFiUI::ta_event_cb(lv_event_t* e) {
             lv_keyboard_set_textarea(ui->_keyboard, NULL);
             lv_obj_add_flag(ui->_keyboard, LV_OBJ_FLAG_HIDDEN);
         }
-        lv_obj_set_style_pad_bottom(ui->_container, 5, 0);
+        lv_obj_set_style_pad_bottom(ui->_container, us(5), 0);
 
         const char* txt = lv_textarea_get_text(ta);
         if (field == 0) Settings.CS.SSID(txt);

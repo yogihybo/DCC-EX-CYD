@@ -116,7 +116,7 @@ void apply_theme() {
         lv_color_make(50, 150, 255),
         lv_color_make(100, 100, 100),
         is_dark,
-        &lv_font_montserrat_14);
+        ui_font_default());
 
     if (is_dark) {
         if (!custom_dark_theme) custom_dark_theme = lv_theme_create();
@@ -135,7 +135,8 @@ void apply_theme() {
 static void create_header_bar() {
     lv_obj_t* scr = lv_scr_act();
 
-    // Top Header (30px height)
+    // Top Header — fixed 30px on every board so the status bar stays identical
+    // across the 2.8" and 3.5" builds (not scaled with us()).
     header_bar = lv_obj_create(scr);
     lv_obj_set_size(header_bar, LV_PCT(100), 30);
     lv_obj_set_style_pad_all(header_bar, 0, 0);
@@ -306,14 +307,14 @@ void create_main_ui() {
     for (uint32_t i = 0; i < tab_count; i++) {
         lv_obj_t* btn = lv_obj_get_child(tab_btns, i);
         // Lock all padding for both states so the theme can't shift content on activation
-        lv_obj_set_style_pad_top(btn,    2, 0);
+        lv_obj_set_style_pad_top(btn, us(2), 0);
         lv_obj_set_style_pad_bottom(btn, 0, 0);
-        lv_obj_set_style_pad_left(btn,   0, 0);
-        lv_obj_set_style_pad_right(btn,  0, 0);
-        lv_obj_set_style_pad_top(btn,    2, LV_STATE_CHECKED);
+        lv_obj_set_style_pad_left(btn, 0, 0);
+        lv_obj_set_style_pad_right(btn, 0, 0);
+        lv_obj_set_style_pad_top(btn, us(2), LV_STATE_CHECKED);
         lv_obj_set_style_pad_bottom(btn, 0, LV_STATE_CHECKED);
-        lv_obj_set_style_pad_left(btn,   0, LV_STATE_CHECKED);
-        lv_obj_set_style_pad_right(btn,  0, LV_STATE_CHECKED);
+        lv_obj_set_style_pad_left(btn, 0, LV_STATE_CHECKED);
+        lv_obj_set_style_pad_right(btn, 0, LV_STATE_CHECKED);
         lv_obj_set_style_bg_color(btn, tc(TC_SURFACE_DEEP), 0);
         lv_obj_set_style_bg_color(btn, tc(TC_SURFACE_DEEP), LV_STATE_CHECKED);
         lv_obj_set_style_text_color(btn, tc(TC_TEXT_MUTED), 0);
@@ -329,9 +330,9 @@ void create_main_ui() {
     }
 
     lv_obj_set_style_pad_all(loco_tab, 0, 0);
-    lv_obj_set_style_pad_all(acc_tab,  0, 0);
-    lv_obj_set_style_pad_all(pwr_tab,  0, 0);
-    lv_obj_set_style_pad_all(set_tab,  0, 0);
+    lv_obj_set_style_pad_all(acc_tab, 0, 0);
+    lv_obj_set_style_pad_all(pwr_tab, 0, 0);
+    lv_obj_set_style_pad_all(set_tab, 0, 0);
 }
 
 void set_header_loco_count(int count) {

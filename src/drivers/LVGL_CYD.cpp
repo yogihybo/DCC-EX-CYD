@@ -12,9 +12,14 @@
 
 #include "LVGL_CYD.h"
 
-// Draw buffer: 1/10 screen for partial-render mode (default).
-// Boards with PSRAM swap this out for a full-screen ps_malloc buffer in main.cpp.
+// Draw buffer: partial-render mode. Larger screens use a smaller fraction to
+// cap static RAM — LVGL just flushes in more chunks, visual result identical.
+// 2.8" (240x320): 1/10 = 15.4 KB   3.5" (320x480): 1/20 = 15.4 KB
+#if (TFT_WIDTH * TFT_HEIGHT) > 200000
+#define DRAW_BUF_SIZE (TFT_WIDTH * TFT_HEIGHT / 20 * (LV_COLOR_DEPTH / 8))
+#else
 #define DRAW_BUF_SIZE (TFT_WIDTH * TFT_HEIGHT / 10 * (LV_COLOR_DEPTH / 8))
+#endif
 static uint32_t draw_buf[DRAW_BUF_SIZE / 4];
 
 // ─── CYD (ILI9341 / ST7789) — original board hardware ───────────────────────

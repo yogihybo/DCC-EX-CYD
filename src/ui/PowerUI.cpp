@@ -5,11 +5,11 @@ static lv_obj_t* make_card(lv_obj_t* parent) {
     lv_obj_t* card = lv_obj_create(parent);
     lv_obj_set_width(card, LV_PCT(100));
     lv_obj_set_height(card, LV_SIZE_CONTENT);
-    lv_obj_set_style_pad_all(card, 6, 0);
-    lv_obj_set_style_pad_row(card, 5, 0);
+    lv_obj_set_style_pad_all(card, us(6), 0);
+    lv_obj_set_style_pad_row(card, us(5), 0);
     lv_obj_set_style_border_width(card, 0, 0);
     lv_obj_set_style_bg_color(card, tc(TC_SURFACE), 0);
-    lv_obj_set_style_radius(card, 6, 0);
+    lv_obj_set_style_radius(card, us(6), 0);
     lv_obj_set_flex_flow(card, LV_FLEX_FLOW_COLUMN);
     lv_obj_clear_flag(card, LV_OBJ_FLAG_SCROLLABLE);
     return card;
@@ -20,7 +20,7 @@ static lv_obj_t* make_row(lv_obj_t* parent, int height) {
     lv_obj_set_width(row, LV_PCT(100));
     lv_obj_set_height(row, height);
     lv_obj_set_style_pad_all(row, 0, 0);
-    lv_obj_set_style_pad_column(row, 4, 0);
+    lv_obj_set_style_pad_column(row, us(4), 0);
     lv_obj_set_style_border_width(row, 0, 0);
     lv_obj_set_style_bg_opa(row, 0, 0);
     lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
@@ -31,7 +31,7 @@ static lv_obj_t* make_row(lv_obj_t* parent, int height) {
 
 static lv_obj_t* make_dot(lv_obj_t* parent) {
     lv_obj_t* dot = lv_obj_create(parent);
-    lv_obj_set_size(dot, 10, 10);
+    lv_obj_set_size(dot, us(10), us(10));
     lv_obj_set_style_radius(dot, LV_RADIUS_CIRCLE, 0);
     lv_obj_set_style_border_width(dot, 0, 0);
     lv_obj_set_style_bg_color(dot, tc(TC_ICON_INACTIVE), 0);
@@ -43,7 +43,7 @@ static lv_obj_t* make_dot(lv_obj_t* parent) {
 static lv_obj_t* make_action_btn(lv_obj_t* parent, const char* label, int action_id, lv_event_cb_t cb, void* user_data) {
     lv_obj_t* btn = lv_btn_create(parent);
     lv_obj_set_flex_grow(btn, 1);
-    lv_obj_set_height(btn, 32);
+    lv_obj_set_height(btn, us(32));
     lv_obj_set_style_bg_color(btn, tc(TC_SURFACE_RAISED), 0);
     lv_obj_set_style_shadow_width(btn, 0, 0);
     lv_obj_t* lbl = lv_label_create(btn);
@@ -57,8 +57,8 @@ static lv_obj_t* make_action_btn(lv_obj_t* parent, const char* label, int action
 PowerUI::PowerUI(DCCEXProtocol& dccex, lv_obj_t* parent) : _dccex(dccex) {
     _container = lv_obj_create(parent);
     lv_obj_set_size(_container, LV_PCT(100), LV_PCT(100));
-    lv_obj_set_style_pad_all(_container, 5, 0);
-    lv_obj_set_style_pad_row(_container, 5, 0);
+    lv_obj_set_style_pad_all(_container, us(5), 0);
+    lv_obj_set_style_pad_row(_container, us(5), 0);
     lv_obj_set_style_border_width(_container, 0, 0);
     lv_obj_set_flex_flow(_container, LV_FLEX_FLOW_COLUMN);
     lv_obj_clear_flag(_container, LV_OBJ_FLAG_SCROLLABLE);
@@ -68,7 +68,7 @@ PowerUI::PowerUI(DCCEXProtocol& dccex, lv_obj_t* parent) : _dccex(dccex) {
 
     lv_obj_t* main_hdr = make_row(main_card, LV_SIZE_CONTENT);
     lv_obj_set_flex_align(main_hdr, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_height(main_hdr, 18);
+    lv_obj_set_height(main_hdr, us(18));
 
     lv_obj_t* main_name = lv_label_create(main_hdr);
     lv_label_set_text(main_name, "Main track");
@@ -87,7 +87,7 @@ PowerUI::PowerUI(DCCEXProtocol& dccex, lv_obj_t* parent) : _dccex(dccex) {
 
     lv_obj_t* prog_hdr = make_row(prog_card, LV_SIZE_CONTENT);
     lv_obj_set_flex_align(prog_hdr, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_height(prog_hdr, 18);
+    lv_obj_set_height(prog_hdr, us(18));
 
     lv_obj_t* prog_name = lv_label_create(prog_hdr);
     lv_label_set_text(prog_name, "Prog track");
@@ -103,8 +103,8 @@ PowerUI::PowerUI(DCCEXProtocol& dccex, lv_obj_t* parent) : _dccex(dccex) {
 
     // --- All tracks row ---
     lv_obj_t* all_row = make_row(_container, 32);
-    lv_obj_set_style_pad_column(all_row, 5, 0);
-    lv_obj_set_style_pad_hor(all_row, 6, 0);
+    lv_obj_set_style_pad_column(all_row, us(5), 0);
+    lv_obj_set_style_pad_hor(all_row, us(6), 0);
     _btn_all_on  = make_action_btn(all_row, "All ON",  5, btn_event_cb, this);
     _btn_all_off = make_action_btn(all_row, "All OFF", 6, btn_event_cb, this);
 
@@ -113,7 +113,7 @@ PowerUI::PowerUI(DCCEXProtocol& dccex, lv_obj_t* parent) : _dccex(dccex) {
     lv_obj_set_width(_btn_join, LV_PCT(100));
     lv_obj_set_style_margin_hor(_btn_join, 6, 0);
     lv_obj_set_style_shadow_width(_btn_join, 0, 0);
-    lv_obj_set_height(_btn_join, 32);
+    lv_obj_set_height(_btn_join, us(32));
     lv_obj_set_style_bg_color(_btn_join, tc(TC_SURFACE_DEEP), 0);
     lv_obj_set_style_border_width(_btn_join, 1, 0);
     lv_obj_set_style_border_color(_btn_join, tc(TC_BORDER), 0);

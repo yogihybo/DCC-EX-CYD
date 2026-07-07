@@ -12,9 +12,9 @@ bool SettingsUI::throttleProgrammingActive = false;
 SettingsUI::SettingsUI(DCCEXProtocol& dccex, lv_obj_t* parent) : _dccex(dccex), _wifiUI(nullptr), _aboutUI(nullptr), _calibrationUI(nullptr), _programUI(nullptr) {
   _container = lv_obj_create(parent);
   lv_obj_set_size(_container, LV_PCT(100), LV_PCT(100));
-  lv_obj_set_style_pad_all(_container, 5, 0);
-  lv_obj_set_style_pad_hor(_container, 11, 0);
-  lv_obj_set_style_pad_row(_container, 3, 0);
+  lv_obj_set_style_pad_all(_container, us(5), 0);
+  lv_obj_set_style_pad_hor(_container, us(11), 0);
+  lv_obj_set_style_pad_row(_container, us(3), 0);
   lv_obj_set_style_border_width(_container, 0, 0);
   lv_obj_set_flex_flow(_container, LV_FLEX_FLOW_COLUMN);
   lv_obj_set_flex_align(_container, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
@@ -24,15 +24,15 @@ SettingsUI::SettingsUI(DCCEXProtocol& dccex, lv_obj_t* parent) : _dccex(dccex), 
     lv_label_set_text(lbl, title);
     lv_obj_set_style_text_color(lbl, tc(TC_SECTION), 0);
     lv_obj_set_width(lbl, LV_PCT(100));
-    lv_obj_set_style_pad_top(lbl, 6, 0);
+    lv_obj_set_style_pad_top(lbl, us(6), 0);
   };
 
   auto make_row = [this](lv_event_cb_t cb) -> lv_obj_t* {
     lv_obj_t* btn = lv_btn_create(_container);
     lv_obj_set_width(btn, LV_PCT(100));
-    lv_obj_set_height(btn, 32);
+    lv_obj_set_height(btn, us(32));
     lv_obj_set_style_pad_ver(btn, 0, 0);
-    lv_obj_set_style_pad_hor(btn, 7, 0);
+    lv_obj_set_style_pad_hor(btn, us(7), 0);
     lv_obj_set_style_bg_color(btn, tc(TC_SURFACE_RAISED), 0);
     lv_obj_set_style_shadow_width(btn, 0, 0);
     lv_obj_set_flex_flow(btn, LV_FLEX_FLOW_ROW);
@@ -53,9 +53,9 @@ SettingsUI::SettingsUI(DCCEXProtocol& dccex, lv_obj_t* parent) : _dccex(dccex), 
     lv_obj_set_style_bg_color(badge, bg, 0);
     lv_obj_set_style_bg_opa(badge, LV_OPA_COVER, 0);
     lv_obj_set_style_text_color(badge, fg, 0);
-    lv_obj_set_style_pad_hor(badge, 5, 0);
-    lv_obj_set_style_pad_ver(badge, 2, 0);
-    lv_obj_set_style_radius(badge, 3, 0);
+    lv_obj_set_style_pad_hor(badge, us(5), 0);
+    lv_obj_set_style_pad_ver(badge, us(2), 0);
+    lv_obj_set_style_radius(badge, us(3), 0);
     return badge;
   };
 
@@ -325,7 +325,7 @@ void SettingsUI::brightness_btn_event_cb(lv_event_t * e) {
   lv_obj_set_style_bg_color(slider, tc(TC_BORDER), LV_PART_MAIN);
   lv_obj_set_style_bg_color(slider, tc(TC_SECTION), LV_PART_INDICATOR);
   lv_obj_set_style_bg_color(slider, lv_color_hex(0xdddddd), LV_PART_KNOB);
-  lv_obj_set_style_pad_all(slider, 6, LV_PART_KNOB);
+  lv_obj_set_style_pad_all(slider, us(6), LV_PART_KNOB);
   lv_slider_set_range(slider, 10, 255);
   lv_slider_set_value(slider, Settings.brightness, LV_ANIM_OFF);
   lv_obj_add_event_cb(slider, brightness_event_cb, LV_EVENT_VALUE_CHANGED, ui);
@@ -488,7 +488,7 @@ void SettingsUI::throttle_programming_event_cb(lv_event_t * e) {
   lv_label_set_text(lbl, LV_SYMBOL_SETTINGS "  Throttle Programming Mode");
   lv_obj_set_style_text_font(lbl, &lv_font_montserrat_14, 0);
   lv_obj_set_style_text_align(lbl, LV_TEXT_ALIGN_CENTER, 0);
-  lv_obj_set_style_pad_bottom(lbl, 8, 0);
+  lv_obj_set_style_pad_bottom(lbl, us(8), 0);
 
   // Connection info
   bool staConnected = WiFi.status() == WL_CONNECTED;
@@ -501,7 +501,7 @@ void SettingsUI::throttle_programming_event_cb(lv_event_t * e) {
   lv_obj_set_style_text_font(ip_lbl, &lv_font_montserrat_12, 0);
   lv_obj_set_style_text_color(ip_lbl, lv_color_hex(0x4488ff), 0);
   lv_obj_set_style_text_align(ip_lbl, LV_TEXT_ALIGN_CENTER, 0);
-  lv_obj_set_style_pad_bottom(ip_lbl, 20, 0);
+  lv_obj_set_style_pad_bottom(ip_lbl, us(20), 0);
 
   // Red close button
   lv_obj_t* close_btn = make_danger_btn(overlay, LV_SYMBOL_CLOSE "  Close");

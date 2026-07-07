@@ -17,31 +17,31 @@ AboutUI::AboutUI(DCCEXProtocol& dccex, lv_obj_t* parent) {
   lv_obj_set_style_bg_opa(_container, LV_OPA_COVER, 0);
 
   lv_obj_set_flex_flow(_container, LV_FLEX_FLOW_COLUMN);
-  lv_obj_set_style_pad_row(_container, 2, 0);
+  lv_obj_set_style_pad_row(_container, us(2), 0);
   lv_obj_clear_flag(_container, LV_OBJ_FLAG_SCROLLABLE);
 
   lv_obj_t* header = lv_obj_create(_container);
   lv_obj_set_width(header, LV_PCT(100));
-  lv_obj_set_height(header, 50);
+  lv_obj_set_height(header, us(50));
   lv_obj_set_style_pad_all(header, 0, 0);
   lv_obj_set_style_border_width(header, 0, 0);
   lv_obj_clear_flag(header, LV_OBJ_FLAG_SCROLLABLE);
 
   lv_obj_t* title = lv_label_create(header);
   lv_label_set_text(title, "About");
-  lv_obj_align(title, LV_ALIGN_LEFT_MID, 10, 0);
+  lv_obj_align(title, LV_ALIGN_LEFT_MID, us(10), 0);
 
   lv_obj_t* close_btn = make_danger_btn(header, "Back");
-  lv_obj_align(close_btn, LV_ALIGN_RIGHT_MID, -10, 0);
+  lv_obj_align(close_btn, LV_ALIGN_RIGHT_MID, us(-10), 0);
   lv_obj_add_event_cb(close_btn, close_btn_event_cb, LV_EVENT_CLICKED, this);
 
   lv_obj_t* content = lv_obj_create(_container);
   lv_obj_set_width(content, LV_PCT(100));
   lv_obj_set_flex_grow(content, 1);
-  lv_obj_set_style_pad_all(content, 5, 0);
+  lv_obj_set_style_pad_all(content, us(5), 0);
   lv_obj_set_style_border_width(content, 0, 0);
   lv_obj_set_flex_flow(content, LV_FLEX_FLOW_COLUMN);
-  lv_obj_set_style_pad_row(content, 2, 0);
+  lv_obj_set_style_pad_row(content, us(2), 0);
 
 #if LV_USE_FONT_MONTSERRAT_12
   lv_obj_set_style_text_font(content, &lv_font_montserrat_12, 0);
@@ -51,7 +51,7 @@ AboutUI::AboutUI(DCCEXProtocol& dccex, lv_obj_t* parent) {
       lv_obj_t* h = lv_label_create(content);
       lv_label_set_text(h, text);
       lv_obj_set_style_text_color(h, lv_color_make(52, 204, 211), 0);
-      lv_obj_set_style_pad_top(h, 8, 0);
+      lv_obj_set_style_pad_top(h, us(8), 0);
   };
 
   // --- Throttle ---

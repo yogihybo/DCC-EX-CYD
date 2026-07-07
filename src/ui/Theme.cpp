@@ -65,6 +65,16 @@ static const uint32_t LIGHT[TC_COUNT] = {
     /* TC_GAUGE_HUB      */ 0xf0f0f8,
 };
 
+const lv_font_t* ui_font_default() {
+    // Body font per board. Flash is near full, so reuse already-enabled sizes
+    // (montserrat 14/16) rather than adding new ones. 3.5" gets the larger face.
+#if defined(TFT_HEIGHT) && TFT_HEIGHT >= 480
+    return &lv_font_montserrat_16;
+#else
+    return &lv_font_montserrat_14;
+#endif
+}
+
 lv_color_t tc(ThemeColor color) {
     bool dark = (Settings.theme == SettingsClass::Theme::DARK);
     return lv_color_hex(dark ? DARK[color] : LIGHT[color]);

@@ -106,7 +106,7 @@ export default {
     },
   },
   template: `
-  <form @submit.prevent="save" class="mt-2">
+  <form @submit.prevent="save" class="mt-2" autocomplete="off">
 
     <!-- ── Connections ─────────────────────────────────────────────────── -->
     <div class="settings-category">--- Connections ---</div>
@@ -114,13 +114,13 @@ export default {
     <div class="mb-3 row">
       <div class="col pe-0">
         <div class="form-floating">
-          <input v-model="ssid" @input="lock" type="text" class="form-control" required placeholder="WiFi SSID">
+          <input v-model="ssid" @input="lock" type="text" class="form-control" required placeholder="WiFi SSID" autocomplete="off">
           <label>WiFi SSID</label>
         </div>
       </div>
       <div class="col">
         <div class="form-floating">
-          <input v-model="password" @input="lock" type="password" class="form-control" placeholder="WiFi Password" />
+          <input v-model="password" @input="lock" type="password" class="form-control" placeholder="WiFi Password" autocomplete="new-password" />
           <label>WiFi Password</label>
         </div>
       </div>

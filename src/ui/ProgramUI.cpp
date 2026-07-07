@@ -24,9 +24,9 @@ ProgramUI::ProgramUI(DCCEXProtocol& dccex, lv_obj_t* parent)
 
     _container = lv_obj_create(parent);
     lv_obj_set_size(_container, LV_PCT(100), LV_PCT(100));
-    lv_obj_set_style_pad_all(_container, 5, 0);
-    lv_obj_set_style_pad_hor(_container, 11, 0);
-    lv_obj_set_style_pad_row(_container, 3, 0);
+    lv_obj_set_style_pad_all(_container, us(5), 0);
+    lv_obj_set_style_pad_hor(_container, us(11), 0);
+    lv_obj_set_style_pad_row(_container, us(3), 0);
     lv_obj_set_style_border_width(_container, 0, 0);
     lv_obj_set_flex_flow(_container, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(_container, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
@@ -34,7 +34,7 @@ ProgramUI::ProgramUI(DCCEXProtocol& dccex, lv_obj_t* parent)
     // --- Title row ---
     lv_obj_t* title_row = lv_obj_create(_container);
     lv_obj_set_width(title_row, LV_PCT(100));
-    lv_obj_set_height(title_row, 36);
+    lv_obj_set_height(title_row, us(36));
     lv_obj_set_style_pad_all(title_row, 0, 0);
     lv_obj_set_style_border_width(title_row, 0, 0);
     lv_obj_set_style_bg_opa(title_row, 0, 0);
@@ -46,8 +46,8 @@ ProgramUI::ProgramUI(DCCEXProtocol& dccex, lv_obj_t* parent)
     lv_obj_align(title, LV_ALIGN_LEFT_MID, 0, 0);
 
     lv_obj_t* back_btn = make_danger_btn(title_row, "Back");
-    lv_obj_set_size(back_btn, LV_SIZE_CONTENT, 28);
-    lv_obj_set_style_pad_hor(back_btn, 10, 0);
+    lv_obj_set_size(back_btn, LV_SIZE_CONTENT, us(28));
+    lv_obj_set_style_pad_hor(back_btn, us(10), 0);
     lv_obj_align(back_btn, LV_ALIGN_RIGHT_MID, 0, 0);
     lv_obj_add_event_cb(back_btn, close_btn_event_cb, LV_EVENT_CLICKED, this);
 
@@ -57,7 +57,7 @@ ProgramUI::ProgramUI(DCCEXProtocol& dccex, lv_obj_t* parent)
         lv_label_set_text(lbl, text);
         lv_obj_set_style_text_color(lbl, tc(TC_SECTION), 0);
         lv_obj_set_width(lbl, LV_PCT(100));
-        lv_obj_set_style_pad_top(lbl, 4, 0);
+        lv_obj_set_style_pad_top(lbl, us(4), 0);
     };
 
     auto make_row = [&](int height) -> lv_obj_t* {
@@ -65,7 +65,7 @@ ProgramUI::ProgramUI(DCCEXProtocol& dccex, lv_obj_t* parent)
         lv_obj_set_width(row, LV_PCT(100));
         lv_obj_set_height(row, height);
         lv_obj_set_style_pad_all(row, 0, 0);
-        lv_obj_set_style_pad_column(row, 4, 0);
+        lv_obj_set_style_pad_column(row, us(4), 0);
         lv_obj_set_style_border_width(row, 0, 0);
         lv_obj_set_style_bg_opa(row, 0, 0);
         lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
@@ -77,7 +77,7 @@ ProgramUI::ProgramUI(DCCEXProtocol& dccex, lv_obj_t* parent)
     auto make_btn = [&](lv_obj_t* row, const char* label, int id) {
         lv_obj_t* btn = lv_btn_create(row);
         lv_obj_set_flex_grow(btn, 1);
-        lv_obj_set_height(btn, 32);
+        lv_obj_set_height(btn, us(32));
         lv_obj_set_style_bg_color(btn, tc(TC_SURFACE_RAISED), 0);
         lv_obj_set_style_shadow_width(btn, 0, 0);
         lv_obj_t* lbl = lv_label_create(btn);
@@ -106,8 +106,8 @@ ProgramUI::ProgramUI(DCCEXProtocol& dccex, lv_obj_t* parent)
     for (const auto& p : presets) {
         lv_obj_t* chip = lv_btn_create(chips_row);
         lv_obj_set_flex_grow(chip, 1);
-        lv_obj_set_height(chip, 26);
-        lv_obj_set_style_pad_hor(chip, 2, 0);
+        lv_obj_set_height(chip, us(26));
+        lv_obj_set_style_pad_hor(chip, us(2), 0);
         lv_obj_set_style_pad_ver(chip, 0, 0);
         lv_obj_set_style_bg_color(chip, tc(TC_TEAL_BG), 0);
         lv_obj_set_style_shadow_width(chip, 0, 0);
@@ -136,7 +136,7 @@ ProgramUI::ProgramUI(DCCEXProtocol& dccex, lv_obj_t* parent)
         const char* labels[] = { "ACK Limit", "ACK Min", "ACK Max" };
         lv_obj_t* btn = lv_btn_create(ack_row);
         lv_obj_set_flex_grow(btn, 1);
-        lv_obj_set_height(btn, 28);
+        lv_obj_set_height(btn, us(28));
         lv_obj_set_style_bg_color(btn, tc(TC_SURFACE_DEEP), 0);
         lv_obj_set_style_shadow_width(btn, 0, 0);
         lv_obj_set_style_border_width(btn, 1, 0);

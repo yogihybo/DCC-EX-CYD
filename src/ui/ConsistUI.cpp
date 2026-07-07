@@ -43,7 +43,7 @@ ConsistUI::ConsistUI(DCCEXProtocol& dccex, lv_obj_t* parent, DriveCallback onDri
     // Header — fixed height; flex gives the rest to _content
     lv_obj_t* header = lv_obj_create(_container);
     lv_obj_set_width(header, LV_PCT(100));
-    lv_obj_set_height(header, 50);
+    lv_obj_set_height(header, us(50));
     lv_obj_set_style_pad_all(header, 0, 0);
     lv_obj_set_style_border_width(header, 0, 0);
     lv_obj_clear_flag(header, LV_OBJ_FLAG_SCROLLABLE);
@@ -51,10 +51,10 @@ ConsistUI::ConsistUI(DCCEXProtocol& dccex, lv_obj_t* parent, DriveCallback onDri
 
     lv_obj_t* title = lv_label_create(header);
     lv_label_set_text(title, "Consists");
-    lv_obj_align(title, LV_ALIGN_LEFT_MID, 10, 0);
+    lv_obj_align(title, LV_ALIGN_LEFT_MID, us(10), 0);
 
     lv_obj_t* close_btn = make_danger_btn(header, "Close");
-    lv_obj_align(close_btn, LV_ALIGN_RIGHT_MID, -10, 0);
+    lv_obj_align(close_btn, LV_ALIGN_RIGHT_MID, us(-10), 0);
     lv_obj_add_event_cb(close_btn, close_btn_cb, LV_EVENT_CLICKED, this);
 
     _showList();
@@ -81,16 +81,16 @@ void ConsistUI::_showList() {
     _content = lv_obj_create(_container);
     lv_obj_set_width(_content, LV_PCT(100));
     lv_obj_set_flex_grow(_content, 1);
-    lv_obj_set_style_pad_all(_content, 5, 0);
+    lv_obj_set_style_pad_all(_content, us(5), 0);
     lv_obj_set_style_border_width(_content, 0, 0);
     lv_obj_set_flex_flow(_content, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(_content, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_pad_row(_content, 4, 0);
+    lv_obj_set_style_pad_row(_content, us(4), 0);
 
     // New consist button
     lv_obj_t* new_btn = lv_btn_create(_content);
     lv_obj_set_width(new_btn, LV_PCT(100));
-    lv_obj_set_height(new_btn, 38);
+    lv_obj_set_height(new_btn, us(38));
     lv_obj_set_style_bg_color(new_btn, lv_color_make(40, 140, 40), 0);
     lv_obj_set_style_shadow_width(new_btn, 0, 0);
     lv_obj_t* new_lbl = lv_label_create(new_btn);
@@ -112,10 +112,10 @@ void ConsistUI::_showList() {
 
                     lv_obj_t* row = lv_obj_create(_content);
                     lv_obj_set_width(row, LV_PCT(100));
-                    lv_obj_set_height(row, 38);
-                    lv_obj_set_style_pad_ver(row, 4, 0);
-                    lv_obj_set_style_pad_hor(row, 2, 0);
-                    lv_obj_set_style_pad_column(row, 4, 0);
+                    lv_obj_set_height(row, us(38));
+                    lv_obj_set_style_pad_ver(row, us(4), 0);
+                    lv_obj_set_style_pad_hor(row, us(2), 0);
+                    lv_obj_set_style_pad_column(row, us(4), 0);
                     lv_obj_set_style_border_width(row, 0, 0);
                     lv_obj_clear_flag(row, LV_OBJ_FLAG_SCROLLABLE);
                     lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
@@ -131,7 +131,7 @@ void ConsistUI::_showList() {
 
                     // Throttle button (drive)
                     lv_obj_t* drv_btn = lv_btn_create(row);
-                    lv_obj_set_size(drv_btn, 34, 30);
+                    lv_obj_set_size(drv_btn, us(34), us(30));
                     lv_obj_set_style_shadow_width(drv_btn, 0, 0);
                     lv_obj_set_style_bg_color(drv_btn, lv_color_make(40, 140, 40), 0);
                     lv_obj_t* drv_lbl = lv_label_create(drv_btn);
@@ -143,7 +143,7 @@ void ConsistUI::_showList() {
 
                     // Settings button (edit)
                     lv_obj_t* set_btn = lv_btn_create(row);
-                    lv_obj_set_size(set_btn, 34, 30);
+                    lv_obj_set_size(set_btn, us(34), us(30));
                     lv_obj_set_style_shadow_width(set_btn, 0, 0);
                     lv_obj_t* set_lbl = lv_label_create(set_btn);
                     lv_label_set_text(set_lbl, LV_SYMBOL_SETTINGS);
@@ -173,8 +173,8 @@ void ConsistUI::_rebuildMemberRows(lv_obj_t* list) {
 
         lv_obj_t* row = lv_obj_create(list);
         lv_obj_set_width(row, LV_PCT(100));
-        lv_obj_set_height(row, 38);
-        lv_obj_set_style_pad_all(row, 3, 0);
+        lv_obj_set_height(row, us(38));
+        lv_obj_set_style_pad_all(row, us(3), 0);
         lv_obj_set_style_border_width(row, 0, 0);
         lv_obj_clear_flag(row, LV_OBJ_FLAG_SCROLLABLE);
         lv_obj_set_user_data(row, (void*)(intptr_t)(i + 1)); // non-null tag
@@ -190,13 +190,13 @@ void ConsistUI::_rebuildMemberRows(lv_obj_t* list) {
             lv_label_set_text_fmt(lbl, "[%s] %d %s", rank, m.address, name.c_str());
         lv_obj_align(lbl, LV_ALIGN_LEFT_MID, 0, 0);
         lv_label_set_long_mode(lbl, LV_LABEL_LONG_CLIP);
-        lv_obj_set_width(lbl, 110);
+        lv_obj_set_width(lbl, us(110));
 
         // Direction toggle
         lv_obj_t* dir_btn = lv_btn_create(row);
-        lv_obj_set_size(dir_btn, 44, 28);
+        lv_obj_set_size(dir_btn, us(44), us(28));
         lv_obj_set_style_shadow_width(dir_btn, 0, 0);
-        lv_obj_align(dir_btn, LV_ALIGN_RIGHT_MID, -48, 0);
+        lv_obj_align(dir_btn, LV_ALIGN_RIGHT_MID, us(-48), 0);
         lv_obj_set_style_bg_color(dir_btn,
             m.reversed ? lv_color_make(180, 120, 30) : lv_color_make(40, 140, 40), 0);
         lv_obj_t* dir_lbl = lv_label_create(dir_btn);
@@ -208,7 +208,7 @@ void ConsistUI::_rebuildMemberRows(lv_obj_t* list) {
 
         // Remove button (not for lead loco)
         lv_obj_t* rem_btn = make_danger_btn(row, LV_SYMBOL_TRASH);
-        lv_obj_set_size(rem_btn, 38, 28);
+        lv_obj_set_size(rem_btn, us(38), us(28));
         lv_obj_align(rem_btn, LV_ALIGN_RIGHT_MID, 0, 0);
         lv_obj_set_user_data(rem_btn, (void*)(intptr_t)i);
         lv_obj_add_event_cb(rem_btn, remove_member_cb, LV_EVENT_CLICKED, this);
@@ -222,17 +222,17 @@ void ConsistUI::_showEditor() {
     _content = lv_obj_create(_container);
     lv_obj_set_width(_content, LV_PCT(100));
     lv_obj_set_flex_grow(_content, 1);
-    lv_obj_set_style_pad_all(_content, 5, 0);
+    lv_obj_set_style_pad_all(_content, us(5), 0);
     lv_obj_set_style_border_width(_content, 0, 0);
     lv_obj_set_flex_flow(_content, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(_content, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_pad_row(_content, 3, 0);
+    lv_obj_set_style_pad_row(_content, us(3), 0);
 
     // Name field
     lv_obj_t* name_row = lv_obj_create(_content);
     lv_obj_set_width(name_row, LV_PCT(100));
-    lv_obj_set_height(name_row, 36);
-    lv_obj_set_style_pad_all(name_row, 3, 0);
+    lv_obj_set_height(name_row, us(36));
+    lv_obj_set_style_pad_all(name_row, us(3), 0);
     lv_obj_set_style_border_width(name_row, 0, 0);
     lv_obj_clear_flag(name_row, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_user_data(name_row, nullptr);
@@ -242,7 +242,7 @@ void ConsistUI::_showEditor() {
     lv_obj_align(name_lbl, LV_ALIGN_LEFT_MID, 0, 0);
 
     lv_obj_t* name_ta = lv_textarea_create(name_row);
-    lv_obj_set_size(name_ta, 150, 30);
+    lv_obj_set_size(name_ta, us(150), us(30));
     lv_obj_align(name_ta, LV_ALIGN_RIGHT_MID, 0, 0);
     lv_textarea_set_one_line(name_ta, true);
     lv_textarea_set_text(name_ta, _editName.isEmpty() ? "New Consist" : _editName.c_str());
@@ -251,8 +251,8 @@ void ConsistUI::_showEditor() {
     // Replicate functions toggle
     lv_obj_t* rep_row = lv_obj_create(_content);
     lv_obj_set_width(rep_row, LV_PCT(100));
-    lv_obj_set_height(rep_row, 32);
-    lv_obj_set_style_pad_all(rep_row, 3, 0);
+    lv_obj_set_height(rep_row, us(32));
+    lv_obj_set_style_pad_all(rep_row, us(3), 0);
     lv_obj_set_style_border_width(rep_row, 0, 0);
     lv_obj_clear_flag(rep_row, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_user_data(rep_row, nullptr);
@@ -271,8 +271,8 @@ void ConsistUI::_showEditor() {
     lv_obj_t* member_list = lv_obj_create(_content);
     lv_obj_set_width(member_list, LV_PCT(100));
     lv_obj_set_flex_grow(member_list, 1);
-    lv_obj_set_style_pad_all(member_list, 2, 0);
-    lv_obj_set_style_pad_row(member_list, 2, 0);
+    lv_obj_set_style_pad_all(member_list, us(2), 0);
+    lv_obj_set_style_pad_row(member_list, us(2), 0);
     lv_obj_set_style_border_width(member_list, 1, 0);
     lv_obj_set_flex_flow(member_list, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_user_data(member_list, nullptr);
@@ -282,7 +282,7 @@ void ConsistUI::_showEditor() {
     // Add member button
     lv_obj_t* add_btn = lv_btn_create(_content);
     lv_obj_set_width(add_btn, LV_PCT(100));
-    lv_obj_set_height(add_btn, 35);
+    lv_obj_set_height(add_btn, us(35));
     lv_obj_set_style_shadow_width(add_btn, 0, 0);
     lv_obj_t* add_lbl = lv_label_create(add_btn);
     lv_label_set_text(add_lbl, "+ Add Loco");
@@ -293,7 +293,7 @@ void ConsistUI::_showEditor() {
     // Action row: Drive / Save / Delete
     lv_obj_t* act_row = lv_obj_create(_content);
     lv_obj_set_width(act_row, LV_PCT(100));
-    lv_obj_set_height(act_row, 38);
+    lv_obj_set_height(act_row, us(38));
     lv_obj_set_style_pad_all(act_row, 0, 0);
     lv_obj_set_style_border_width(act_row, 0, 0);
     lv_obj_set_flex_flow(act_row, LV_FLEX_FLOW_ROW);
@@ -303,7 +303,7 @@ void ConsistUI::_showEditor() {
 
     lv_obj_t* drive_btn = lv_btn_create(act_row);
     lv_obj_set_flex_grow(drive_btn, 1);
-    lv_obj_set_height(drive_btn, 35);
+    lv_obj_set_height(drive_btn, us(35));
     lv_obj_set_style_shadow_width(drive_btn, 0, 0);
     lv_obj_set_style_bg_color(drive_btn, lv_color_make(40, 140, 40), 0);
     lv_obj_t* drive_lbl = lv_label_create(drive_btn);
@@ -314,7 +314,7 @@ void ConsistUI::_showEditor() {
 
     lv_obj_t* save_btn = lv_btn_create(act_row);
     lv_obj_set_flex_grow(save_btn, 1);
-    lv_obj_set_height(save_btn, 35);
+    lv_obj_set_height(save_btn, us(35));
     lv_obj_set_style_shadow_width(save_btn, 0, 0);
     lv_obj_t* save_lbl = lv_label_create(save_btn);
     lv_label_set_text(save_lbl, LV_SYMBOL_SAVE " Save");
@@ -325,7 +325,7 @@ void ConsistUI::_showEditor() {
     if (_editLeadAddr != -1) {
         lv_obj_t* del_btn = make_danger_btn(act_row, LV_SYMBOL_TRASH);
         lv_obj_set_flex_grow(del_btn, 1);
-        lv_obj_set_height(del_btn, 35);
+        lv_obj_set_height(del_btn, us(35));
         lv_obj_add_event_cb(del_btn, delete_btn_cb, LV_EVENT_CLICKED, this);
     }
 }
@@ -336,11 +336,11 @@ void ConsistUI::_showAddMember() {
     _content = lv_obj_create(_container);
     lv_obj_set_width(_content, LV_PCT(100));
     lv_obj_set_flex_grow(_content, 1);
-    lv_obj_set_style_pad_all(_content, 5, 0);
+    lv_obj_set_style_pad_all(_content, us(5), 0);
     lv_obj_set_style_border_width(_content, 0, 0);
     lv_obj_set_flex_flow(_content, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(_content, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_pad_row(_content, 4, 0);
+    lv_obj_set_style_pad_row(_content, us(4), 0);
 
     lv_obj_t* prompt = lv_label_create(_content);
     lv_label_set_text(prompt, _members.empty() ? "Lead loco address:" : "Member loco address:");
@@ -356,8 +356,8 @@ void ConsistUI::_showAddMember() {
     if (!_members.empty()) {
         lv_obj_t* dir_row = lv_obj_create(_content);
         lv_obj_set_width(dir_row, LV_PCT(100));
-        lv_obj_set_height(dir_row, 34);
-        lv_obj_set_style_pad_all(dir_row, 3, 0);
+        lv_obj_set_height(dir_row, us(34));
+        lv_obj_set_style_pad_all(dir_row, us(3), 0);
         lv_obj_set_style_border_width(dir_row, 0, 0);
         lv_obj_clear_flag(dir_row, LV_OBJ_FLAG_SCROLLABLE);
 
