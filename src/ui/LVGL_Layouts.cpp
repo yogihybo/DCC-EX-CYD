@@ -366,6 +366,12 @@ void set_header_cs_status(bool connected) {
 }
 
 void set_header_power_status(float voltage) {
+    // Low-battery warning: colour the battery indicator red below threshold.
+    // (voltage ~0 means no/invalid reading — treat as not-low.)
+    bool low = voltage > 0.1f && voltage < LOW_BATTERY_VOLTS;
+    lv_color_t iconCol = low ? lv_color_hex(0xe53935) : tc(TC_TEXT_SECONDARY);
+    lv_color_t textCol = low ? lv_color_hex(0xe53935) : tc(TC_TEXT_HINT);
+
     if (power_label) {
         const char* sym = LV_SYMBOL_BATTERY_EMPTY;
         if      (voltage >= 4.10) sym = LV_SYMBOL_BATTERY_FULL;
@@ -373,10 +379,12 @@ void set_header_power_status(float voltage) {
         else if (voltage >= 3.75) sym = LV_SYMBOL_BATTERY_2;
         else if (voltage >= 3.60) sym = LV_SYMBOL_BATTERY_1;
         lv_label_set_text(power_label, sym);
+        lv_obj_set_style_text_color(power_label, iconCol, 0);
     }
     if (voltage_label) {
         char buf[8];
         snprintf(buf, sizeof(buf), "%.2fV", voltage);
         lv_label_set_text(voltage_label, buf);
+        lv_obj_set_style_text_color(voltage_label, textCol, 0);
     }
 }

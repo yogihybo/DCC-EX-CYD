@@ -94,6 +94,27 @@ static void touch_read(lv_indev_t * indev, lv_indev_data_t * data) {
 const uint32_t POWER_CHECK = 60000 * 2;
 const uint16_t CONNECTION_ALIVE_DELAY = 5000;
 
+// ── Power management ─────────────────────────────────────────────────────────
+// Idle screen dimming (dim only — never fully blank, so a moving train is never
+// left with a black display) and low-battery auto-dim, both feeding one
+// backlight resolver so the two effects compose instead of fighting.
+const uint32_t IDLE_DIM_MS      = 30000; // dim after this much input inactivity
+const int      IDLE_DIM_DIVISOR = 4;     // dim to 1/4 of the set brightness
+const int      IDLE_DIM_FLOOR   = 12;    // never below this (stay visible)
+const int      LOW_BATT_MAX_BL  = 80;    // cap backlight when battery is low
+
+static volatile bool g_lowBattery = false; // written by powerCheck task
+static bool          g_idleDimmed = false; // written by loop()
+
+// Resolve the effective backlight from the user brightness + idle + low-battery.
+static void applyBacklight() {
+  int b = Settings.brightness;
+  if (g_lowBattery)  b = min(b, LOW_BATT_MAX_BL);
+  if (g_idleDimmed)  b = b / IDLE_DIM_DIVISOR;
+  if (b < IDLE_DIM_FLOOR) b = IDLE_DIM_FLOOR;
+  LVGL_CYD::backlight((uint8_t)b);
+}
+
 static void onCSCommand(const char* cmd) {
   ServerDescription desc;
   if (!parseServerDescription(cmd, desc)) return;
@@ -254,8 +275,15 @@ void powerCheck(void *) {
 
     float voltage = total / 10.0f;
 
+    // Low-battery state with hysteresis (ignore ~0 = no/invalid reading).
+    if (voltage > 0.1f) {
+      if (!g_lowBattery && voltage < LOW_BATTERY_VOLTS)        g_lowBattery = true;
+      else if (g_lowBattery && voltage > LOW_BATTERY_CLEAR_VOLTS) g_lowBattery = false;
+    }
+
     if (xSemaphoreTake(lvgl_mutex, portMAX_DELAY) == pdTRUE) {
         set_header_power_status(voltage);
+        applyBacklight(); // reflect low-battery auto-dim
         xSemaphoreGive(lvgl_mutex);
     }
     vTaskDelay(POWER_CHECK / portTICK_PERIOD_MS);
@@ -363,7 +391,8 @@ void setup() {
   });
 
   Settings.addEventListener(SettingsClass::Event::BRIGHTNESS_CHANGE, [](void*) {
-      LVGL_CYD::backlight(Settings.brightness);
+      g_idleDimmed = false; // adjusting brightness counts as activity
+      applyBacklight();
   });
 
   // --- SPLASH SCREEN ---
@@ -493,9 +522,14 @@ void setup() {
       }
 
       long delta = rotaryEncoder.encoderChanged();
-      if (delta != 0 && locoUI) {
-          if (main_tabview) lv_tabview_set_act(main_tabview, 0, LV_ANIM_OFF);
-          locoUI->nudgeSpeed((int)-delta * (1 << Settings.LocoUI.speedStep));
+      if (delta != 0) {
+          // Encoder isn't an LVGL input device, so mark activity manually to
+          // wake the screen from idle dimming.
+          lv_display_trigger_activity(NULL);
+          if (locoUI) {
+              if (main_tabview) lv_tabview_set_act(main_tabview, 0, LV_ANIM_OFF);
+              locoUI->nudgeSpeed((int)-delta * (1 << Settings.LocoUI.speedStep));
+          }
       }
 
       // Button long press – E-Stop (currently disabled)
@@ -551,6 +585,15 @@ void loop() {
     }
 
     lv_timer_handler();
+
+    // Idle screen dimming — dim after inactivity, restore on any touch/encoder
+    // input. Dim-only (never blank) so a moving train is never left dark.
+    bool wantDim = lv_display_get_inactive_time(NULL) > IDLE_DIM_MS;
+    if (wantDim != g_idleDimmed) {
+      g_idleDimmed = wantDim;
+      applyBacklight();
+    }
+
     xSemaphoreGive(lvgl_mutex);
   }
   delay(5);

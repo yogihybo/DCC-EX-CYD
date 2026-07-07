@@ -11,6 +11,12 @@ class UIView {
         virtual ~UIView() = default;
 };
 
+// Low-battery thresholds (LiPo, volts). At/below LOW_BATTERY_VOLTS the header
+// battery indicator turns red and the backlight is auto-dimmed to conserve
+// power; it clears once voltage recovers past LOW_BATTERY_CLEAR_VOLTS (hysteresis).
+#define LOW_BATTERY_VOLTS        3.60f
+#define LOW_BATTERY_CLEAR_VOLTS  3.75f
+
 extern lv_obj_t* header_bar;
 extern lv_obj_t* main_tabview;
 
