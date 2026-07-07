@@ -14,7 +14,7 @@ The firmware supports multiple board variants, each selected as its own Platform
 | Board | Env (`platformio.ini`) | Display | Resolution | Touch | Fn buttons / page |
 |---|---|---|---|---|---|
 | **ESP32-2432S028R** (Cheap Yellow Display / CYD) | `esp32-2432S028R` | 2.8" ILI9341 | 240×320 | XPT2046 (bit-bang SPI) | 6 (2×3) |
-| **ESP32-32E 3.5" LCD** | `3inch5-ESP32-32E` | 3.5" ST7796 | 320×480 | XPT2046 (shared LCD SPI bus) | 8 (2×4) |
+| **ESP32-32E 3.5" LCD** | `ESP32-32E-3.5in-LCD` | 3.5" ST7796 | 320×480 | XPT2046 (shared LCD SPI bus) | 8 (2×4) |
 
 Board-specific pins, display driver, touch wiring, and UI scale are all set via build flags in each environment — no code changes are needed to switch boards. See [Board Differences](#board-differences) for details.
 
@@ -138,7 +138,7 @@ On this board the XPT2046 touch controller **shares the LCD SPI bus** (GPIO 12/1
 | Battery ADC | 34 | Battery voltage via on-board 1:1 (100k/100k) divider; read with `analogReadMilliVolts` ×2 |
 | SD MISO / MOSI / CLK / CS | 19 / 23 / 18 / 5 | Hardware VSPI [SD card slot] |
 
-> **Note**: GPIO 34–39 are input-only pads with no internal pull resistors, so they are used only for the touch IRQ and battery ADC. Display resolution, driver, backlight polarity, RGB order, touch pins, encoder pins, and battery pin are all set as build flags in the `[env:3inch5-ESP32-32E]` section of `platformio.ini`.
+> **Note**: GPIO 34–39 are input-only pads with no internal pull resistors, so they are used only for the touch IRQ and battery ADC. Display resolution, driver, backlight polarity, RGB order, touch pins, encoder pins, and battery pin are all set as build flags in the `[env:ESP32-32E-3.5in-LCD]` section of `platformio.ini`.
 
 ---
 
@@ -259,7 +259,7 @@ The project is configured out-of-the-box via `platformio.ini`.
 1. Open the repository in **VSCode** with the **PlatformIO** extension installed.
 2. Select the environment for your board:
    - `esp32-2432S028R` for the 2.8" CYD.
-   - `3inch5-ESP32-32E` for the 3.5" LCD board.
+   - `ESP32-32E-3.5in-LCD` for the 3.5" LCD board.
 3. Click **Build** and **Upload** to flash the device.
 4. *Important*: Remember to also run **Upload File System Image** (LittleFS) to upload the necessary loco JSON definitions and system configurations to the ESP32 flash memory. Note: the file system image is flashed to the `website` partition, while the `config` partition is formatted automatically on first boot.
 5. On first boot, run **Touch Calibration** from the Settings tab so touch coordinates match your panel (the default calibration values differ per board).
