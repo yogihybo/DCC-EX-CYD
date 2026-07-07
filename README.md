@@ -4,7 +4,7 @@
 </p>
 
 ## Overview
-DCC-EX-CYD is a port of EX-T3-WiFi that transforms an inexpensive ESP32 touch-display board into a handheld model railway controller. It communicates asynchronously via WiFi directly to a DCC-EX Command Station.
+DCC-EX-CYD is a port of [EX-T3-WiFi](https://github.com/DCC-EX/EX-T3-WiFi) that transforms an inexpensive ESP32 touch-display board into a handheld model railway controller. It communicates asynchronously via WiFi directly to a DCC-EX Command Station.
 
 The firmware uses **FreeRTOS** and **LVGL 9** to provide a robust and clean UI.
 
