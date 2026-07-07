@@ -269,7 +269,9 @@ void ThrottleServer::begin() {
     JsonVariant& cs = response->getRoot();
 
     cs["ssid"] = Settings.CS.SSID();
-    cs["password"] = Settings.CS.password();
+    // Never send the stored WiFi password back over HTTP. Expose only whether one
+    // is set; the UI leaves the field blank and a blank on save keeps the existing.
+    cs["has_password"] = Settings.CS.password().length() > 0;
     cs["server"] = Settings.CS.server();
     cs["port"] = Settings.CS.port();
     cs["storageMode"] = Settings.storageMode;
@@ -288,7 +290,12 @@ void ThrottleServer::begin() {
 
   addHandler(new AsyncCallbackJsonWebHandler("/cs", [](AsyncWebServerRequest* request, JsonVariant &json) {
     Settings.CS.SSID(json["ssid"]);
-    Settings.CS.password(json["password"]);
+    // Blank/absent password = keep the currently stored one (the UI never
+    // receives it, so it can't echo it back). Only overwrite on a real value.
+    if (json.containsKey("password")) {
+      String pw = json["password"].as<String>();
+      if (pw.length() > 0) Settings.CS.password(pw);
+    }
     Settings.CS.server(json["server"]);
     Settings.CS.port(json["port"]);
     

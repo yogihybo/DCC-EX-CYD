@@ -14,6 +14,7 @@ export default {
       ip: '',
       storageMode: 0,
       has_sd: false,
+      has_password: false,
       importing: false,
     }
   },
@@ -40,7 +41,6 @@ export default {
       if (response.ok) {
         ({
           ssid: this.ssid,
-          password: this.password,
           server: this.server,
           port: this.port,
           version: this.version,
@@ -48,8 +48,12 @@ export default {
           free_ram: this.free_ram,
           ip: this.ip,
           storageMode: this.storageMode,
-          has_sd: this.has_sd
+          has_sd: this.has_sd,
+          has_password: this.has_password
         } = await response.json());
+        // The password is never sent by the device. Leave the field blank;
+        // a blank on save keeps the stored password unchanged.
+        this.password = '';
       }
     },
     async save() {
@@ -120,7 +124,7 @@ export default {
       </div>
       <div class="col">
         <div class="form-floating">
-          <input v-model="password" @input="lock" type="password" class="form-control" placeholder="WiFi Password" autocomplete="new-password" />
+          <input v-model="password" @input="lock" type="password" class="form-control" :placeholder="has_password ? 'WiFi Password (unchanged)' : 'WiFi Password'" autocomplete="new-password" />
           <label>WiFi Password</label>
         </div>
       </div>
