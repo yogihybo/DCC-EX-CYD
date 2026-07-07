@@ -138,7 +138,9 @@ void LocoUI::buildSelectionMenu() {
     lv_obj_set_style_pad_row(_selectionMenu, us(5), 0);
     lv_obj_set_flex_flow(_selectionMenu, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(_selectionMenu, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_clear_flag(_selectionMenu, LV_OBJ_FLAG_SCROLLABLE);
+    // Allow vertical scrolling: with the Recent chips added the content can exceed
+    // the fixed menu height on the smaller panel; scrolling keeps Release reachable.
+    lv_obj_set_scroll_dir(_selectionMenu, LV_DIR_VER);
     lv_obj_add_flag(_selectionMenu, LV_OBJ_FLAG_HIDDEN);
 
     lv_obj_t* title_row = lv_obj_create(_selectionMenu);
@@ -176,6 +178,44 @@ void LocoUI::buildSelectionMenu() {
     make_menu_btn("By Name",    name_btn_event_cb,    tc(TC_SURFACE_RAISED));
     make_menu_btn("By Group",   group_btn_event_cb,   tc(TC_SURFACE_RAISED));
     make_menu_btn("By Consist", consist_btn_event_cb, tc(TC_SURFACE_RAISED));
+
+    // Recent locos — quick-recall chips (persisted across sessions)
+    if (Settings.recentLocoCount > 0) {
+        lv_obj_t* rec_lbl = lv_label_create(_selectionMenu);
+        lv_label_set_text(rec_lbl, "Recent");
+        lv_obj_set_style_text_color(rec_lbl, tc(TC_TEXT_HINT), 0);
+        lv_obj_set_style_text_font(rec_lbl, &lv_font_montserrat_10, 0);
+
+        lv_obj_t* rec_row = lv_obj_create(_selectionMenu);
+        lv_obj_set_width(rec_row, LV_PCT(100));
+        lv_obj_set_height(rec_row, LV_SIZE_CONTENT);
+        lv_obj_set_style_max_height(rec_row, us(72), 0);
+        lv_obj_set_style_pad_all(rec_row, 0, 0);
+        lv_obj_set_style_pad_row(rec_row, us(4), 0);
+        lv_obj_set_style_pad_column(rec_row, us(4), 0);
+        lv_obj_set_style_border_width(rec_row, 0, 0);
+        lv_obj_set_style_bg_opa(rec_row, 0, 0);
+        lv_obj_set_flex_flow(rec_row, LV_FLEX_FLOW_ROW_WRAP);
+        lv_obj_set_flex_align(rec_row, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_START);
+
+        for (uint8_t i = 0; i < Settings.recentLocoCount; i++) {
+            uint16_t addr = Settings.recentLocos[i];
+            lv_obj_t* chip = lv_btn_create(rec_row);
+            lv_obj_set_height(chip, us(26));
+            lv_obj_set_style_pad_hor(chip, us(8), 0);
+            lv_obj_set_style_pad_ver(chip, 0, 0);
+            lv_obj_set_style_radius(chip, us(13), 0);
+            lv_obj_set_style_bg_color(chip, tc(TC_SURFACE_RAISED), 0);
+            lv_obj_set_style_shadow_width(chip, 0, 0);
+            lv_obj_set_user_data(chip, (void*)(uintptr_t)addr);
+            lv_obj_add_event_cb(chip, recent_loco_event_cb, LV_EVENT_CLICKED, this);
+            lv_obj_t* cl = lv_label_create(chip);
+            lv_label_set_text_fmt(cl, "%d", addr);
+            lv_obj_set_style_text_font(cl, &lv_font_montserrat_12, 0);
+            lv_obj_center(cl);
+        }
+    }
+
     lv_obj_t* rel_btn = make_danger_btn(_selectionMenu, "Release");
     lv_obj_set_width(rel_btn, LV_PCT(100));
     lv_obj_set_height(rel_btn, us(30));
@@ -906,12 +946,27 @@ void LocoUI::loco_selected_event_cb(lv_event_t * e) {
 
     if (address > 0 && address <= 9999) {
         ui->_locos.add(address);
+        Settings.pushRecentLoco(address);
         ui->_nameMenu = nullptr;
         ui->_groupsDoc.reset();
         lv_async_call([](void* user_data) {
             ((LocoUI*)user_data)->refresh();
         }, ui);
     }
+}
+
+void LocoUI::recent_loco_event_cb(lv_event_t * e) {
+    LocoUI* ui = (LocoUI*)lv_event_get_user_data(e);
+    lv_obj_t* chip = (lv_obj_t*)lv_event_get_target(e);
+    uint16_t addr = (uintptr_t)lv_obj_get_user_data(chip);
+    if (addr == 0) return;
+
+    if (ui->_selectionMenu) lv_obj_add_flag(ui->_selectionMenu, LV_OBJ_FLAG_HIDDEN);
+    ui->_locos.add(addr);
+    Settings.pushRecentLoco(addr);
+    lv_async_call([](void* user_data) {
+        ((LocoUI*)user_data)->refresh();
+    }, ui);
 }
 
 void LocoUI::close_name_menu_event_cb(lv_event_t * e) {
@@ -1135,6 +1190,7 @@ void LocoUI::kb_event_cb(lv_event_t * e) {
             uint16_t addr = atoi(txt);
             if (addr > 0 && addr <= 9999) {
                 ui->_locos.add(addr);
+                Settings.pushRecentLoco(addr);
                 ui->_keyboard = nullptr;
                 ui->_textarea = nullptr;
                 lv_async_call([](void* user_data) {

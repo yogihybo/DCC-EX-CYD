@@ -5,7 +5,7 @@
 
 void SettingsClass::load() {
   File json = ConfigFS.open("/settings.json");
-  StaticJsonDocument<768> doc;
+  StaticJsonDocument<1024> doc;
   DeserializationError error = deserializeJson(doc, json);
 
   json.close();
@@ -36,13 +36,22 @@ void SettingsClass::load() {
       TouchCal.yMin = cal["yMin"] | TouchCal.yMin;
       TouchCal.yMax = cal["yMax"] | TouchCal.yMax;
     }
+
+    recentLocoCount = 0;
+    if (doc.containsKey("recentLocos")) {
+      for (JsonVariant v : doc["recentLocos"].as<JsonArray>()) {
+        if (recentLocoCount >= RECENT_LOCOS_MAX) break;
+        uint16_t a = v.as<uint16_t>();
+        if (a != 0) recentLocos[recentLocoCount++] = a;
+      }
+    }
   } else {
     init();
   }
 }
 
 void SettingsClass::save() {
-  StaticJsonDocument<768> doc;
+  StaticJsonDocument<1024> doc;
 
   doc["version"] = version;
   doc["rotation"] = rotation;
@@ -59,7 +68,10 @@ void SettingsClass::save() {
   cal["xMax"] = TouchCal.xMax;
   cal["yMin"] = TouchCal.yMin;
   cal["yMax"] = TouchCal.yMax;
-  
+
+  JsonArray recents = doc.createNestedArray("recentLocos");
+  for (uint8_t i = 0; i < recentLocoCount; i++) recents.add(recentLocos[i]);
+
   File json = ConfigFS.open("/settings.json", FILE_WRITE);
   serializeJson(doc, json);
   json.close();
@@ -173,6 +185,28 @@ void SettingsClass::LocoUI::load(const JsonObject& obj) {
 void SettingsClass::LocoUI::save(const JsonObject& obj) {
   obj["step"]  = speedStep;
   obj["accel"] = acceleration;
+}
+
+void SettingsClass::pushRecentLoco(uint16_t addr) {
+  if (addr == 0) return;
+
+  // Already at the front — nothing to do (avoids a needless flash write).
+  if (recentLocoCount > 0 && recentLocos[0] == addr) return;
+
+  // Drop any existing occurrence, preserving order of the rest.
+  uint8_t w = 0;
+  for (uint8_t i = 0; i < recentLocoCount; i++) {
+    if (recentLocos[i] != addr) recentLocos[w++] = recentLocos[i];
+  }
+  recentLocoCount = w;
+
+  // Shift down (capped) and insert at the front.
+  uint8_t last = (recentLocoCount < RECENT_LOCOS_MAX) ? recentLocoCount : (RECENT_LOCOS_MAX - 1);
+  for (uint8_t i = last; i > 0; i--) recentLocos[i] = recentLocos[i - 1];
+  recentLocos[0] = addr;
+  if (recentLocoCount < RECENT_LOCOS_MAX) recentLocoCount++;
+
+  save();
 }
 
 SettingsClass Settings;

@@ -39,6 +39,14 @@ class SettingsClass : public Events {
     uint8_t brightness = 255;
     uint8_t emergencyStopDelay = 5; // seconds of encoder button hold to trigger e-stop
 
+    // Most-recently-selected loco addresses, most-recent first. Persisted so the
+    // throttle can offer quick recall across power cycles.
+    static constexpr uint8_t RECENT_LOCOS_MAX = 10;
+    uint16_t recentLocos[RECENT_LOCOS_MAX] = {0};
+    uint8_t  recentLocoCount = 0;
+    // Insert addr at the front (de-duplicated), cap at RECENT_LOCOS_MAX, and save.
+    void pushRecentLoco(uint16_t addr);
+
     struct TouchCal {
 #ifdef ST7796_DRIVER
       int xMin = 350;   // rx at left edge

@@ -75,6 +75,8 @@ class LocoUI : public UIView {
     static void close_name_menu_event_cb(lv_event_t * e);
     static void loco_selected_event_cb(lv_event_t * e);
 
+    static void recent_loco_event_cb(lv_event_t * e);
+
     static void group_btn_event_cb(lv_event_t * e);
     static void group_selected_event_cb(lv_event_t * e);
 
