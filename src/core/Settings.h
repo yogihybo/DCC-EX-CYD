@@ -37,6 +37,7 @@ class SettingsClass : public Events {
     uint8_t storageMode = StorageMode::LITTLEFS;
     uint8_t theme = Theme::DARK;
     uint8_t brightness = 255;
+    bool    autoDim = true;          // dim the screen after input inactivity
     uint8_t emergencyStopDelay = 5; // seconds of encoder button hold to trigger e-stop
 
     // Most-recently-selected loco addresses, most-recent first. Persisted so the

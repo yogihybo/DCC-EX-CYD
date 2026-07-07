@@ -588,7 +588,8 @@ void loop() {
 
     // Idle screen dimming — dim after inactivity, restore on any touch/encoder
     // input. Dim-only (never blank) so a moving train is never left dark.
-    bool wantDim = lv_display_get_inactive_time(NULL) > IDLE_DIM_MS;
+    // Skippable via the Settings "Auto-dim" toggle.
+    bool wantDim = Settings.autoDim && lv_display_get_inactive_time(NULL) > IDLE_DIM_MS;
     if (wantDim != g_idleDimmed) {
       g_idleDimmed = wantDim;
       applyBacklight();

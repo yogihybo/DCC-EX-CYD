@@ -24,6 +24,7 @@ void SettingsClass::load() {
     storageMode = doc["storageMode"] | storageMode;
     theme = doc["theme"] | theme;
     brightness = doc["brightness"] | brightness;
+    autoDim = doc["autoDim"] | autoDim;
     emergencyStopDelay = doc["emergencyStopDelay"] | emergencyStopDelay;
     AP.load(doc["ap"]);
     CS.load(doc["cs"]);
@@ -58,6 +59,7 @@ void SettingsClass::save() {
   doc["storageMode"] = storageMode;
   doc["theme"] = theme;
   doc["brightness"] = brightness;
+  doc["autoDim"] = autoDim;
   doc["emergencyStopDelay"] = emergencyStopDelay;
   AP.save(doc["ap"] | doc.createNestedObject("ap"));
   CS.save(doc["cs"] | doc.createNestedObject("cs"));

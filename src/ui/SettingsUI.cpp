@@ -98,6 +98,10 @@ SettingsUI::SettingsUI(DCCEXProtocol& dccex, lv_obj_t* parent) : _dccex(dccex), 
   snprintf(buf, sizeof(buf), "%d%%", (Settings.brightness * 100) / 255);
   _brightnessLbl = make_badge(b, buf, VAL_BG, VAL_FG);
 
+  b = make_row(auto_dim_event_cb);
+  make_name(b, "Auto-dim screen");
+  _autoDimLbl = make_badge(b, Settings.autoDim ? "On" : "Off", VAL_BG, VAL_FG);
+
   b = make_row(theme_event_cb);
   make_name(b, "Theme");
   _themeLbl = make_badge(b, Settings.theme == SettingsClass::Theme::DARK ? "Dark" : "Light", VAL_BG, VAL_FG);
@@ -210,6 +214,13 @@ void SettingsUI::theme_event_cb(lv_event_t * e) {
   lv_label_set_text_fmt(ui->_themeLbl, "%s", Settings.theme == SettingsClass::Theme::DARK ? "Dark" : "Light");
   Settings.save();
   Settings.dispatchEvent(SettingsClass::Event::THEME_CHANGE);
+}
+
+void SettingsUI::auto_dim_event_cb(lv_event_t * e) {
+  SettingsUI* ui = (SettingsUI*)lv_event_get_user_data(e);
+  Settings.autoDim = !Settings.autoDim;
+  lv_label_set_text(ui->_autoDimLbl, Settings.autoDim ? "On" : "Off");
+  Settings.save();
 }
 
 void SettingsUI::rotation_event_cb(lv_event_t * e) {

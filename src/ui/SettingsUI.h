@@ -23,6 +23,7 @@ class SettingsUI : public UIView {
     lv_obj_t* _storageModeLbl;
 
     lv_obj_t* _brightnessLbl;
+    lv_obj_t* _autoDimLbl;
     lv_obj_t* _eStopDelayLbl;
     lv_obj_t* _formatMsgbox = nullptr;
     lv_obj_t* _calMsgbox = nullptr;
@@ -41,6 +42,7 @@ class SettingsUI : public UIView {
     static void estop_delay_event_cb(lv_event_t * e);
     static void brightness_btn_event_cb(lv_event_t * e);
     static void brightness_event_cb(lv_event_t * e);
+    static void auto_dim_event_cb(lv_event_t * e);
     static void wifi_setup_event_cb(lv_event_t * e);
     static void about_event_cb(lv_event_t * e);
     static void calibrate_event_cb(lv_event_t * e);
