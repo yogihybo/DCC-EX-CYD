@@ -259,7 +259,7 @@ The project is configured out-of-the-box via `platformio.ini`.
 1. Open the repository in **VSCode** with the **PlatformIO** extension installed.
 2. Select the environment for your board:
    - `esp32-2432S028R` for the 2.8" CYD.
-   - `3inch5-ESP32-32E` for the 3.5" LCDWIKI board.
+   - `3inch5-ESP32-32E` for the 3.5" LCD board.
 3. Click **Build** and **Upload** to flash the device.
 4. *Important*: Remember to also run **Upload File System Image** (LittleFS) to upload the necessary loco JSON definitions and system configurations to the ESP32 flash memory. Note: the file system image is flashed to the `website` partition, while the `config` partition is formatted automatically on first boot.
 5. On first boot, run **Touch Calibration** from the Settings tab so touch coordinates match your panel (the default calibration values differ per board).
@@ -268,7 +268,7 @@ The project is configured out-of-the-box via `platformio.ini`.
 
 ## SD Card & Touch Screen SPI Multiplexing
 
-> This section applies to the **CYD (ESP32-2432S028R)**. On the **3.5" ESP32-32E** the XPT2046 touch controller shares the LCD SPI bus directly and is driven through TFT_eSPI's built-in XPT2046 support (hardware SPI with CS switching) — the bit-bang workaround below is compiled out for that board via the `ST7796_DRIVER` flag. Reading touch through TFT_eSPI's `getTouchRaw()`/`getTouchRawZ()` avoids reconfiguring the shared bus pins as GPIO, which would otherwise corrupt the display.
+> This section applies to the **CYD (ESP32-2432S028R)**. On the **ESP32-32E 3.5" LCD** the XPT2046 touch controller shares the LCD SPI bus directly and is driven through TFT_eSPI's built-in XPT2046 support (hardware SPI with CS switching) — the bit-bang workaround below is compiled out for that board via the `ST7796_DRIVER` flag. Reading touch through TFT_eSPI's `getTouchRaw()`/`getTouchRawZ()` avoids reconfiguring the shared bus pins as GPIO, which would otherwise corrupt the display.
 
 The ESP32 Cheap Yellow Display (CYD) features a notorious hardware conflict: **The SD Card reader and the Resistive Touch Screen are intended to share the same VSPI hardware controller, but are wired to completely different pins.**
 - **Touch Pins**: `CLK=25`, `MISO=39`, `MOSI=32`, `CS=33`, `IRQ=36`
