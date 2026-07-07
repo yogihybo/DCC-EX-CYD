@@ -1,12 +1,22 @@
-# DCC-EX-CYD Throttle for Cheap Yellow Display (CYD)
+# DCC-EX-CYD — WiFi Throttle for ESP32 Touch Displays (CYD 2.8" & LCDWIKI 3.5")
 <p align="center">
 <img width="200" height="208" alt="logo" src="https://github.com/user-attachments/assets/ec05c465-016c-4fdd-a8e6-c6d3c67aa4a7" />
 </p>
 
 ## Overview
-DCC-EX-CYD is port of EX-T3-WiFi that transforms a Cheap Yellow Display (CYD) ESP32-2432S028R into a handheld model railway controller. It communicates asynchronously via WiFi directly to a DCC-EX Command Station. 
+DCC-EX-CYD is a port of EX-T3-WiFi that transforms an inexpensive ESP32 touch-display board into a handheld model railway controller. It communicates asynchronously via WiFi directly to a DCC-EX Command Station.
 
-The firmware uses **FreeRTOS** and **LVGL 9** to provide a robust and clean UI
+The firmware uses **FreeRTOS** and **LVGL 9** to provide a robust and clean UI.
+
+### Supported Boards
+The firmware supports multiple board variants, each selected as its own PlatformIO environment. The UI scales automatically to the panel size, so the same features are available on both.
+
+| Board | Env (`platformio.ini`) | Display | Resolution | Touch | Fn buttons / page |
+|---|---|---|---|---|---|
+| **ESP32-2432S028R** (Cheap Yellow Display / CYD) | `esp32-2432S028R` | 2.8" ILI9341 | 240×320 | XPT2046 (bit-bang SPI) | 6 (2×3) |
+| **LCDWIKI 3.5" ESP32-32E** | `3inch5-ESP32-32E` | 3.5" ST7796 | 320×480 | XPT2046 (shared LCD SPI bus) | 8 (2×4) |
+
+Board-specific pins, display driver, touch wiring, and UI scale are all set via build flags in each environment — no code changes are needed to switch boards. See [Board Differences](#board-differences) for details.
 
 <p align="center">
 <img width="240" height="320" alt="demo" src="https://github.com/user-attachments/assets/fd9401f1-40ce-46f9-9039-7acc50f2ab25" />
@@ -43,15 +53,22 @@ A web interface running on the ESP32 allows for easy input of loco details and a
 ---
 
 ## Hardware Requirements
-- **ESP32-2432S028R** (Also known as the CYD / Cheap Yellow Display)
-- **Screen**: CYD 2.8" TFT (240x320) with ILI9341 Driver
-- **Touch**: CYD Resistive (or Capacitive) touch panel support
-- **Power**: USB power or LiPo via additional battery USB charging board (battery voltage/capacity is measured using the touch screen driver IC feature on pin 7)
-- **Encoder**: A rotary encoder (optional) to operated as a tactile throttle HW-040
-- **Battery and Charging Board**: A LiPo battery and USB LiPo charging board
-- **TODO** Details on assembly and case 
+One of the supported ESP32 display boards:
+- **ESP32-2432S028R** — the CYD / Cheap Yellow Display: 2.8" ILI9341 TFT (240×320), resistive (or capacitive) touch.
+- **LCDWIKI 3.5" ESP32-32E** — 3.5" ST7796 TFT (320×480), XPT2046 resistive touch sharing the LCD SPI bus. [Product page](https://www.lcdwiki.com/3.5inch_ESP32-32E_Display).
 
-### Pin Definitions
+Common to both:
+- **Power**: USB power or a LiPo via a USB LiPo charging board.
+- **Encoder** *(optional)*: an HW-040 rotary encoder acting as a tactile throttle; the throttle can also be driven entirely by touch.
+- **TODO**: details on assembly and case.
+
+Board-specific notes:
+- **CYD** measures battery voltage through the XPT2046 touch IC's VBAT channel (pin 7).
+- **3.5" ESP32-32E** measures battery voltage on GPIO 34 through an on-board 1:1 (100k/100k) divider, and has no PSRAM.
+
+---
+
+### CYD (ESP32-2432S028R) Pin Definitions
 
 #### External — HW-040 Encoder (entirely optional as throttle can be controlled on screen by touch input)
 
@@ -89,6 +106,58 @@ A web interface running on the ESP32 allows for easy input of loco details and a
 | LDR | 34 | Light dependent resistor (unused) |
 | XPT2046 VBAT | pin 7 | Battery voltage read via XPT2046 internal ADC channel (÷4 attenuator, 2.5V ref); solder a wire from the JP3 pad (battery voltage source) directly to pin 7 on the XPT2046 IC |
 
+---
+
+### 3.5" ESP32-32E Pin Definitions
+
+On this board the XPT2046 touch controller **shares the LCD SPI bus** (GPIO 12/13/14) rather than using a separate bit-bang bus. The firmware drives touch through TFT_eSPI's built-in XPT2046 support (with CS switching) so the shared bus is not corrupted.
+
+#### External — HW-040 Encoder (optional)
+
+| Function | GPIO | Notes |
+|---|---|---|
+| Encoder CLK (A) | 32 | Free GPIO with internal pull |
+| Encoder DT (B) | 25 | Free GPIO with internal pull |
+| Encoder Button (SW) | 23 | Active LOW; long-press triggers E-Stop. Shared with the SD-card MOSI line — fine unless an SD card is used simultaneously |
+| 3.3V / GND | — | Encoder power/ground |
+
+#### Internal — Hardwired on the 3.5" Board
+
+| Function | GPIO | Notes |
+|---|---|---|
+| LCD MISO | 12 | Display SPI MISO (shared with touch) |
+| LCD MOSI | 13 | Display SPI MOSI (shared with touch) |
+| LCD SCLK | 14 | Display SPI clock (shared with touch) |
+| LCD CS | 15 | Display chip select |
+| LCD DC | 2 | Display data/command select |
+| LCD RST | -1 | Not connected |
+| Backlight | 27 | PWM backlight (active HIGH) |
+| Touch CS | 33 | XPT2046 chip select |
+| Touch IRQ | 36 | XPT2046 interrupt (input-only pad) |
+| Red LED | 22 | RGB LED red channel |
+| Battery ADC | 34 | Battery voltage via on-board 1:1 (100k/100k) divider; read with `analogReadMilliVolts` ×2 |
+| SD MISO / MOSI / CLK / CS | 19 / 23 / 18 / 5 | Hardware VSPI [SD card slot] |
+
+> **Note**: GPIO 34–39 are input-only pads with no internal pull resistors, so they are used only for the touch IRQ and battery ADC. Display resolution, driver, backlight polarity, RGB order, touch pins, encoder pins, and battery pin are all set as build flags in the `[env:3inch5-ESP32-32E]` section of `platformio.ini`.
+
+---
+
+<a name="board-differences"></a>
+### Board Differences
+
+| Area | CYD (ESP32-2432S028R) | 3.5" ESP32-32E |
+|---|---|---|
+| Display driver | ILI9341 / ST7789 (auto-detected) | ST7796 |
+| Resolution | 240×320 | 320×480 |
+| Touch bus | XPT2046 on a dedicated software (bit-bang) SPI bus | XPT2046 on the shared LCD SPI bus (TFT_eSPI built-in driver, CS switching) |
+| Battery sense | XPT2046 VBAT (pin 7) | GPIO 34 + 1:1 divider |
+| PSRAM | n/a | none (4 MB is flash only) |
+| RGB LED | GPIO 4/16/17 | Red on GPIO 22 |
+| Function buttons/page | 6 (2×3) | 8 (2×4) |
+| UI scale | reference (1.0×) | ~1.5× (height) via `us()`; bottom controls use ~1.33× (width) via `usw()` |
+
+The UI is authored against the CYD's pixel dimensions. `Theme.h` provides `us()` (height-ratio) and `usw()` (width-ratio) scale helpers, plus `ui_font_default()`, so hardcoded sizes, paddings and fonts scale up on the larger panel while the CYD build stays byte-for-byte identical (scale factor 1/1). The status/header bar is deliberately left un-scaled so it reads the same on both boards.
+
 ## Software Stack
 - **PlatformIO**: Primary build environment and C++ Framework
 - **FreeRTOS**: Handles async WiFi keep-alives, background voltage checks, and strictly manages LVGL thread safety via Mutex locks.
@@ -114,13 +183,13 @@ The entry point of the firmware.
 ### 2. Global View Manager (`LVGL_Layouts.cpp / .h`)
 A native LVGL container system for the UI.
 - **Top Status Bar**: Displays real-time battery voltage, WiFi state, Command Station connection, and active locomotive count utilizing dynamic LVGL symbolic icons (`LV_SYMBOL_WIFI`, `LV_SYMBOL_BATTERY_FULL`, custom Loco and DCC connection icons). The DCC status icon renders as a live square-wave waveform using an `lv_line` polyline — green when connected, red when not.
-- **Rear RGB LED**: The onboard RGB LED (active-LOW on GPIO 4/16/17) mirrors the Command Station connection state — green when connected, red when disconnected.
+- **Rear RGB LED**: The onboard RGB LED (active-LOW; GPIO 4/16/17 on the CYD, red on GPIO 22 for the 3.5") mirrors the Command Station connection state — green when connected, red when disconnected.
 - **Navigation**: Deploys an `lv_tabview` anchored to the bottom of the screen. It seamlessly hosts the 4 permanent sub-applications, enabling native physical swiping between them.
 
 ### 3. Loco Control (`LocoUI.cpp`)
 The primary dashboard for driving locomotives and consists.
 - **Throttle**: Features an `lv_arc` serving as a dynamic rotary speedometer. Speed updates from the CS are accepted unless a local change was made within the last 500 ms (preventing CS echo fighting user input).
-- **Function Mapping**: Parses `[address].json` files from LittleFS/SD to dynamically generate up to 6 function buttons per page, specific to the active locomotive. Each button supports idle and pressed visual states (label, icon, colour) defined per-function in the JSON. Latching buttons toggle on each press; momentary buttons animate on press and release independently of the DCC function state roundtrip.
+- **Function Mapping**: Parses `[address].json` files from LittleFS/SD to dynamically generate function buttons specific to the active locomotive — 6 per page (2×3) on the CYD, 8 per page (2×4) on the taller 3.5" panel, with a paging button when a loco has more than fits on one page. Each button supports idle and pressed visual states (label, icon, colour) defined per-function in the JSON. Latching buttons toggle on each press; momentary buttons animate on press and release independently of the DCC function state roundtrip. On the 3.5" the throttle dial is vertically centred on the mid-line of the function-button block.
 - **Selection Menu**: Tapping the active address opens a dark-themed overlay panel with options to select a locomotive by address (numeric keypad), by name (roster list), by group, or by consist. A Release button stops and deregisters the current loco or consist.
 - **Direction / E-Stop**: Instant DCC directional toggle (blocked at speed > 0) and a prominent circular emergency stop button.
 - **Consist Mode**: When a consist is active all throttle controls (speed arc, encoder, direction, functions, e-stop) are routed through the DCC-EX consist API. The consist name is shown in place of the loco name.
@@ -188,13 +257,18 @@ All screens share a consistent dark theme:
 The project is configured out-of-the-box via `platformio.ini`. 
 
 1. Open the repository in **VSCode** with the **PlatformIO** extension installed.
-2. Select the `esp32-2432S028R` environment.
-3. Click **Build** and **Upload** to flash your CYD.
+2. Select the environment for your board:
+   - `esp32-2432S028R` for the 2.8" CYD.
+   - `3inch5-ESP32-32E` for the 3.5" LCDWIKI board.
+3. Click **Build** and **Upload** to flash the device.
 4. *Important*: Remember to also run **Upload File System Image** (LittleFS) to upload the necessary loco JSON definitions and system configurations to the ESP32 flash memory. Note: the file system image is flashed to the `website` partition, while the `config` partition is formatted automatically on first boot.
+5. On first boot, run **Touch Calibration** from the Settings tab so touch coordinates match your panel (the default calibration values differ per board).
 
 ---
 
 ## SD Card & Touch Screen SPI Multiplexing
+
+> This section applies to the **CYD (ESP32-2432S028R)**. On the **3.5" ESP32-32E** the XPT2046 touch controller shares the LCD SPI bus directly and is driven through TFT_eSPI's built-in XPT2046 support (hardware SPI with CS switching) — the bit-bang workaround below is compiled out for that board via the `ST7796_DRIVER` flag. Reading touch through TFT_eSPI's `getTouchRaw()`/`getTouchRawZ()` avoids reconfiguring the shared bus pins as GPIO, which would otherwise corrupt the display.
 
 The ESP32 Cheap Yellow Display (CYD) features a notorious hardware conflict: **The SD Card reader and the Resistive Touch Screen are intended to share the same VSPI hardware controller, but are wired to completely different pins.**
 - **Touch Pins**: `CLK=25`, `MISO=39`, `MOSI=32`, `CS=33`, `IRQ=36`
