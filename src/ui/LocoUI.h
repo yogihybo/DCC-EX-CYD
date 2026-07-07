@@ -10,6 +10,19 @@
 #include "LVGL_Layouts.h"
 #include "ConsistUI.h"
 
+// Function-button page layout. The taller 3.5" panel fits an extra row per
+// column: 8 buttons/page (2x4) vs 6 (2x3). Shared between LocoUI.cpp (throttle
+// centring) and LocoUI_Functions.cpp (button build/render).
+#if defined(TFT_HEIGHT) && TFT_HEIGHT >= 480
+static const int FN_ROWS     = 4;
+#else
+static const int FN_ROWS     = 3;
+#endif
+static const int FN_PER_PAGE = FN_ROWS * 2;
+// Row layout as fractions of contentH (/250), kept close to the 6-button spacing.
+static inline int fnTopOffset() { return (FN_ROWS >= 4) ? 52 : 56; }
+static inline int fnSpacing()   { return (FN_ROWS >= 4) ? 39 : 44; }
+
 class LocoUI : public UIView {
   private:
     DCCEXProtocol& _dccex;
