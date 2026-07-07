@@ -12,7 +12,7 @@ vendored `src/drivers/LVGL_CYD.cpp`.
 | Environment | Board | Display | Resolution | Touch |
 |---|---|---|---|---|
 | `esp32-2432S028R` | Sunton CYD 2.8" | ILI9341 / ST7789 (runtime detect) | 240 × 320 | XPT2046 (dedicated VSPI) |
-| `ESP32-32E-3.5in-LCD` | LCDWIKI 3.5" | ST7796U | 320 × 480 | XPT2046 (shared HSPI) |
+| `ESP32-32E-3_5in-LCD` | LCDWIKI 3.5" | ST7796U | 320 × 480 | XPT2046 (shared HSPI) |
 
 ---
 
