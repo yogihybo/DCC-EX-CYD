@@ -304,3 +304,23 @@ Generating and importing custom icons into this project requires specific format
    }
    #endif
    ```
+
+---
+
+## Credits & License
+
+This project began as a fork of **[DCC-EX/EX-T3-WiFi](https://github.com/DCC-EX/EX-T3-WiFi)** and has since diverged substantially — it was rebuilt around FreeRTOS and LVGL 9 with a new tabbed touch UI, a companion web interface for roster/function management, on-device consist building, and support for multiple ESP32 display boards (2.8" CYD and 3.5" ESP32-32E). Grateful thanks to the original authors and the [DCC-EX](https://dcc-ex.com/) team for the foundation this was built on.
+
+### License
+Licensed under the **GNU General Public License v3.0**, inherited from the upstream project — see [`LICENSE.md`](LICENSE.md). As a GPL-3.0 work, this repository and any derivatives must remain under GPL-3.0, preserve these attributions, and make source available.
+
+### Third-party libraries & assets
+- **[DCC-EX/EX-T3-WiFi](https://github.com/DCC-EX/EX-T3-WiFi)** — original project this is forked from (GPL-3.0).
+- **[DCCEXProtocol](https://github.com/DCC-EX/DCCEXProtocol)** — official DCC-EX command-station client library.
+- **[LVGL](https://lvgl.io/)** (v9) — embedded graphics library (MIT).
+- **LVGL_CYD** by Rop Gonggrijp — CYD board driver layer, vendored and modified for multi-board support (MIT).
+- **[XPT2046_Bitbang_Arduino_Library](https://github.com/TheNitek/XPT2046_Bitbang_Arduino_Library)** — software-SPI touch driver used on the CYD.
+- **[TFT_eSPI](https://github.com/Bodmer/TFT_eSPI)** — display driver (used directly for the 3.5" board's shared-bus touch).
+- **[ArduinoJson](https://arduinojson.org/)**, **[ESPAsyncWebServer](https://github.com/mathieucarbou/ESPAsyncWebServer)**, **[StreamUtils](https://github.com/bblanchon/ArduinoStreamUtils)**, **[AiEsp32RotaryEncoder](https://github.com/igorantolic/ai-esp32-rotary-encoder)**.
+- **[Vue.js](https://vuejs.org/)** — web interface framework (MIT).
+- **[Font Awesome](https://fontawesome.com/)** — function/UI icon glyphs.
