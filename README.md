@@ -1,4 +1,4 @@
-# DCC-EX-CYD — WiFi Throttle for ESP32 Touch Displays (CYD 2.8" & LCDWIKI 3.5")
+# DCC-EX-CYD — WiFi Throttle for ESP32 Touch Displays (CYD 2.8" & ESP32-32E 3.5" LCD)
 <p align="center">
 <img width="200" height="208" alt="logo" src="https://github.com/user-attachments/assets/ec05c465-016c-4fdd-a8e6-c6d3c67aa4a7" />
 </p>
@@ -14,7 +14,7 @@ The firmware supports multiple board variants, each selected as its own Platform
 | Board | Env (`platformio.ini`) | Display | Resolution | Touch | Fn buttons / page |
 |---|---|---|---|---|---|
 | **ESP32-2432S028R** (Cheap Yellow Display / CYD) | `esp32-2432S028R` | 2.8" ILI9341 | 240×320 | XPT2046 (bit-bang SPI) | 6 (2×3) |
-| **LCDWIKI 3.5" ESP32-32E** | `3inch5-ESP32-32E` | 3.5" ST7796 | 320×480 | XPT2046 (shared LCD SPI bus) | 8 (2×4) |
+| **ESP32-32E 3.5" LCD** | `3inch5-ESP32-32E` | 3.5" ST7796 | 320×480 | XPT2046 (shared LCD SPI bus) | 8 (2×4) |
 
 Board-specific pins, display driver, touch wiring, and UI scale are all set via build flags in each environment — no code changes are needed to switch boards. See [Board Differences](#board-differences) for details.
 
@@ -63,8 +63,8 @@ Common to both:
 - **TODO**: details on assembly and case.
 
 Board-specific notes:
-- **CYD** measures battery voltage through the XPT2046 touch IC's VBAT channel (pin 7).
-- **3.5" ESP32-32E** measures battery voltage on GPIO 34 through an on-board 1:1 (100k/100k) divider, and has no PSRAM.
+- **CYD** measures battery voltage through the XPT2046 touch IC's VBAT channel (pin 7). This requires custom wiring from the voltage trace pad to the IC pin. 
+- **ESP32-32E 3.5" LCD** measures battery voltage on GPIO 34 through an on-board 1:1 (100k/100k) divider, no additional wiring is required.
 
 ---
 
@@ -108,7 +108,7 @@ Board-specific notes:
 
 ---
 
-### 3.5" ESP32-32E Pin Definitions
+### ESP32-32E 3.5" LCD Pin Definitions
 
 On this board the XPT2046 touch controller **shares the LCD SPI bus** (GPIO 12/13/14) rather than using a separate bit-bang bus. The firmware drives touch through TFT_eSPI's built-in XPT2046 support (with CS switching) so the shared bus is not corrupted.
 
@@ -145,7 +145,7 @@ On this board the XPT2046 touch controller **shares the LCD SPI bus** (GPIO 12/1
 <a name="board-differences"></a>
 ### Board Differences
 
-| Area | CYD (ESP32-2432S028R) | 3.5" ESP32-32E |
+| Area | CYD (ESP32-2432S028R) | ESP32-32E 3.5" LCD |
 |---|---|---|
 | Display driver | ILI9341 / ST7789 (auto-detected) | ST7796 |
 | Resolution | 240×320 | 320×480 |
