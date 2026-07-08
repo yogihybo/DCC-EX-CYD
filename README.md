@@ -1,6 +1,6 @@
 # DCC-EX-CYD — WiFi Throttle for ESP32 Touch Displays (CYD 2.8" & ESP32-32E 3.5" LCD)
 <p align="center">
-<img width="200" height="208" alt="logo" src="https://github.com/user-attachments/assets/ec05c465-016c-4fdd-a8e6-c6d3c67aa4a7" />
+<img width="200" height="208" alt="logo" src="https://github.com/user-attachments/assets/2af39976-d167-47b7-a795-20b3fb95266b" />
 </p>
 
 ## Overview
@@ -19,11 +19,9 @@ The firmware supports multiple board variants, each selected as its own Platform
 Board-specific pins, display driver, touch wiring, and UI scale are all set via build flags in each environment — no code changes are needed to switch boards. See [Board Differences](#board-differences) for details.
 
 <p align="center">
-<img width="240" height="320" alt="demo" src="https://github.com/user-attachments/assets/fd9401f1-40ce-46f9-9039-7acc50f2ab25" />
+<img width="240" height="320" alt="demo" src="https://github.com/user-attachments/assets/9874b84a-8a53-43a8-b8d1-99b7c4208b3f" />
 
 </p>
-
-
 
 ### Navigation & Tabs
 The interface is split into four primary tabs anchored to the bottom of the screen:
@@ -34,9 +32,7 @@ The interface is split into four primary tabs anchored to the bottom of the scre
 
 
 ### Web Interface
-<p align="center">
-<img width="532" height="374" alt="image" src="https://github.com/user-attachments/assets/5bfa0c13-20c4-4d38-b070-d3ac0b6aa48c" />
-</p>
+
 A web interface running on the ESP32 allows for easy input of loco details and assigning functions. To enable editting in the web interface, the 'Throttle Programming' mode must be selected on the device screen first.
 
 - **Locos**: Add, edit, and delete locomotives by DCC address and name. Assign one of the two built-in default function sets (Basic F0–F8 or Extended F0–F15), a saved custom set, or define functions inline with the function editor.
